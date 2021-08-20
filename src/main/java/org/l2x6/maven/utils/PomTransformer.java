@@ -362,6 +362,10 @@ public class PomTransformer {
                 currentNode = next;
             }
         }
+
+        public T getNode() {
+            return node;
+        }
     }
 
     public static class ContainerElement extends WrappedNode<Element> {
