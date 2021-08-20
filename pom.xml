@@ -27,6 +27,7 @@
     <packaging>jar</packaging>
 
     <name>Maven utilities</name>
+    <description>Maven utilities</description>
     <url>https://github.com/l2x6/maven-utils</url>
     <inceptionYear>2015</inceptionYear>
     <licenses>
