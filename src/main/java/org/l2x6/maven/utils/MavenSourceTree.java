@@ -289,6 +289,11 @@ public class MavenSourceTree {
                 return expression;
             }
 
+            @Override
+            public String asConstant() {
+                return expression;
+            }
+
         }
 
         /**
@@ -412,6 +417,11 @@ public class MavenSourceTree {
                 return result;
             }
 
+            @Override
+            public String asConstant() {
+                throw new IllegalStateException(expression + "is not a constant");
+            }
+
         }
 
         /**
@@ -441,6 +451,12 @@ public class MavenSourceTree {
          * @return the raw source of this {@link Expression}
          */
         String getRawExpression();
+
+        /**
+         * @return the constant value of this {@link Expression} if this is a {@link Constant}; otherwise an
+         *         {@link IllegalStateException} is thrown
+         */
+        String asConstant();
     }
 
     /**
@@ -801,7 +817,7 @@ public class MavenSourceTree {
                         }
                     }
                 } catch (IOException | XMLStreamException e1) {
-                    throw new RuntimeException(e1);
+                    throw new RuntimeException("Couldnot parse " + pomXml, e1);
                 }
             }
 
@@ -836,23 +852,25 @@ public class MavenSourceTree {
                     final Set<String> useChildren = Collections.unmodifiableSet(children);
                     children = null;
                     final Set<Dependency> useDependencies = Collections
-                            .<Dependency>unmodifiableSet((Set<Dependency>)dependencies.stream().map(DependencyBuilder::build)
+                            .<Dependency> unmodifiableSet((Set<Dependency>) dependencies.stream().map(DependencyBuilder::build)
                                     .collect(Collectors.toCollection(LinkedHashSet::new)));
                     dependencies = null;
                     final Set<Dependency> useManagedDependencies = Collections
-                            .<Dependency>unmodifiableSet((Set<Dependency>)dependencyManagement.stream().map(DependencyBuilder::build)
-                                    .collect(Collectors.toCollection(LinkedHashSet::new)));
+                            .<Dependency> unmodifiableSet(
+                                    (Set<Dependency>) dependencyManagement.stream().map(DependencyBuilder::build)
+                                            .collect(Collectors.toCollection(LinkedHashSet::new)));
                     dependencyManagement = null;
-                    final Set<Plugin> usePlugins = Collections.<Plugin>unmodifiableSet((Set<Plugin>)plugins.stream()
+                    final Set<Plugin> usePlugins = Collections.<Plugin> unmodifiableSet((Set<Plugin>) plugins.stream()
                             .map(PluginGavBuilder::build).collect(Collectors.toCollection(LinkedHashSet::new)));
                     plugins = null;
                     final Set<Plugin> usePluginManagement = Collections
-                            .<Plugin>unmodifiableSet((Set<Plugin>)pluginManagement.stream().map(PluginGavBuilder::build)
+                            .<Plugin> unmodifiableSet((Set<Plugin>) pluginManagement.stream().map(PluginGavBuilder::build)
                                     .collect(Collectors.toCollection(LinkedHashSet::new)));
                     pluginManagement = null;
 
-                    final Set<GavExpression> useExtensions = Collections.<GavExpression>unmodifiableSet((Set<GavExpression>)extensions
-                            .stream().map(PlainGavBuilder::build).collect(Collectors.toCollection(LinkedHashSet::new)));
+                    final Set<GavExpression> useExtensions = Collections
+                            .<GavExpression> unmodifiableSet((Set<GavExpression>) extensions
+                                    .stream().map(PlainGavBuilder::build).collect(Collectors.toCollection(LinkedHashSet::new)));
                     extensions = null;
 
                     final Map<String, Expression> useProps = Collections.unmodifiableMap(properties.stream() //
@@ -1109,7 +1127,8 @@ public class MavenSourceTree {
             } else if (PROJECT_VERSION_XPATH.equals(valueDefinition.getXPath())) {
                 /* ignore */
             } else {
-                edits.add(valueDefinition.getModule().getPomPath(), Transformation.setTextValue(valueDefinition.getXPath(), newValue));
+                edits.add(valueDefinition.getModule().getPomPath(),
+                        Transformation.setTextValue(valueDefinition.getXPath(), newValue));
             }
         }
 
@@ -1493,7 +1512,8 @@ public class MavenSourceTree {
      * @param isProfileActive a {@link Profile} filter, see {@link #profiles(String...)}
      * @param simpleElementWhitespace see {@link SimpleElementWhitespace}
      */
-    public void setVersions(final String newVersion, final Predicate<Profile> isProfileActive, SimpleElementWhitespace simpleElementWhitespace) {
+    public void setVersions(final String newVersion, final Predicate<Profile> isProfileActive,
+            SimpleElementWhitespace simpleElementWhitespace) {
         final DomEdits edits = new DomEdits();
         for (Module module : modulesByGa.values()) {
 
@@ -1508,7 +1528,8 @@ public class MavenSourceTree {
             /* parent */
             if (parentGav != null && modulesByGa.containsKey(parentGav.resolveGa(this, isProfileActive))) {
                 final Expression parentVersion = parentGav.getVersion();
-                edit(newVersion, isProfileActive, edits, module, parentVersion, PomTransformer.anyNs("project", "parent", "version"));
+                edit(newVersion, isProfileActive, edits, module, parentVersion,
+                        PomTransformer.anyNs("project", "parent", "version"));
             }
 
             for (Profile profile : module.getProfiles()) {
@@ -1561,7 +1582,8 @@ public class MavenSourceTree {
      * @param includes a list of {@code groupId:artifactId}s
      * @param isProfileActive a {@link Profile} filter, see {@link #profiles(String...)}
      */
-    public void unlinkUneededModules(Set<Ga> includes, Predicate<Profile> isProfileActive, Charset encoding, SimpleElementWhitespace simpleElementWhitespace) {
+    public void unlinkUneededModules(Set<Ga> includes, Predicate<Profile> isProfileActive, Charset encoding,
+            SimpleElementWhitespace simpleElementWhitespace) {
         final Module rootModule = modulesByPath.get("pom.xml");
         final Map<String, Set<Path>> removeChildPaths = unlinkUneededModules(includes, rootModule,
                 new LinkedHashMap<String, Set<Path>>(), isProfileActive);
@@ -1573,7 +1595,8 @@ public class MavenSourceTree {
         }
     }
 
-    void unlinkUneededModules(Path pomXml, Set<Path> removeChildPaths, Charset encoding, SimpleElementWhitespace simpleElementWhitespace) {
+    void unlinkUneededModules(Path pomXml, Set<Path> removeChildPaths, Charset encoding,
+            SimpleElementWhitespace simpleElementWhitespace) {
 
         final Path parentDir = pomXml.getParent();
         final Set<String> relPathsToRemove = removeChildPaths.stream()
