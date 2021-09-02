@@ -29,8 +29,8 @@ public class Gav implements Comparable<Gav> {
     /**
      * Returns a new {@link Gav} instance parsed out of the given {@code gavString}.
      *
-     * @param gavString the string to parse, something of the form {@code groupId:artifactId:version}
-     * @return a new {@link Gav} instance parsed out of the given {@code gavString}
+     * @param  gavString the string to parse, something of the form {@code groupId:artifactId:version}
+     * @return           a new {@link Gav} instance parsed out of the given {@code gavString}
      */
     public static Gav of(String gavString) {
         StringTokenizer st = new StringTokenizer(gavString, ":");

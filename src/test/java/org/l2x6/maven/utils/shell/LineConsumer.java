@@ -24,7 +24,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.function.Consumer;
-
 import org.slf4j.Logger;
 
 public interface LineConsumer extends Consumer<String>, Closeable {

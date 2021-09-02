@@ -164,7 +164,8 @@ public class Gavtcs {
         this.exclusions = Collections.emptySortedSet();
     }
 
-    public Gavtcs(String groupId, String artifactId, String version, String type, String classifier, String scope, Ga exclusion) {
+    public Gavtcs(String groupId, String artifactId, String version, String type, String classifier, String scope,
+            Ga exclusion) {
         super();
         this.groupId = groupId;
         this.artifactId = artifactId;

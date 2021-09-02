@@ -45,7 +45,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
@@ -58,7 +57,6 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-
 import org.w3c.dom.Comment;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
@@ -232,8 +230,8 @@ public class PomTransformer {
      * {@code /*:[local-name()='foo']/*:[local-name()='bar']}. In XPath 2.0, this would be just {@code /*:foo/*:bar},
      * but as of Java 13, there is only XPath 1.0 available in the JDK.
      *
-     * @param elements namespace-less element names
-     * @return am XPath 1.0 style selector
+     * @param  elements namespace-less element names
+     * @return          am XPath 1.0 style selector
      */
     public static String anyNs(String... elements) {
         StringBuilder sb = new StringBuilder();
@@ -698,9 +696,9 @@ public class PomTransformer {
         }
 
         /**
-         * @param indentCount how many times to concatenate the {@link #indentationString}
-         * @return a new indentation node containing a newline and {@code indentCount} times concatenated
-         *         {@link #indentationString}
+         * @param  indentCount how many times to concatenate the {@link #indentationString}
+         * @return             a new indentation node containing a newline and {@code indentCount} times concatenated
+         *                     {@link #indentationString}
          */
         public Text indent(int indentCount) {
             final StringBuilder sb = new StringBuilder(1 + indentCount * indentationString.length());
@@ -1092,9 +1090,10 @@ public class PomTransformer {
                 final String condition = modulesToComment.stream()
                         .map(m -> "text() = '" + m + "'")
                         .collect(Collectors.joining(" or "));
-                final String xPathExpr = anyNs("project", "modules", "module") + "["+condition +"]";
+                final String xPathExpr = anyNs("project", "modules", "module") + "[" + condition + "]";
                 try {
-                    final NodeList moduleNodes = (NodeList) context.getXPath().evaluate(xPathExpr, document, XPathConstants.NODESET);
+                    final NodeList moduleNodes = (NodeList) context.getXPath().evaluate(xPathExpr, document,
+                            XPathConstants.NODESET);
                     for (int i = 0; i < moduleNodes.getLength(); i++) {
                         final Node moduleNode = moduleNodes.item(i);
                         final String moduleText = moduleNode.getTextContent();
@@ -1239,7 +1238,7 @@ public class PomTransformer {
          * Perform this {@link Transformation} on the given {@code document}
          *
          * @param document the {@link Document} to transform
-         * @param context the current {@link TransformationContext}
+         * @param context  the current {@link TransformationContext}
          */
         void perform(Document document, TransformationContext context);
 

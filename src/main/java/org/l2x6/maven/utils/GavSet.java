@@ -54,8 +54,8 @@ public class GavSet implements Serializable {
         /**
          * Exclude a single GAV pattern.
          *
-         * @param rawPattern
-         * @return this {@link Builder}
+         * @param  rawPattern
+         * @return            this {@link Builder}
          */
         public Builder exclude(String rawPattern) {
             this.excludes.add(GavPattern.of(rawPattern));
@@ -65,8 +65,8 @@ public class GavSet implements Serializable {
         /**
          * Parses the entries of the given {@link Collection} of {@code rawPatterns} and excludes those.
          *
-         * @param rawPatterns {@link Collection} of GAV patterns to parse via {@link GavPattern#of(String)}
-         * @return this {@link Builder}
+         * @param  rawPatterns {@link Collection} of GAV patterns to parse via {@link GavPattern#of(String)}
+         * @return             this {@link Builder}
          */
         public Builder excludes(Collection<String> rawPatterns) {
             if (rawPatterns != null) {
@@ -80,8 +80,8 @@ public class GavSet implements Serializable {
         /**
          * Parses the entries of the given array of {@code rawPatterns} and excludes those.
          *
-         * @param rawPatterns a list of GAV patterns to parse via {@link GavPattern#of(String)}
-         * @return this {@link Builder}
+         * @param  rawPatterns a list of GAV patterns to parse via {@link GavPattern#of(String)}
+         * @return             this {@link Builder}
          */
         public Builder excludes(String... rawPatterns) {
             if (rawPatterns != null) {
@@ -95,8 +95,8 @@ public class GavSet implements Serializable {
         /**
          * Parses the given comma separated list of {@code rawPatterns} and excludes those.
          *
-         * @param rawPatterns a comma separated list of GAV patterns
-         * @return this {@link Builder}
+         * @param  rawPatterns a comma separated list of GAV patterns
+         * @return             this {@link Builder}
          */
         public Builder excludes(String rawPatterns) {
             if (rawPatterns != null) {
@@ -121,8 +121,8 @@ public class GavSet implements Serializable {
         /**
          * Include a single GAV pattern.
          *
-         * @param rawPattern
-         * @return this {@link Builder}
+         * @param  rawPattern
+         * @return            this {@link Builder}
          */
         public Builder include(String rawPattern) {
             this.includes.add(GavPattern.of(rawPattern));
@@ -132,8 +132,8 @@ public class GavSet implements Serializable {
         /**
          * Parses the entries of the given {@link Collection} of {@code rawPatterns} and includes those.
          *
-         * @param rawPatterns {@link Collection} of GAV patterns to parse via {@link GavPattern#of(String)}
-         * @return this {@link Builder}
+         * @param  rawPatterns {@link Collection} of GAV patterns to parse via {@link GavPattern#of(String)}
+         * @return             this {@link Builder}
          */
         public Builder includes(Collection<String> rawPatterns) {
             if (rawPatterns != null) {
@@ -147,8 +147,8 @@ public class GavSet implements Serializable {
         /**
          * Parses the given comma separated list of {@code rawPatterns} and includes those.
          *
-         * @param rawPatterns a comma separated list of GAV patterns
-         * @return this {@link Builder}
+         * @param  rawPatterns a comma separated list of GAV patterns
+         * @return             this {@link Builder}
          */
         public Builder includes(String rawPatterns) {
             if (rawPatterns != null) {
@@ -163,8 +163,8 @@ public class GavSet implements Serializable {
         /**
          * Parses the entries of the given array of {@code rawPatterns} and includes those.
          *
-         * @param rawPatterns a list of GAV patterns to parse via {@link GavPattern#of(String)}
-         * @return this {@link Builder}
+         * @param  rawPatterns a list of GAV patterns to parse via {@link GavPattern#of(String)}
+         * @return             this {@link Builder}
          */
         public Builder includes(String... rawPatterns) {
             if (rawPatterns != null) {
@@ -236,7 +236,7 @@ public class GavSet implements Serializable {
     /**
      * Appends {@link #excludes} to the given {@code out} separating them by comma.
      *
-     * @param out an {@link Appendable} to append to
+     * @param  out         an {@link Appendable} to append to
      * @throws IOException
      */
     public void appendExcludes(Appendable out) throws IOException {
@@ -246,7 +246,7 @@ public class GavSet implements Serializable {
     /**
      * Appends {@link #includes} to the given {@code out} separating them by comma.
      *
-     * @param out an {@link Appendable} to append to
+     * @param  out         an {@link Appendable} to append to
      * @throws IOException
      */
     public void appendIncludes(Appendable out) throws IOException {
@@ -255,9 +255,10 @@ public class GavSet implements Serializable {
 
     /**
      *
-     * @param groupId
-     * @param artifactId
-     * @return {@code true} if the given GA identifier is a member of this {@link GavSet} and {@code false} otherwise
+     * @param  groupId
+     * @param  artifactId
+     * @return            {@code true} if the given GA identifier is a member of this {@link GavSet} and {@code false}
+     *                    otherwise
      */
     public boolean contains(String groupId, String artifactId) {
         return matches(groupId, artifactId, includes) && !matches(groupId, artifactId, excludes);
@@ -265,10 +266,11 @@ public class GavSet implements Serializable {
 
     /**
      *
-     * @param groupId
-     * @param artifactId
-     * @param version
-     * @return {@code true} if the given GAV triple is a member of this {@link GavSet} and {@code false} otherwise
+     * @param  groupId
+     * @param  artifactId
+     * @param  version
+     * @return            {@code true} if the given GAV triple is a member of this {@link GavSet} and {@code false}
+     *                    otherwise
      */
     public boolean contains(String groupId, String artifactId, String version) {
         return matches(groupId, artifactId, version, includes) && !matches(groupId, artifactId, version, excludes);

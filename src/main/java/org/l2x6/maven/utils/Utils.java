@@ -25,8 +25,8 @@ public class Utils {
     private static final boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
 
     /**
-     * @param anyPath a path with either slashes or backslashes
-     * @return a file path with slashes
+     * @param  anyPath a path with either slashes or backslashes
+     * @return         a file path with slashes
      */
     public static String toUnixPath(String anyPath) {
         if (anyPath == null || anyPath.isEmpty()) {
@@ -39,8 +39,8 @@ public class Utils {
      * Climbs up the file system hierarchy starting in {@code start} and searching for a {@code mvnw} or
      * {@code mvnw.cmd} file suitable for the current platform.
      *
-     * @param start a preferably absolute path to a file or directory where the search should start
-     * @return a path to {@code mvnw} or {@code mvnw.cmd} (suitable for the current platform)
+     * @param  start                 a preferably absolute path to a file or directory where the search should start
+     * @return                       a path to {@code mvnw} or {@code mvnw.cmd} (suitable for the current platform)
      * @throws IllegalStateException if no {@code mvnw} or {@code mvnw.cmd} could be found
      */
     public static Path findMvnw(final Path start) {

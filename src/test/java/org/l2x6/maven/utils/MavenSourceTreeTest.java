@@ -18,7 +18,6 @@ package org.l2x6.maven.utils;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -31,7 +30,6 @@ import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.l2x6.maven.utils.MavenSourceTree.ActiveProfiles;
@@ -348,10 +346,11 @@ public class MavenSourceTreeTest {
                 .assertThat(rootUnlinks)
                 .isEqualTo(
                         Stream.of("module-3/pom.xml", "module-6/pom.xml")
-                            .map(root::resolve)
-                            .collect(Collectors.toCollection(LinkedHashSet::new)));
+                                .map(root::resolve)
+                                .collect(Collectors.toCollection(LinkedHashSet::new)));
 
-        t.unlinkUneededModules(expandedIncludes, profileSelector, StandardCharsets.UTF_8, SimpleElementWhitespace.AUTODETECT_PREFER_SPACE);
+        t.unlinkUneededModules(expandedIncludes, profileSelector, StandardCharsets.UTF_8,
+                SimpleElementWhitespace.AUTODETECT_PREFER_SPACE);
 
         final Path expectedRoot = BASEDIR.resolve("target/test-classes/MavenSourceTree/tree-1-expected");
 

@@ -42,14 +42,12 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.Characters;
 import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.XMLEvent;
-
 import org.l2x6.maven.utils.MavenSourceTree.Expression.Constant;
 import org.l2x6.maven.utils.MavenSourceTree.Expression.NonConstant;
 import org.l2x6.maven.utils.MavenSourceTree.GavExpression.DependencyBuilder;
@@ -68,7 +66,7 @@ import org.slf4j.LoggerFactory;
  * A representation of a Maven module hierarchy.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
- * @since 4.1
+ * @since  4.1
  */
 public class MavenSourceTree {
     public static class ActiveProfiles implements Predicate<Profile> {
@@ -76,16 +74,16 @@ public class MavenSourceTree {
         static final Predicate<Profile> EMPTY = new ActiveProfiles();
 
         /**
-         * @param profileIds the active profiles (can be empty)
-         * @return a new {@link Profile} filter which will hold the named {@code profileIds} for active
+         * @param  profileIds the active profiles (can be empty)
+         * @return            a new {@link Profile} filter which will hold the named {@code profileIds} for active
          */
         public static Predicate<Profile> of(String... profileIds) {
             return profileIds.length == 0 ? EMPTY : new ActiveProfiles(profileIds);
         }
 
         /**
-         * @param args Maven command line arguments
-         * @return a new {@link Predicate}
+         * @param  args Maven command line arguments
+         * @return      a new {@link Predicate}
          */
         public static Predicate<Profile> ofArgs(List<String> args) {
             for (Iterator<String> it = args.iterator(); it.hasNext();) {
@@ -210,7 +208,7 @@ public class MavenSourceTree {
         final Map<String, Set<Transformation>> domEditsByPath = new LinkedHashMap<>();
 
         /**
-         * @param path a file system path to a {@code pom.xml} file relative to {@link MavenSourceTree#rootDirectory}
+         * @param path    a file system path to a {@code pom.xml} file relative to {@link MavenSourceTree#rootDirectory}
          * @param domEdit the operation to add
          */
         public void add(String path, Transformation domEdit) {
@@ -425,10 +423,11 @@ public class MavenSourceTree {
         }
 
         /**
-         * @param expression the expression possibly containing <code>${...}</code> placeholders
-         * @param ga the {@link Ga} against which the resulting {@link Expression} should be evaluated
-         * @return a {@link NonConstant} or {@link Constant} depending on whether the given {@code expression} contains
-         *         <code>${</code>
+         * @param  expression the expression possibly containing <code>${...}</code> placeholders
+         * @param  ga         the {@link Ga} against which the resulting {@link Expression} should be evaluated
+         * @return            a {@link NonConstant} or {@link Constant} depending on whether the given {@code expression}
+         *                    contains
+         *                    <code>${</code>
          */
         static Expression of(String expression, Ga ga) {
             if (expression.indexOf("${") >= 0) {
@@ -441,9 +440,9 @@ public class MavenSourceTree {
         /**
          * Evaluate this {@link Expression} by recursively expanding all ${...} placeholders.
          *
-         * @param tree the {@link MavenSourceTree} against which this {@link Expression} should be evaluated
-         * @param isProfileActive the profile selector to use when evaluating properties
-         * @return the result of evaluation
+         * @param  tree            the {@link MavenSourceTree} against which this {@link Expression} should be evaluated
+         * @param  isProfileActive the profile selector to use when evaluating properties
+         * @return                 the result of evaluation
          */
         String evaluate(MavenSourceTree tree, Predicate<Profile> isProfileActive);
 
@@ -1015,10 +1014,11 @@ public class MavenSourceTree {
         /**
          * Goes through active profiles and find the definition of the property having the given {@code propertyName}.
          *
-         * @param propertyName the property name to find a definition for
-         * @param isProfileActive tells which profiles are active
-         * @return the {@link ValueDefinition} of the seeked property or {@code null} if no such property is defined in
-         *         this {@link Module}
+         * @param  propertyName    the property name to find a definition for
+         * @param  isProfileActive tells which profiles are active
+         * @return                 the {@link ValueDefinition} of the seeked property or {@code null} if no such property is
+         *                         defined in
+         *                         this {@link Module}
          */
         public ValueDefinition findPropertyDefinition(String propertyName, Predicate<Profile> isProfileActive) {
             final ListIterator<Profile> it = this.profiles.listIterator(this.profiles.size());
@@ -1066,10 +1066,11 @@ public class MavenSourceTree {
         }
 
         /**
-         * @param childPomPath a path to {@code pom.xml} file relative to {@link MavenSourceTree#rootDirectory}
-         * @param isProfileActive
-         * @return {@code true} if the {@code pom.xml} represented by this {@link Module} has a {@code <module>} with
-         *         the given pom.xml path or {@code false} otherwise
+         * @param  childPomPath    a path to {@code pom.xml} file relative to {@link MavenSourceTree#rootDirectory}
+         * @param  isProfileActive
+         * @return                 {@code true} if the {@code pom.xml} represented by this {@link Module} has a {@code <module>}
+         *                         with
+         *                         the given pom.xml path or {@code false} otherwise
          */
         public boolean hasChild(String childPomPath, Predicate<Profile> isProfileActive) {
             for (Profile p : profiles) {
@@ -1180,9 +1181,9 @@ public class MavenSourceTree {
     private static final XMLInputFactory xmlInputFactory = XMLInputFactory.newInstance();
 
     /**
-     * @param rootPomXml the path to the {@code pom.xml} file of the root Maven module
-     * @param encoding the encoding to use when reading {@code pom.xml} files in the given file tree
-     * @return a new {@link MavenSourceTree}
+     * @param  rootPomXml the path to the {@code pom.xml} file of the root Maven module
+     * @param  encoding   the encoding to use when reading {@code pom.xml} files in the given file tree
+     * @return            a new {@link MavenSourceTree}
      */
     public static MavenSourceTree of(Path rootPomXml, Charset encoding) {
         return new Builder(rootPomXml.getParent(), encoding).pomXml(rootPomXml).build();
@@ -1266,8 +1267,8 @@ public class MavenSourceTree {
      * {@link MavenSourceTree} that are reachable from the {@code initialModules} via <i>depends on</i> and <i>is parent
      * of</i> relationships.
      *
-     * @param initialModules
-     * @return {@link Set} of {@code groupId:artifactId}
+     * @param  initialModules
+     * @return                {@link Set} of {@code groupId:artifactId}
      */
     public Set<Ga> computeModuleClosure(Collection<Ga> initialModules, Predicate<Profile> isProfileActive) {
         final Set<Ga> visited = new HashSet<>();
@@ -1282,8 +1283,8 @@ public class MavenSourceTree {
      * Returns the complement of the given {@code inputSet}, the universe being the set of all modules in this
      * {@link MavenSourceTree}.
      *
-     * @param inputSet the set whose complement is to be computed
-     * @return a new {@link Set} with stable ordering
+     * @param  inputSet the set whose complement is to be computed
+     * @return          a new {@link Set} with stable ordering
      */
     public Set<Ga> complement(Set<Ga> inputSet) {
         final Set<Ga> result = new LinkedHashSet<>();
@@ -1362,9 +1363,9 @@ public class MavenSourceTree {
     /**
      * Evaluate the given {@link Expression} by recursively expanding all its ${...} placeholders.
      *
-     * @param expression the {@link Expression} to evaluate
-     * @param isProfileActive the profile selector to use when evaluating properties
-     * @return the result of evaluation
+     * @param  expression      the {@link Expression} to evaluate
+     * @param  isProfileActive the profile selector to use when evaluating properties
+     * @return                 the result of evaluation
      */
     public String evaluate(Expression expression, Predicate<Profile> isProfileActive) {
         return expression.evaluate(this, isProfileActive);
@@ -1374,9 +1375,9 @@ public class MavenSourceTree {
      * Goes through dependencies and plugins this source tree requires and returns the set of those satisfying
      * {@link GavSet#contains(String, String)}.
      *
-     * @param gavSet
-     * @param isProfileActive
-     * @return a
+     * @param  gavSet
+     * @param  isProfileActive
+     * @return                 a
      */
     public Set<Ga> filterDependencies(GavSet gavSet, final Predicate<Profile> isProfileActive) {
         final Set<Ga> result = new TreeSet<>();
@@ -1475,8 +1476,8 @@ public class MavenSourceTree {
     }
 
     /**
-     * @param child
-     * @return the {@link Module} having the given gild in its {@code <modules>}
+     * @param  child
+     * @return       the {@link Module} having the given gild in its {@code <modules>}
      */
     Module getProperParentModule(Module child, Predicate<Profile> isProfileActive) {
         final GavExpression parentGa = child.parentGav;
@@ -1508,8 +1509,8 @@ public class MavenSourceTree {
     /**
      * A fast alternative to {@code mvn versions:set -DnewVersion=...}
      *
-     * @param newVersion the new version to set
-     * @param isProfileActive a {@link Profile} filter, see {@link #profiles(String...)}
+     * @param newVersion              the new version to set
+     * @param isProfileActive         a {@link Profile} filter, see {@link #profiles(String...)}
      * @param simpleElementWhitespace see {@link SimpleElementWhitespace}
      */
     public void setVersions(final String newVersion, final Predicate<Profile> isProfileActive,
@@ -1579,7 +1580,7 @@ public class MavenSourceTree {
      * Edit the {@code pom.xml} files so that just the given @{@code includes} are buildable, removing all unnecessary
      * {@code <module>} elements from {@code pom.xml} files.
      *
-     * @param includes a list of {@code groupId:artifactId}s
+     * @param includes        a list of {@code groupId:artifactId}s
      * @param isProfileActive a {@link Profile} filter, see {@link #profiles(String...)}
      */
     public void unlinkUneededModules(Set<Ga> includes, Predicate<Profile> isProfileActive, Charset encoding,

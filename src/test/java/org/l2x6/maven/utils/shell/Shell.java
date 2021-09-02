@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,7 +115,7 @@ public class Shell {
         }
 
         /**
-         * @return this {@link CommandResult}
+         * @return                      this {@link CommandResult}
          * @throws BadExitCodeException if and only if {@link #exitCode} != 0
          */
         public CommandResult assertSuccess() throws BadExitCodeException {
@@ -180,11 +179,12 @@ public class Shell {
     /**
      * Executes the given {@link ShellCommand} synchronously.
      *
-     * @param command the command to execute
-     * @return the {@link CommandResult} that can be used to determine if the execution was successful
-     * @throws BuildException on any build related problems
+     * @param  command                 the command to execute
+     * @return                         the {@link CommandResult} that can be used to determine if the execution was
+     *                                 successful
+     * @throws BuildException          on any build related problems
      * @throws CommandTimeoutException if the execution is not finished within the timeout defined in
-     *         {@link ShellCommand#getTimeoutMs()}
+     *                                 {@link ShellCommand#getTimeoutMs()}
      */
     public static CommandResult execute(ShellCommand command) throws BuildException, CommandTimeoutException {
         final String[] cmdArray = command.asCmdArray();

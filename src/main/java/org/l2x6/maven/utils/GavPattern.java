@@ -51,8 +51,8 @@ public class GavPattern implements Serializable {
         /**
          * Sets the pattern for {@code artifactId}
          *
-         * @param wildcardPattern a pattern that can contain string literals and asterisk {@code *} wildcards
-         * @return this {@link Builder}
+         * @param  wildcardPattern a pattern that can contain string literals and asterisk {@code *} wildcards
+         * @return                 this {@link Builder}
          */
         public Builder artifactIdPattern(String wildcardPattern) {
             this.artifactIdPattern = new GavSegmentPattern(wildcardPattern);
@@ -66,8 +66,8 @@ public class GavPattern implements Serializable {
         /**
          * Sets the pattern for {@code groupId}
          *
-         * @param wildcardPattern a pattern that can contain string literals and asterisk {@code *} wildcards
-         * @return this {@link Builder}
+         * @param  wildcardPattern a pattern that can contain string literals and asterisk {@code *} wildcards
+         * @return                 this {@link Builder}
          */
         public Builder groupIdPattern(String wildcardPattern) {
             this.groupIdPattern = new GavSegmentPattern(wildcardPattern);
@@ -77,8 +77,8 @@ public class GavPattern implements Serializable {
         /**
          * Sets the pattern for {@code version}
          *
-         * @param wildcardPattern a pattern that can contain string literals and asterisk {@code *} wildcards
-         * @return this {@link Builder}
+         * @param  wildcardPattern a pattern that can contain string literals and asterisk {@code *} wildcards
+         * @return                 this {@link Builder}
          */
         public Builder versionPattern(String wildcardPattern) {
             this.versionPattern = new GavSegmentPattern(wildcardPattern);
@@ -213,8 +213,8 @@ public class GavPattern implements Serializable {
      * {@code org.my-group:my-artifact:1.2.3} - will match just the version 1.2.3 of artifacts
      * {@code org.my-group:my-artifact}.
      *
-     * @param wildcardPattern a string pattern to parse and create a new {@link GavPattern} from
-     * @return a new {@link GavPattern}
+     * @param  wildcardPattern a string pattern to parse and create a new {@link GavPattern} from
+     * @return                 a new {@link GavPattern}
      */
     public static GavPattern of(String wildcardPattern) {
         final GavSegmentPattern groupIdPattern;
@@ -286,11 +286,11 @@ public class GavPattern implements Serializable {
     /**
      * Matches the given {@code groupId}, {@code artifactId}, {@code version} triple against this {@link GavPattern}.
      *
-     * @param groupId
-     * @param artifactId
-     * @param version
-     * @return {@code true} if this {@link GavPattern} matches the given {@code groupId}, {@code artifactId},
-     *         {@code version} triple and {@code false otherwise}
+     * @param  groupId
+     * @param  artifactId
+     * @param  version
+     * @return            {@code true} if this {@link GavPattern} matches the given {@code groupId}, {@code artifactId},
+     *                    {@code version} triple and {@code false otherwise}
      */
     public boolean matches(String groupId, String artifactId, String version) {
         return groupIdPattern.matches(groupId) && //
@@ -302,10 +302,10 @@ public class GavPattern implements Serializable {
      * Matches the given {@code groupId}, {@code artifactId} pair against this {@link GavPattern} disregarding the
      * version part of the pattern.
      *
-     * @param groupId
-     * @param artifactId
-     * @return {@code true} if this {@link GavPattern} matches the given {@code groupId} and {@code artifactId}
-     *         (disregarding the version part of this {@link GavPattern}), and {@code false otherwise}
+     * @param  groupId
+     * @param  artifactId
+     * @return            {@code true} if this {@link GavPattern} matches the given {@code groupId} and {@code artifactId}
+     *                    (disregarding the version part of this {@link GavPattern}), and {@code false otherwise}
      */
     public boolean matches(String groupId, String artifactId) {
         return groupIdPattern.matches(groupId) && //

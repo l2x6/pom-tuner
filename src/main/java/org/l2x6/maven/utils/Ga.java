@@ -29,11 +29,12 @@ public class Ga implements Comparable<Ga> {
     private final String artifactId;
     private final String groupId;
     private final int hashCode;
+
     /**
      * Returns a new {@link Ga} instance parsed out of the given {@code gavString}.
      *
-     * @param gavString the string to parse, something of the form {@code groupId:artifactId:version}
-     * @return a new {@link Ga} instance parsed out of the given {@code gavString}
+     * @param  gavString the string to parse, something of the form {@code groupId:artifactId:version}
+     * @return           a new {@link Ga} instance parsed out of the given {@code gavString}
      */
     public static Ga of(String gavString) {
         StringTokenizer st = new StringTokenizer(gavString, ":");

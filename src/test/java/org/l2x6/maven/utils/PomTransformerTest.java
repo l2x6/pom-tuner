@@ -21,7 +21,6 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
@@ -30,7 +29,6 @@ import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.stream.StreamSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathFactory;
-
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.l2x6.maven.utils.PomTransformer.ContainerElement;
@@ -1231,7 +1229,9 @@ public class PomTransformerTest {
                 + "</project>\n";
         asserTransformation(source,
                 Collections.singletonList(
-                        Transformation.keepFirst("//comment()[contains(.,' The following dependencies guarantee that this module is built after them. You can update them by running `mvn process-resources -Pformat -N` from the source tree root directory ')]", true)),
+                        Transformation.keepFirst(
+                                "//comment()[contains(.,' The following dependencies guarantee that this module is built after them. You can update them by running `mvn process-resources -Pformat -N` from the source tree root directory ')]",
+                                true)),
                 expected);
     }
 
