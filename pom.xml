@@ -74,7 +74,10 @@
         <assertj.version>3.15.0</assertj.version>
 
         <!-- Plugins and their dependencies -->
-        <site-maven-plugin.version>0.12</site-maven-plugin.version>
+        <buildnumber-maven-plugin.version>1.4</buildnumber-maven-plugin.version>
+        <editorconfig-maven-plugin.version>0.0.10</editorconfig-maven-plugin.version>
+        <formatter-maven-plugin.version>2.15.0</formatter-maven-plugin.version>
+        <impsort-maven-plugin.version>1.6.0</impsort-maven-plugin.version>
         <license-maven-plugin.version>3.0</license-maven-plugin.version>
         <maven-clean-plugin.version>2.6.1</maven-clean-plugin.version>
         <maven-compiler-plugin.version>3.3</maven-compiler-plugin.version>
@@ -92,8 +95,7 @@
         <maven-source-plugin.version>2.4</maven-source-plugin.version>
         <maven-surefire-plugin.version>3.0.0-M4</maven-surefire-plugin.version>
         <nexus-staging-maven-plugin.version>1.6.8</nexus-staging-maven-plugin.version>
-        <buildnumber-maven-plugin.version>1.4</buildnumber-maven-plugin.version>
-        <editorconfig-maven-plugin.version>0.0.10</editorconfig-maven-plugin.version>
+        <site-maven-plugin.version>0.12</site-maven-plugin.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -353,6 +355,30 @@ limitations under the License.</inlineHeader>
                 </plugin>
 
                 <plugin>
+                    <groupId>net.revelc.code.formatter</groupId>
+                    <artifactId>formatter-maven-plugin</artifactId>
+                    <version>${formatter-maven-plugin.version}</version>
+                    <configuration>
+                        <configFile>${maven.multiModuleProjectDirectory}/build/eclipse-formatter-config.xml</configFile>
+                        <skip>${format.skip}</skip>
+                        <lineEnding>KEEP</lineEnding>
+                        <cachedir>${project.build.directory}/cache</cachedir>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>net.revelc.code</groupId>
+                    <artifactId>impsort-maven-plugin</artifactId>
+                    <version>${impsort-maven-plugin.version}</version>
+                    <configuration>
+                        <removeUnused>true</removeUnused>
+                        <staticAfter>true</staticAfter>
+                        <lineEnding>KEEP</lineEnding>
+                        <skip>${format.skip}</skip>
+                        <cachedir>${project.build.directory}/cache</cachedir>
+                    </configuration>
+                </plugin>
+
+                <plugin>
                     <groupId>org.sonatype.plugins</groupId>
                     <artifactId>nexus-staging-maven-plugin</artifactId>
                     <version>${nexus-staging-maven-plugin.version}</version>
@@ -372,6 +398,33 @@ limitations under the License.</inlineHeader>
             <plugin>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>net.revelc.code.formatter</groupId>
+                <artifactId>formatter-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>format</id>
+                        <goals>
+                            <goal>format</goal>
+                        </goals>
+                        <phase>process-sources</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>net.revelc.code</groupId>
+                <artifactId>impsort-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>sort-imports</id>
+                        <goals>
+                            <goal>sort</goal>
+                        </goals>
+                        <phase>process-sources</phase>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- To speed up the tests, we use the mrm-maven-plugin to proxy the local Maven repo of the main build so that
