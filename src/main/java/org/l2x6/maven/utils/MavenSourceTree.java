@@ -154,6 +154,7 @@ public class MavenSourceTree {
         final Map<String, Module.Builder> modulesByPath = new LinkedHashMap<>();
 
         private final Path rootDirectory;
+        private Predicate<Dependency> dependencyExcludes = dep -> false;
 
         Builder(Path rootDirectory, Charset encoding) {
             super();
@@ -171,11 +172,16 @@ public class MavenSourceTree {
                 byPath.put(module.pomPath, module);
             }
             return new MavenSourceTree(rootDirectory, encoding, Collections.unmodifiableMap(byPath),
-                    Collections.unmodifiableMap(byGa));
+                    Collections.unmodifiableMap(byGa), dependencyExcludes);
+        }
+
+        Builder dependencyExcludes(Predicate<Dependency> dependencyExcludes) {
+            this.dependencyExcludes = dependencyExcludes;
+            return this;
         }
 
         Builder pomXml(final Path pomXml) {
-            final Module.Builder module = new Module.Builder(rootDirectory, pomXml, encoding);
+            final Module.Builder module = new Module.Builder(rootDirectory, pomXml, encoding, dependencyExcludes);
             modulesByPath.put(module.pomPath, module);
             modulesByGa.put(module.moduleGav.getGa(), module);
             for (Profile.Builder profile : module.profiles) {
@@ -191,14 +197,24 @@ public class MavenSourceTree {
 
     public static class Dependency extends GavExpression {
         private final String scope;
+        private final String type;
 
-        public Dependency(Expression groupId, Expression artifactId, Expression version, String scope) {
+        public Dependency(Expression groupId, Expression artifactId, Expression version, String type, String scope) {
             super(groupId, artifactId, version);
+            this.type = type;
             this.scope = scope;
         }
 
         public String getScope() {
             return scope;
+        }
+
+        public String getType() {
+            return type;
+        }
+
+        public boolean isVirtual() {
+            return "pom".equals(type) && "test".equals(scope);
         }
     }
 
@@ -467,6 +483,7 @@ public class MavenSourceTree {
         public static class DependencyBuilder extends PlainGavBuilder {
 
             private String scope = "compile";
+            private String type = "jar";
 
             public DependencyBuilder(ModuleGavBuilder module) {
                 super(module);
@@ -475,11 +492,15 @@ public class MavenSourceTree {
             public Dependency build() {
                 final Ga ga = module.getGa();
                 return new Dependency(Expression.of(groupId, ga), Expression.of(artifactId, ga),
-                        version != null ? Expression.of(version, ga) : null, scope);
+                        version != null ? Expression.of(version, ga) : null, type, scope);
             }
 
             public void scope(String scope) {
                 this.scope = scope;
+            }
+
+            public void type(String type) {
+                this.type = type;
             }
 
         }
@@ -686,16 +707,17 @@ public class MavenSourceTree {
          * A {@link Module} builder.
          */
         static class Builder {
-            Profile.Builder implicitProfile = new Profile.Builder();
+            final Profile.Builder implicitProfile;
             final ModuleGavBuilder moduleGav;
             final ParentGavBuilder parentGav;
             /** Relative to source tree root directory */
             final String pomPath;
             List<Profile.Builder> profiles;
 
-            Builder(Path rootDirectory, Path pomXml, Charset encoding) {
+            Builder(Path rootDirectory, Path pomXml, Charset encoding, Predicate<Dependency> dependencyExcludes) {
                 parentGav = new ParentGavBuilder();
                 moduleGav = new ModuleGavBuilder(parentGav);
+                implicitProfile = new Profile.Builder(dependencyExcludes);
                 profiles = new ArrayList<>();
                 profiles.add(implicitProfile);
 
@@ -773,7 +795,7 @@ public class MavenSourceTree {
                                             nextEvent.getClass().getName(), pomXml));
                                 }
                             } else if ("profile".equals(elementName)) {
-                                profile = new Profile.Builder();
+                                profile = new Profile.Builder(dependencyExcludes);
                             } else if ("id".equals(elementName)) {
                                 if ("profile".equals(elementStack.peek())) {
                                     final String id = r.nextEvent().asCharacters().getData();
@@ -786,6 +808,10 @@ public class MavenSourceTree {
                                 gavBuilderStack.peek().artifactId(r.nextEvent().asCharacters().getData());
                             } else if ("version".equals(elementName)) {
                                 gavBuilderStack.peek().version(r.nextEvent().asCharacters().getData());
+                            } else if ("type".equals(elementName)
+                                    && gavBuilderStack.peek() instanceof DependencyBuilder) {
+                                ((DependencyBuilder) gavBuilderStack.peek())
+                                        .type(r.nextEvent().asCharacters().getData());
                             } else if ("scope".equals(elementName)
                                     && gavBuilderStack.peek() instanceof DependencyBuilder) {
                                 ((DependencyBuilder) gavBuilderStack.peek())
@@ -847,12 +873,19 @@ public class MavenSourceTree {
                 List<PluginGavBuilder> pluginManagement = new ArrayList<>();
                 List<PluginGavBuilder> plugins = new ArrayList<>();
                 List<PropertyBuilder> properties = new ArrayList<>();
+                final Predicate<Dependency> dependencyExcludes;
+
+                Builder(Predicate<Dependency> dependencyExcludes) {
+                    this.dependencyExcludes = dependencyExcludes;
+                }
 
                 public Profile build() {
                     final Set<String> useChildren = Collections.unmodifiableSet(children);
                     children = null;
                     final Set<Dependency> useDependencies = Collections
-                            .<Dependency> unmodifiableSet((Set<Dependency>) dependencies.stream().map(DependencyBuilder::build)
+                            .<Dependency> unmodifiableSet((Set<Dependency>) dependencies.stream()
+                                    .map(DependencyBuilder::build)
+                                    .filter(dep -> !dependencyExcludes.test(dep))
                                     .collect(Collectors.toCollection(LinkedHashSet::new)));
                     dependencies = null;
                     final Set<Dependency> useManagedDependencies = Collections
@@ -1194,6 +1227,17 @@ public class MavenSourceTree {
         return new Builder(rootPomXml.getParent(), encoding).pomXml(rootPomXml).build();
     }
 
+    /**
+     * @param  rootPomXml         the path to the {@code pom.xml} file of the root Maven module
+     * @param  encoding           the encoding to use when reading {@code pom.xml} files in the given file tree
+     * @param  dependencyExcludes a {@link Predicate} deciding whether a given {@link Dependency} should be ignored when
+     *                            building the resulting {@link MavenSourceTree}
+     * @return                    a new {@link MavenSourceTree}
+     */
+    public static MavenSourceTree of(Path rootPomXml, Charset encoding, Predicate<Dependency> dependencyExcludes) {
+        return new Builder(rootPomXml.getParent(), encoding).dependencyExcludes(dependencyExcludes).pomXml(rootPomXml).build();
+    }
+
     static String xPathDependency(String dependencyKind, GavExpression gav) {
         return "/*[local-name()='" + dependencyKind + "' and *[local-name()='groupId' and text()='"
                 + gav.getGroupId().getRawExpression() + "'] and *[local-name()='artifactId' and text()='"
@@ -1219,12 +1263,15 @@ public class MavenSourceTree {
 
     private final Path rootDirectory;
 
+    private final Predicate<Dependency> dependencyExcludes;
+
     MavenSourceTree(Path rootDirectory, Charset encoding, Map<String, Module> modulesByPath,
-            Map<Ga, Module> modulesByGa) {
+            Map<Ga, Module> modulesByGa, Predicate<Dependency> dependencyExcludes) {
         this.rootDirectory = rootDirectory;
         this.modulesByPath = modulesByPath;
         this.modulesByGa = modulesByGa;
         this.encoding = encoding;
+        this.dependencyExcludes = dependencyExcludes;
     }
 
     private void addDeclaredParents(final Module module, final Set<Ga> result, Set<Ga> visited,
@@ -1681,7 +1728,8 @@ public class MavenSourceTree {
      * @return a new {@link MavenSourceTree};
      */
     public MavenSourceTree reload() {
-        return new Builder(rootDirectory, encoding).pomXml(rootDirectory.resolve("pom.xml")).build();
+        return new Builder(rootDirectory, encoding).dependencyExcludes(dependencyExcludes)
+                .pomXml(rootDirectory.resolve("pom.xml")).build();
     }
 
 }

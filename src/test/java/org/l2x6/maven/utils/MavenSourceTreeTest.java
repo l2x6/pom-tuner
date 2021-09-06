@@ -34,7 +34,9 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.l2x6.maven.utils.MavenSourceTree.ActiveProfiles;
 import org.l2x6.maven.utils.MavenSourceTree.Builder;
+import org.l2x6.maven.utils.MavenSourceTree.Dependency;
 import org.l2x6.maven.utils.MavenSourceTree.Expression;
+import org.l2x6.maven.utils.MavenSourceTree.Expression.Constant;
 import org.l2x6.maven.utils.MavenSourceTree.GavExpression;
 import org.l2x6.maven.utils.MavenSourceTree.Module;
 import org.l2x6.maven.utils.MavenSourceTree.Module.Profile;
@@ -201,6 +203,19 @@ public class MavenSourceTreeTest {
                     .hasSameTextualContentAs(expectedPath, StandardCharsets.UTF_8);
         }
 
+    }
+
+    @Test
+    public void dependencyFilter() throws IOException {
+        final Path root = BASEDIR.resolve("target/test-classes/MavenSourceTree/tree-1");
+        final MavenSourceTree t = MavenSourceTree.of(root.resolve("pom.xml"), StandardCharsets.UTF_8,
+                dep -> dep.getGroupId().toString().equals("org.srcdeps.tree-1")
+                        && dep.getArtifactId().toString().equals("tree-module-5"));
+        final Module m4 = t.getModulesByGa().get(Ga.of("org.srcdeps.tree-1:tree-module-4"));
+        Assertions.assertEquals(
+                new LinkedHashSet<>(Arrays.asList(new Dependency(new Constant("org.srcdeps.tree-1"),
+                        new Constant("tree-module-1"), new Constant("0.0.1"), "jar", "compile"))),
+                m4.getProfiles().get(0).getDependencies());
     }
 
     @Test
