@@ -1564,7 +1564,7 @@ public class MavenSourceTree {
         edits.perform(rootDirectory, encoding, simpleElementWhitespace);
     }
 
-    Map<String, Set<Path>> unlinkNonRequiredModules(Set<Ga> includes, Module module,
+    Map<String, Set<Path>> unlinkModules(Set<Ga> includes, Module module,
             Map<String, Set<Path>> removeChildPaths, Predicate<Profile> isProfileActive) {
         for (Profile p : module.profiles) {
             if (isProfileActive.test(p)) {
@@ -1579,7 +1579,7 @@ public class MavenSourceTree {
                         }
                         set.add(rootDirectory.resolve(childPath).normalize());
                     } else {
-                        unlinkNonRequiredModules(includes, childModule, removeChildPaths, isProfileActive);
+                        unlinkModules(includes, childModule, removeChildPaths, isProfileActive);
                     }
                 }
             }
@@ -1588,7 +1588,7 @@ public class MavenSourceTree {
     }
 
     /**
-     * Delegates to {@link #unlinkNonRequiredModules(Set, Predicate, Charset, SimpleElementWhitespace, boolean)} with
+     * Delegates to {@link #unlinkModules(Set, Predicate, Charset, SimpleElementWhitespace, boolean)} with
      * {@code remove} set to {@code false}.
      *
      * @param requiredModules         a list of {@code groupId:artifactId}s
@@ -1598,9 +1598,9 @@ public class MavenSourceTree {
      * @param commentText             for @{@code commentText} {@code "a comment"} the resulting snippet would look like
      *                                {@code <!-- <module>some-module</module> a comment --> }
      */
-    public void unlinkNonRequiredModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
+    public void unlinkModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
             SimpleElementWhitespace simpleElementWhitespace, String commentText) {
-        unlinkNonRequiredModules(requiredModules, isProfileActive, encoding, simpleElementWhitespace,
+        unlinkModules(requiredModules, isProfileActive, encoding, simpleElementWhitespace,
                 (Set<String> modules) -> Transformation.commentModules(modules, commentText));
     }
 
@@ -1617,20 +1617,20 @@ public class MavenSourceTree {
      *                                {@code <module>my-module</module>} elements) and produces a {@link Transformation}
      *                                removing those elements.
      */
-    public void unlinkNonRequiredModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
+    public void unlinkModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
             SimpleElementWhitespace simpleElementWhitespace, Function<Set<String>, PomTransformer.Transformation> remover) {
         final Module rootModule = modulesByPath.get("pom.xml");
-        final Map<String, Set<Path>> removeChildPaths = unlinkNonRequiredModules(requiredModules, rootModule,
+        final Map<String, Set<Path>> removeChildPaths = unlinkModules(requiredModules, rootModule,
                 new LinkedHashMap<String, Set<Path>>(), isProfileActive);
         for (Entry<String, Set<Path>> e : removeChildPaths.entrySet()) {
             final Set<Path> paths = e.getValue();
             if (!paths.isEmpty()) {
-                unlinkNonRequiredModules(rootDirectory.resolve(e.getKey()), paths, encoding, simpleElementWhitespace, remover);
+                unlinkModules(rootDirectory.resolve(e.getKey()), paths, encoding, simpleElementWhitespace, remover);
             }
         }
     }
 
-    void unlinkNonRequiredModules(
+    void unlinkModules(
             Path pomXml,
             Set<Path> removeChildPaths,
             Charset encoding,
@@ -1650,12 +1650,12 @@ public class MavenSourceTree {
 
     /**
      * Link back any modules anywhere in the source tree previously removed by
-     * {@link #unlinkNonRequiredModules(Set, Predicate, Charset, SimpleElementWhitespace, Function)}.
+     * {@link #unlinkModules(Set, Predicate, Charset, SimpleElementWhitespace, Function)}.
      *
      * @param encoding                the encoding for reading and writing pom.xml files
      * @param simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
      * @param commentText             has to be the same as used in the previous
-     *                                {@link #unlinkNonRequiredModules(Set, Predicate, Charset, SimpleElementWhitespace, Function)}
+     *                                {@link #unlinkModules(Set, Predicate, Charset, SimpleElementWhitespace, Function)}
      *                                invocation
      */
     public void relinkModules(Charset encoding, SimpleElementWhitespace simpleElementWhitespace, String commentText) {

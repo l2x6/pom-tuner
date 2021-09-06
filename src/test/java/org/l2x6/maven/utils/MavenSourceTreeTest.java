@@ -338,7 +338,7 @@ public class MavenSourceTreeTest {
                         "org.srcdeps.tree-1:declared-parent", "org.srcdeps.tree-1:tree-plugin")
                 .stream().map(Ga::of).collect(Collectors.toCollection(LinkedHashSet::new)), expandedIncludes);
 
-        final Map<String, Set<Path>> removeChildPaths = t.unlinkNonRequiredModules(expandedIncludes, t.getRootModule(),
+        final Map<String, Set<Path>> removeChildPaths = t.unlinkModules(expandedIncludes, t.getRootModule(),
                 new LinkedHashMap<String, Set<Path>>(), profileSelector);
         Assertions.assertEquals(1, removeChildPaths.size());
         Set<Path> rootUnlinks = removeChildPaths.get("pom.xml");
@@ -349,7 +349,7 @@ public class MavenSourceTreeTest {
                                 .map(root::resolve)
                                 .collect(Collectors.toCollection(LinkedHashSet::new)));
 
-        t.unlinkNonRequiredModules(expandedIncludes, profileSelector, StandardCharsets.UTF_8,
+        t.unlinkModules(expandedIncludes, profileSelector, StandardCharsets.UTF_8,
                 SimpleElementWhitespace.AUTODETECT_PREFER_SPACE, "removed by srcdeps");
 
         final Path expectedRoot = BASEDIR.resolve("target/test-classes/MavenSourceTree/tree-1-expected");
