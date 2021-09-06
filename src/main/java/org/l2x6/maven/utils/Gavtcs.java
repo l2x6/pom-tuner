@@ -329,4 +329,11 @@ public class Gavtcs {
         return "pom".equals(type) && "test".equals(scope) && artifactId.endsWith("-deployment");
     }
 
+    /**
+     * @return a new {@link Ga} created out of this {@link Gavtcs}'s {@link #groupId} and {@link #artifactId}
+     */
+    public Ga toGa() {
+        return new Ga(groupId, artifactId);
+    }
+
 }
