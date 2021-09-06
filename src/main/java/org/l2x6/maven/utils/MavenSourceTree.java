@@ -1564,7 +1564,7 @@ public class MavenSourceTree {
         edits.perform(rootDirectory, encoding, simpleElementWhitespace);
     }
 
-    Map<String, Set<Path>> unlinkUneededModules(Set<Ga> includes, Module module,
+    Map<String, Set<Path>> unlinkNonRequiredModules(Set<Ga> includes, Module module,
             Map<String, Set<Path>> removeChildPaths, Predicate<Profile> isProfileActive) {
         for (Profile p : module.profiles) {
             if (isProfileActive.test(p)) {
@@ -1579,7 +1579,7 @@ public class MavenSourceTree {
                         }
                         set.add(rootDirectory.resolve(childPath).normalize());
                     } else {
-                        unlinkUneededModules(includes, childModule, removeChildPaths, isProfileActive);
+                        unlinkNonRequiredModules(includes, childModule, removeChildPaths, isProfileActive);
                     }
                 }
             }
@@ -1588,44 +1588,47 @@ public class MavenSourceTree {
     }
 
     /**
-     * Delegates to {@link #unlinkUneededModules(Set, Predicate, Charset, SimpleElementWhitespace, boolean)} with
+     * Delegates to {@link #unlinkNonRequiredModules(Set, Predicate, Charset, SimpleElementWhitespace, boolean)} with
      * {@code remove} set to {@code false}.
      *
-     * @param includes                a list of {@code groupId:artifactId}s
+     * @param requiredModules         a list of {@code groupId:artifactId}s
      * @param isProfileActive         a {@link Profile} filter, see {@link #profiles(String...)}
      * @param encoding                the encoding for reading and writing pom.xml files
      * @param simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
      */
-    public void unlinkUneededModules(Set<Ga> includes, Predicate<Profile> isProfileActive, Charset encoding,
+    public void unlinkNonRequiredModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
             SimpleElementWhitespace simpleElementWhitespace) {
-        unlinkUneededModules(includes, isProfileActive, encoding, simpleElementWhitespace, Transformation::commentModules);
+        unlinkNonRequiredModules(requiredModules, isProfileActive, encoding, simpleElementWhitespace,
+                Transformation::commentModules);
     }
 
     /**
-     * Edit the {@code pom.xml} files so that just the given @{@code includes} are buildable, removing all unnecessary
+     * Edit the {@code pom.xml} files so that just the given @{@code requiredModules} are buildable, removing all
+     * unnecessary
      * {@code <module>} elements from {@code pom.xml} files.
      *
-     * @param includes                a list of {@code groupId:artifactId}s
+     * @param requiredModules         a list of {@code groupId:artifactId}s that are required to build
      * @param isProfileActive         a {@link Profile} filter, see {@link #profiles(String...)}
      * @param encoding                the encoding for reading and writing pom.xml files
      * @param simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
-     * @param remove                  if {@code true} the {@code <module>} elements will be removed including any preceding
-     *                                whitespace and comments
+     * @param remover                 a {@link Function} that takes a {@link Set} of module names (as in
+     *                                {@code <module>my-module</module>} elements) and produces a {@link Transformation}
+     *                                removing those elements.
      */
-    public void unlinkUneededModules(Set<Ga> includes, Predicate<Profile> isProfileActive, Charset encoding,
+    public void unlinkNonRequiredModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
             SimpleElementWhitespace simpleElementWhitespace, Function<Set<String>, PomTransformer.Transformation> remover) {
         final Module rootModule = modulesByPath.get("pom.xml");
-        final Map<String, Set<Path>> removeChildPaths = unlinkUneededModules(includes, rootModule,
+        final Map<String, Set<Path>> removeChildPaths = unlinkNonRequiredModules(requiredModules, rootModule,
                 new LinkedHashMap<String, Set<Path>>(), isProfileActive);
         for (Entry<String, Set<Path>> e : removeChildPaths.entrySet()) {
             final Set<Path> paths = e.getValue();
             if (!paths.isEmpty()) {
-                unlinkUneededModules(rootDirectory.resolve(e.getKey()), paths, encoding, simpleElementWhitespace, remover);
+                unlinkNonRequiredModules(rootDirectory.resolve(e.getKey()), paths, encoding, simpleElementWhitespace, remover);
             }
         }
     }
 
-    void unlinkUneededModules(
+    void unlinkNonRequiredModules(
             Path pomXml,
             Set<Path> removeChildPaths,
             Charset encoding,
