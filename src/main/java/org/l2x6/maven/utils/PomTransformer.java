@@ -985,6 +985,15 @@ public class PomTransformer {
             }
             return false;
         }
+
+        public static Comment commentTextNode(Node node, String commentText) {
+            final String moduleText = node.getTextContent();
+            final Node parent = node.getParentNode();
+            final Comment moduleComment = node.getOwnerDocument()
+                    .createComment(MODULE_COMMENT_PREFIX + moduleText + MODULE_COMMENT_INFIX + commentText + " ");
+            parent.replaceChild(moduleComment, node);
+            return moduleComment;
+        }
     }
 
     /**
@@ -1144,12 +1153,7 @@ public class PomTransformer {
                     final NodeList moduleNodes = (NodeList) context.getXPath().evaluate(xPathExpr, document,
                             XPathConstants.NODESET);
                     for (int i = 0; i < moduleNodes.getLength(); i++) {
-                        final Node moduleNode = moduleNodes.item(i);
-                        final String moduleText = moduleNode.getTextContent();
-                        final Node parent = moduleNode.getParentNode();
-                        final Comment moduleComment = moduleNode.getOwnerDocument()
-                                .createComment(MODULE_COMMENT_PREFIX + moduleText + MODULE_COMMENT_INFIX + commentText + " ");
-                        parent.replaceChild(moduleComment, moduleNode);
+                        TransformationContext.commentTextNode(moduleNodes.item(i), commentText);
                     }
                 } catch (XPathExpressionException | DOMException e) {
                     throw new RuntimeException(e);

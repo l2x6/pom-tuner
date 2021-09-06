@@ -1652,18 +1652,36 @@ public class MavenSourceTree {
      * Link back any modules anywhere in the source tree previously removed by
      * {@link #unlinkModules(Set, Predicate, Charset, SimpleElementWhitespace, Function)}.
      *
-     * @param encoding                the encoding for reading and writing pom.xml files
-     * @param simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
-     * @param commentText             has to be the same as used in the previous
-     *                                {@link #unlinkModules(Set, Predicate, Charset, SimpleElementWhitespace, Function)}
-     *                                invocation
+     * @param  encoding                the encoding for reading and writing pom.xml files
+     * @param  simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
+     * @param  commentText             has to be the same as used in the previous
+     *                                 {@link #unlinkModules(Set, Predicate, Charset, SimpleElementWhitespace, Function)}
+     *                                 invocation
+     * @return                         either this {@link MavenSourceTree} if no relinking edits could be performed or a new
+     *                                 {@link MavenSourceTree} with all modules relinked
      */
-    public void relinkModules(Charset encoding, SimpleElementWhitespace simpleElementWhitespace, String commentText) {
+    public MavenSourceTree relinkModules(Charset encoding, SimpleElementWhitespace simpleElementWhitespace,
+            String commentText) {
         for (String relPath : modulesByPath.keySet()) {
             Path pomXmlPath = rootDirectory.resolve(relPath);
             new PomTransformer(pomXmlPath, encoding, simpleElementWhitespace)
                     .transform(Transformation.uncommentModules(commentText));
         }
+        MavenSourceTree newTree = reload();
+        if (modulesByPath.keySet().equals(newTree.modulesByPath.keySet())) {
+            return this;
+        } else {
+            return newTree.relinkModules(encoding, simpleElementWhitespace, commentText);
+        }
+    }
+
+    /**
+     * Re-read the module hierarchy from the file system and return new {@link MavenSourceTree}.
+     *
+     * @return a new {@link MavenSourceTree};
+     */
+    public MavenSourceTree reload() {
+        return new Builder(rootDirectory, encoding).pomXml(rootDirectory.resolve("pom.xml")).build();
     }
 
 }
