@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -1083,6 +1084,10 @@ public class MavenSourceTree {
             return false;
         }
 
+        public String toString() {
+            return gav.toString() + "@" + pomPath;
+        }
+
     }
 
     public static class Plugin extends GavExpression {
@@ -1241,11 +1246,16 @@ public class MavenSourceTree {
             addDeclaredParents(module, result, visited, isProfileActive);
             for (Profile p : module.profiles) {
                 if (isProfileActive.test(p)) {
-                    for (GavExpression depGa : p.dependencies) {
-                        addModule(depGa.resolveGa(this, isProfileActive), result, visited, isProfileActive);
+                    for (GavExpression dep : p.dependencies) {
+                        addModule(dep.resolveGa(this, isProfileActive), result, visited, isProfileActive);
                     }
-                    for (GavExpression depGa : p.plugins) {
-                        addModule(depGa.resolveGa(this, isProfileActive), result, visited, isProfileActive);
+                    for (GavExpression dep : p.plugins) {
+                        addModule(dep.resolveGa(this, isProfileActive), result, visited, isProfileActive);
+                    }
+                    for (Dependency dep : p.dependencyManagement) {
+                        if ("import".equals(dep.getScope())) {
+                            addModule(dep.resolveGa(this, isProfileActive), result, visited, isProfileActive);
+                        }
                     }
                 }
             }
@@ -1264,13 +1274,14 @@ public class MavenSourceTree {
 
     /**
      * Returns a {@link Set} that contains all given {@code initialModules} and all such modules from the current
-     * {@link MavenSourceTree} that are reachable from the {@code initialModules} via <i>depends on</i> and <i>is parent
-     * of</i> relationships.
+     * {@link MavenSourceTree} that are required to build all {@code initialModules}. The set is defined as a union of
+     * transitive closures of {@code initialModules} on relationships <i>depends on</i>, <i>is parent
+     * of</i> and <i>imports BOM</i>.
      *
      * @param  initialModules
      * @return                {@link Set} of {@code groupId:artifactId}
      */
-    public Set<Ga> computeModuleClosure(Collection<Ga> initialModules, Predicate<Profile> isProfileActive) {
+    public Set<Ga> findRequiredModules(Collection<Ga> initialModules, Predicate<Profile> isProfileActive) {
         final Set<Ga> visited = new HashSet<>();
         final Set<Ga> result = new LinkedHashSet<>();
         for (Ga includeGa : initialModules) {
@@ -1577,27 +1588,49 @@ public class MavenSourceTree {
     }
 
     /**
-     * Edit the {@code pom.xml} files so that just the given @{@code includes} are buildable, removing all unnecessary
-     * {@code <module>} elements from {@code pom.xml} files.
+     * Delegates to {@link #unlinkUneededModules(Set, Predicate, Charset, SimpleElementWhitespace, boolean)} with
+     * {@code remove} set to {@code false}.
      *
-     * @param includes        a list of {@code groupId:artifactId}s
-     * @param isProfileActive a {@link Profile} filter, see {@link #profiles(String...)}
+     * @param includes                a list of {@code groupId:artifactId}s
+     * @param isProfileActive         a {@link Profile} filter, see {@link #profiles(String...)}
+     * @param encoding                the encoding for reading and writing pom.xml files
+     * @param simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
      */
     public void unlinkUneededModules(Set<Ga> includes, Predicate<Profile> isProfileActive, Charset encoding,
             SimpleElementWhitespace simpleElementWhitespace) {
+        unlinkUneededModules(includes, isProfileActive, encoding, simpleElementWhitespace, Transformation::commentModules);
+    }
+
+    /**
+     * Edit the {@code pom.xml} files so that just the given @{@code includes} are buildable, removing all unnecessary
+     * {@code <module>} elements from {@code pom.xml} files.
+     *
+     * @param includes                a list of {@code groupId:artifactId}s
+     * @param isProfileActive         a {@link Profile} filter, see {@link #profiles(String...)}
+     * @param encoding                the encoding for reading and writing pom.xml files
+     * @param simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
+     * @param remove                  if {@code true} the {@code <module>} elements will be removed including any preceding
+     *                                whitespace and comments
+     */
+    public void unlinkUneededModules(Set<Ga> includes, Predicate<Profile> isProfileActive, Charset encoding,
+            SimpleElementWhitespace simpleElementWhitespace, Function<Set<String>, PomTransformer.Transformation> remover) {
         final Module rootModule = modulesByPath.get("pom.xml");
         final Map<String, Set<Path>> removeChildPaths = unlinkUneededModules(includes, rootModule,
                 new LinkedHashMap<String, Set<Path>>(), isProfileActive);
         for (Entry<String, Set<Path>> e : removeChildPaths.entrySet()) {
             final Set<Path> paths = e.getValue();
             if (!paths.isEmpty()) {
-                unlinkUneededModules(rootDirectory.resolve(e.getKey()), paths, encoding, simpleElementWhitespace);
+                unlinkUneededModules(rootDirectory.resolve(e.getKey()), paths, encoding, simpleElementWhitespace, remover);
             }
         }
     }
 
-    void unlinkUneededModules(Path pomXml, Set<Path> removeChildPaths, Charset encoding,
-            SimpleElementWhitespace simpleElementWhitespace) {
+    void unlinkUneededModules(
+            Path pomXml,
+            Set<Path> removeChildPaths,
+            Charset encoding,
+            SimpleElementWhitespace simpleElementWhitespace,
+            Function<Set<String>, PomTransformer.Transformation> remover) {
 
         final Path parentDir = pomXml.getParent();
         final Set<String> relPathsToRemove = removeChildPaths.stream()
@@ -1607,7 +1640,7 @@ public class MavenSourceTree {
                 .map(Utils::toUnixPath)
                 .collect(Collectors.toSet());
         final PomTransformer transformer = new PomTransformer(pomXml, encoding, simpleElementWhitespace);
-        transformer.transform(Transformation.commentModules(relPathsToRemove));
+        transformer.transform(remover.apply(relPathsToRemove));
     }
 
 }

@@ -329,7 +329,7 @@ public class MavenSourceTreeTest {
 
         final Predicate<Profile> profileSelector = p -> true;
         final Set<Ga> expandedIncludes = t
-                .computeModuleClosure(Arrays.asList(Ga.of("org.srcdeps.tree-1:tree-module-2")), profileSelector);
+                .findRequiredModules(Arrays.asList(Ga.of("org.srcdeps.tree-1:tree-module-2")), profileSelector);
         Assertions.assertEquals(Arrays
                 .asList("org.srcdeps.tree-1:tree-module-2", "org.srcdeps.tree-1:tree-parent",
                         "org.srcdeps.tree-1:tree-module-4", "org.srcdeps.tree-1:tree-module-1",

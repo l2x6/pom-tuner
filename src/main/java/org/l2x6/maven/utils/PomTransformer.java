@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -114,22 +115,14 @@ public class PomTransformer {
      * @param transformations the {@link Transformation}s to apply
      */
     public void transform(Collection<Transformation> transformations) {
-        transform(transformations, simpleElementWhitespace, path, () -> {
-            try {
-                return new String(Files.readAllBytes(path), charset);
-            } catch (IOException e) {
-                throw new RuntimeException(String.format("Could not read DOM from [%s]", path), e);
-            }
-        }, xml -> {
-            try {
-                Files.write(path, xml.getBytes(charset));
-            } catch (IOException e) {
-                throw new RuntimeException(String.format("Could not write DOM from [%s]", path), e);
-            }
-        });
+        LazyWriter lazyWriter = new LazyWriter();
+        transform(transformations, simpleElementWhitespace, path, lazyWriter::read, lazyWriter::write);
     }
 
-    static void transform(Collection<Transformation> edits, SimpleElementWhitespace simpleElementWhitespace, Path path,
+    static void transform(
+            Collection<Transformation> edits,
+            SimpleElementWhitespace simpleElementWhitespace,
+            Path path,
             Supplier<String> source,
             Consumer<String> outConsumer) {
         final String src = source.get();
@@ -242,7 +235,8 @@ public class PomTransformer {
     }
 
     /**
-     * A preference whether simple elements should be formated with ({@code <foo />} or without ({@code <foo/>} whitespace.
+     * A preference whether simple elements should be formated with ({@code <foo />} or without ({@code <foo/>}
+     * whitespace.
      */
     public enum SimpleElementWhitespace {
         AUTODETECT_PREFER_SPACE(true, " "),
@@ -651,6 +645,29 @@ public class PomTransformer {
         }
     }
 
+    class LazyWriter {
+        private String oldContent;
+
+        String read() {
+            try {
+                oldContent = new String(Files.readAllBytes(path), charset);
+                return oldContent;
+            } catch (IOException e) {
+                throw new RuntimeException(String.format("Could not read DOM from [%s]", path), e);
+            }
+        }
+
+        void write(String newContent) {
+            if (!oldContent.equals(newContent)) {
+                try {
+                    Files.write(path, newContent.getBytes(charset));
+                } catch (IOException e) {
+                    throw new RuntimeException(String.format("Could not write DOM from [%s]", path), e);
+                }
+            }
+        }
+    }
+
     /**
      * A context of a set of {@link Transformation}s.
      */
@@ -911,19 +928,39 @@ public class PomTransformer {
 
         public void removeNode(String xPathExpression, boolean removePrecedingComments, boolean removePrecedingWhitespace,
                 boolean onlyIfEmpty) {
+            BiConsumer<Node, Node> precedingNodesConsumer = null;
+            if (removePrecedingComments || removePrecedingWhitespace) {
+                precedingNodesConsumer = (Node deletedNode, Node whitespaceOrComment) -> {
+                    if ((removePrecedingWhitespace && TransformationContext.isWhiteSpaceNode(whitespaceOrComment))
+                            || (removePrecedingComments && whitespaceOrComment.getNodeType() == Node.COMMENT_NODE)) {
+                        /* remove any preceding whitespace or comments */
+                        whitespaceOrComment.getParentNode().removeChild(whitespaceOrComment);
+                    }
+                };
+            }
+            removeNode(xPathExpression, precedingNodesConsumer, onlyIfEmpty);
+        }
+
+        public void removeNode(String xPathExpression, BiConsumer<Node, Node> precedingNodesConsumer,
+                boolean onlyIfEmpty) {
             try {
                 Node deletedNode = (Node) getXPath().evaluate(xPathExpression, document, XPathConstants.NODE);
                 if (deletedNode != null) {
                     if (onlyIfEmpty && hasElementChildren(deletedNode)) {
                         return;
                     }
-                    if (removePrecedingComments || removePrecedingWhitespace) {
-                        Node prevSibling = null;
-                        while ((prevSibling = deletedNode.getPreviousSibling()) != null
-                                && ((removePrecedingWhitespace && TransformationContext.isWhiteSpaceNode(prevSibling))
-                                        || (removePrecedingComments && prevSibling.getNodeType() == Node.COMMENT_NODE))) {
+                    if (precedingNodesConsumer != null) {
+                        Node prevSibling = deletedNode.getPreviousSibling();
+                        while (prevSibling != null
+                                && (TransformationContext.isWhiteSpaceNode(prevSibling)
+                                        || prevSibling.getNodeType() == Node.COMMENT_NODE)) {
                             /* remove any preceding whitespace or comments */
-                            prevSibling.getParentNode().removeChild(prevSibling);
+                            precedingNodesConsumer.accept(deletedNode, prevSibling);
+                            final Node newPrevSibling = deletedNode.getPreviousSibling();
+                            if (prevSibling == newPrevSibling) {
+                                break;
+                            }
+                            prevSibling = newPrevSibling;
                         }
                     }
                     deletedNode.getParentNode().removeChild(deletedNode);
@@ -1082,6 +1119,16 @@ public class PomTransformer {
             return (Document document, TransformationContext context) -> {
                 final String xPath = anyNs("project", "modules", "module") + "[text() = '" + module + "']";
                 context.removeNode(xPath, removePrecedingComments, removePrecedingWhitespace, false);
+            };
+        }
+
+        public static Transformation removeModules(boolean removePrecedingComments, boolean removePrecedingWhitespace,
+                Set<String> modules) {
+            return (Document document, TransformationContext context) -> {
+                for (String module : modules) {
+                    final String xPath = anyNs("project", "modules", "module") + "[text() = '" + module + "']";
+                    context.removeNode(xPath, removePrecedingComments, removePrecedingWhitespace, false);
+                }
             };
         }
 
