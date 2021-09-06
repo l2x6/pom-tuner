@@ -1595,11 +1595,13 @@ public class MavenSourceTree {
      * @param isProfileActive         a {@link Profile} filter, see {@link #profiles(String...)}
      * @param encoding                the encoding for reading and writing pom.xml files
      * @param simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
+     * @param commentText             For @{@code commentText} {@code "a comment"} the resulting snippet would look like
+     *                                {@code <!-- <module>some-module</module> a comment --> }
      */
     public void unlinkNonRequiredModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
-            SimpleElementWhitespace simpleElementWhitespace) {
+            SimpleElementWhitespace simpleElementWhitespace, String commentText) {
         unlinkNonRequiredModules(requiredModules, isProfileActive, encoding, simpleElementWhitespace,
-                Transformation::commentModules);
+                (Set<String> modules) -> Transformation.commentModules(modules, commentText));
     }
 
     /**

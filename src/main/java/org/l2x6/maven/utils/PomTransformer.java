@@ -1132,7 +1132,7 @@ public class PomTransformer {
             };
         }
 
-        public static Transformation commentModules(Collection<String> modulesToComment) {
+        public static Transformation commentModules(Collection<String> modulesToComment, String commentText) {
             return (Document document, TransformationContext context) -> {
                 final String condition = modulesToComment.stream()
                         .map(m -> "text() = '" + m + "'")
@@ -1146,7 +1146,7 @@ public class PomTransformer {
                         final String moduleText = moduleNode.getTextContent();
                         final Node parent = moduleNode.getParentNode();
                         final Comment moduleComment = moduleNode.getOwnerDocument()
-                                .createComment(" <module>" + moduleText + "</module> removed by srcdeps ");
+                                .createComment(" <module>" + moduleText + "</module> " + commentText + " ");
                         parent.replaceChild(moduleComment, moduleNode);
                     }
                 } catch (XPathExpressionException | DOMException e) {

@@ -350,7 +350,7 @@ public class MavenSourceTreeTest {
                                 .collect(Collectors.toCollection(LinkedHashSet::new)));
 
         t.unlinkNonRequiredModules(expandedIncludes, profileSelector, StandardCharsets.UTF_8,
-                SimpleElementWhitespace.AUTODETECT_PREFER_SPACE);
+                SimpleElementWhitespace.AUTODETECT_PREFER_SPACE, "removed by srcdeps");
 
         final Path expectedRoot = BASEDIR.resolve("target/test-classes/MavenSourceTree/tree-1-expected");
 
