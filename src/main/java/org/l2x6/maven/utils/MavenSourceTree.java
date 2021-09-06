@@ -1595,7 +1595,7 @@ public class MavenSourceTree {
      * @param isProfileActive         a {@link Profile} filter, see {@link #profiles(String...)}
      * @param encoding                the encoding for reading and writing pom.xml files
      * @param simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
-     * @param commentText             For @{@code commentText} {@code "a comment"} the resulting snippet would look like
+     * @param commentText             for @{@code commentText} {@code "a comment"} the resulting snippet would look like
      *                                {@code <!-- <module>some-module</module> a comment --> }
      */
     public void unlinkNonRequiredModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
@@ -1646,6 +1646,24 @@ public class MavenSourceTree {
                 .collect(Collectors.toSet());
         final PomTransformer transformer = new PomTransformer(pomXml, encoding, simpleElementWhitespace);
         transformer.transform(remover.apply(relPathsToRemove));
+    }
+
+    /**
+     * Link back any modules anywhere in the source tree previously removed by
+     * {@link #unlinkNonRequiredModules(Set, Predicate, Charset, SimpleElementWhitespace, Function)}.
+     *
+     * @param encoding                the encoding for reading and writing pom.xml files
+     * @param simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
+     * @param commentText             has to be the same as used in the previous
+     *                                {@link #unlinkNonRequiredModules(Set, Predicate, Charset, SimpleElementWhitespace, Function)}
+     *                                invocation
+     */
+    public void relinkModules(Charset encoding, SimpleElementWhitespace simpleElementWhitespace, String commentText) {
+        for (String relPath : modulesByPath.keySet()) {
+            Path pomXmlPath = rootDirectory.resolve(relPath);
+            new PomTransformer(pomXmlPath, encoding, simpleElementWhitespace)
+                    .transform(Transformation.uncommentModules(commentText));
+        }
     }
 
 }

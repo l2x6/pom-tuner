@@ -86,6 +86,8 @@ public class PomTransformer {
     static final Pattern WS_PATTERN = Pattern.compile("[ \t\n\r]+");
     static final Pattern EMPTY_LINE_PATTERN = Pattern.compile("[ \t]*\r?\n\r?\n[ \t\r\n]*");
     static final Pattern SIMPLE_ELEM_WS_PATTERN = Pattern.compile("<([^ \t\n\r]+)([ \t\n\r]*)/>");
+    private static final String MODULE_COMMENT_PREFIX = " <module>";
+    private static final String MODULE_COMMENT_INFIX = "</module> ";
 
     private final Path path;
     private final Charset charset;
@@ -1146,10 +1148,38 @@ public class PomTransformer {
                         final String moduleText = moduleNode.getTextContent();
                         final Node parent = moduleNode.getParentNode();
                         final Comment moduleComment = moduleNode.getOwnerDocument()
-                                .createComment(" <module>" + moduleText + "</module> " + commentText + " ");
+                                .createComment(MODULE_COMMENT_PREFIX + moduleText + MODULE_COMMENT_INFIX + commentText + " ");
                         parent.replaceChild(moduleComment, moduleNode);
                     }
                 } catch (XPathExpressionException | DOMException e) {
+                    throw new RuntimeException(e);
+                }
+            };
+        }
+
+        public static Transformation uncommentModules(String commentText) {
+            return (Document document, TransformationContext context) -> {
+                final String xPathExpr = anyNs("project", "modules") + "/comment()[starts-with(., '"
+                        + MODULE_COMMENT_PREFIX
+                        + "') and substring(., string-length(.) - "
+                        + (MODULE_COMMENT_INFIX.length() + commentText.length()) + ")  = '" + MODULE_COMMENT_INFIX
+                        + commentText + " ']";
+                try {
+                    final NodeList commentNodes = (NodeList) context.getXPath().evaluate(xPathExpr, document,
+                            XPathConstants.NODESET);
+                    for (int i = 0; i < commentNodes.getLength(); i++) {
+                        final Node commentNode = commentNodes.item(i);
+                        final String wholeText = commentNode.getTextContent();
+                        final String modulePath = wholeText.substring(MODULE_COMMENT_PREFIX.length(),
+                                wholeText.length() - MODULE_COMMENT_INFIX.length() - commentText.length() - 1);
+                        final Node parent = commentNode.getParentNode();
+                        final Element newModuleNode = context.document.createElement("module");
+                        newModuleNode.appendChild(context.document.createTextNode(modulePath));
+                        parent.replaceChild(newModuleNode, commentNode);
+                    }
+                } catch (XPathExpressionException e) {
+                    throw new RuntimeException("Could not evaluate '" + xPathExpr + "'", e);
+                } catch (DOMException e) {
                     throw new RuntimeException(e);
                 }
             };
