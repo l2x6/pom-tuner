@@ -43,6 +43,7 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import javax.xml.stream.XMLEventReader;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -1117,6 +1118,17 @@ public class MavenSourceTree {
             return false;
         }
 
+        /**
+         * @param  isProfileActive an active profile selector
+         * @return                 a {@link Stream} of own {@link Dependency Dependencies} collected from all active
+         *                         {@link Profile}s
+         */
+        public Stream<Dependency> streamOwnDependencies(final Predicate<Profile> isProfileActive) {
+            return profiles.stream()
+                    .filter(isProfileActive)
+                    .flatMap(p -> p.getDependencies().stream());
+        }
+
         public String toString() {
             return gav.toString() + "@" + pomPath;
         }
@@ -1508,6 +1520,76 @@ public class MavenSourceTree {
         } else {
             return null;
         }
+    }
+
+    /**
+     * Find a {@link Module} for the given {@link Ga} in this tree and collects its dependencies declared through out its
+     * ancestor hierarchy. Consider caching the result as this is a potentially expensive operation.
+     *
+     * @param  module
+     * @param  profiles
+     * @return          a {@link Set}
+     */
+    public Set<Dependency> collectOwnDependencies(Ga module, Predicate<Profile> profiles) {
+        Set<Dependency> result = new LinkedHashSet<>();
+        Module m = modulesByGa.get(module);
+        if (m == null) {
+            throw new IllegalArgumentException(
+                    "Can collect own dependencies only for modules available in this tree; " + module + " was not found here");
+        }
+        do {
+            m.streamOwnDependencies(profiles).forEach(result::add);
+            final GavExpression parentGav = m.getParentGav();
+            if (parentGav == null) {
+                break;
+            }
+            m = modulesByGa.get(parentGav.resolve(this, profiles).toGa());
+        } while (m != null);
+        return result;
+    }
+
+    /**
+     * Find a {@link Module} for the given {@link Ga} in this tree and collects its dependencies declared through out its
+     * ancestor hierarchy and any transitive dependencies available in this tree. Consider caching the result as this is a
+     * potentially expensive operation.
+     *
+     * @param  module
+     * @param  profiles
+     * @return          a {@link Set}
+     */
+    public Set<Dependency> collectTransitiveDependencies(Ga module, Predicate<Profile> profiles) {
+        Module m = modulesByGa.get(module);
+        if (m == null) {
+            throw new IllegalArgumentException(
+                    "Can collect own dependencies only for modules available in this tree; " + module + " was not found here");
+        }
+        Set<Dependency> result = new LinkedHashSet<>();
+        collectTransitiveDependencies(module, profiles, result, new HashSet<>());
+        return result;
+    }
+
+    void collectTransitiveDependencies(Ga module, Predicate<Profile> profiles, Set<Dependency> result, Set<Ga> visited) {
+        if (visited.contains(module)) {
+            return;
+        }
+        visited.add(module);
+        Module m = modulesByGa.get(module);
+        if (m == null) {
+            return;
+        }
+        do {
+            m.streamOwnDependencies(profiles)
+                    .forEach(dep -> {
+                        result.add(dep);
+                        collectTransitiveDependencies(dep.resolveGa(this, profiles), profiles, result, visited);
+                    });
+            final GavExpression parentGav = m.getParentGav();
+            if (parentGav == null) {
+                break;
+            }
+            m = modulesByGa.get(parentGav.resolve(this, profiles).toGa());
+        } while (m != null);
+
     }
 
     /**

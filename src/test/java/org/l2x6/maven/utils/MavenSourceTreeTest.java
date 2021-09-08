@@ -50,6 +50,8 @@ import org.l2x6.maven.utils.shell.Shell;
 import org.l2x6.maven.utils.shell.ShellCommand;
 import org.l2x6.maven.utils.shell.ShellCommand.ShellCommandBuilder;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class MavenSourceTreeTest {
     private static final Path BASEDIR = Paths.get(System.getProperty("project.basedir", "."));
     private static final Path MVN_LOCAL_REPO;
@@ -109,20 +111,6 @@ public class MavenSourceTreeTest {
         }
         return props;
     }
-
-    // @Test
-    // public void quarkus() {
-    // MavenSourceTree t = MavenSourceTree.of(Paths.get("/home/ppalaga/.m2/srcdeps/io/quarkus/0/pom.xml"),
-    // StandardCharsets.UTF_8);
-    // t.setVersions("999-SRC-revision-123", ActiveProfiles.of());
-    // }
-    //
-    // @Test
-    // public void camel() {
-    // MavenSourceTree t = MavenSourceTree.of(Paths.get("/home/ppalaga/.m2/srcdeps/org/apache/camel/0/pom.xml"),
-    // StandardCharsets.UTF_8);
-    // t.setVersions("999-SRC-revision-123", ActiveProfiles.of());
-    // }
 
     @Test
     public void filterDependencies() throws IOException {
@@ -216,6 +204,32 @@ public class MavenSourceTreeTest {
                 new LinkedHashSet<>(Arrays.asList(new Dependency(new Constant("org.srcdeps.tree-1"),
                         new Constant("tree-module-1"), new Constant("0.0.1"), "jar", "compile"))),
                 m4.getProfiles().get(0).getDependencies());
+    }
+
+    @Test
+    public void collectDependencies() throws IOException {
+        final Path root = BASEDIR.resolve("target/test-classes/MavenSourceTree/tree-1");
+        MavenSourceTree t = MavenSourceTree.of(root.resolve("pom.xml"), StandardCharsets.UTF_8);
+
+        final Predicate<Profile> profiles = ActiveProfiles.of();
+        final Ga m1 = new Ga("org.srcdeps.tree-1", "tree-module-1");
+        assertThat(
+                t.collectOwnDependencies(m1, profiles).stream()
+                        .map(dep -> dep.resolveGa(t, profiles).toString()))
+                                .containsExactly("org.srcdeps.external:artifact-3");
+
+        final Ga m8 = new Ga("org.srcdeps.tree-1", "tree-module-8");
+        assertThat(
+                t.collectOwnDependencies(m8, profiles).stream()
+                        .map(dep -> dep.resolveGa(t, profiles).toString()))
+                                .containsExactly("org.srcdeps.tree-1:tree-module-1", "org.srcdeps.external:artifact-5");
+
+        assertThat(
+                t.collectTransitiveDependencies(m8, profiles).stream()
+                        .map(dep -> dep.resolveGa(t, profiles).toString()))
+                                .containsExactly("org.srcdeps.tree-1:tree-module-1", "org.srcdeps.external:artifact-3",
+                                        "org.srcdeps.external:artifact-5");
+
     }
 
     @Test

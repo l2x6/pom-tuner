@@ -32,4 +32,13 @@
     <modules>
         <module>module-8</module>
     </modules>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.srcdeps.external</groupId>
+            <artifactId>artifact-5</artifactId>
+            <version>1.2.3</version>
+        </dependency>
+    </dependencies>
+
 </project>

@@ -116,4 +116,8 @@ public class Gav implements Comparable<Gav> {
     public String toString() {
         return groupId + ":" + artifactId + ":" + version;
     }
+
+    public Ga toGa() {
+        return new Ga(groupId, artifactId);
+    }
 }
