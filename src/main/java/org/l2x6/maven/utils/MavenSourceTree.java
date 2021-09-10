@@ -351,7 +351,7 @@ public class MavenSourceTree {
                             new ValueDefinition(context, PROJECT_GROUP_ID_XPATH, context.getGav().getGroupId()));
                 } else if ("project.artifactId".equals(propertyName)) {
                     consumer.accept(
-                            new ValueDefinition(context, PROJECT_ARTIFACT_ID_XPATH, context.getGav().getGroupId()));
+                            new ValueDefinition(context, PROJECT_ARTIFACT_ID_XPATH, context.getGav().getArtifactId()));
                 } else {
                     final ValueDefinition propertyDefinition = context.findPropertyDefinition(propertyName,
                             isProfileActive);
@@ -360,9 +360,7 @@ public class MavenSourceTree {
                         final Module parent = tree.getDeclaredParentModule(context);
                         if (parent == null) {
                             /* unable to resolve */
-                            throw new IllegalStateException(String.format(
-                                    "Unable to resolve property [%s]: root of the module hierarchy reached",
-                                    propertyName));
+                            throw new NoSuchPropertyException(propertyName);
                         } else {
                             evaluateProperty(tree, parent, isProfileActive, propertyName, consumer);
                         }
@@ -436,6 +434,24 @@ public class MavenSourceTree {
             @Override
             public String asConstant() {
                 throw new IllegalStateException(expression + "is not a constant");
+            }
+
+        }
+
+        public static class NoSuchPropertyException extends RuntimeException {
+            /**  */
+            private static final long serialVersionUID = 8378620214313767928L;
+            private final String propertyName;
+
+            public NoSuchPropertyException(String propertyName) {
+                super(String.format(
+                        "Unable to resolve property [%s]: root of the module hierarchy reached",
+                        propertyName));
+                this.propertyName = propertyName;
+            }
+
+            public String getPropertyName() {
+                return propertyName;
             }
 
         }
@@ -1523,7 +1539,8 @@ public class MavenSourceTree {
     }
 
     /**
-     * Find a {@link Module} for the given {@link Ga} in this tree and collects its dependencies declared through out its
+     * Find a {@link Module} for the given {@link Ga} in this tree and collects its dependencies declared through out
+     * its
      * ancestor hierarchy. Consider caching the result as this is a potentially expensive operation.
      *
      * @param  module
@@ -1549,8 +1566,10 @@ public class MavenSourceTree {
     }
 
     /**
-     * Find a {@link Module} for the given {@link Ga} in this tree and collects its dependencies declared through out its
-     * ancestor hierarchy and any transitive dependencies available in this tree. Consider caching the result as this is a
+     * Find a {@link Module} for the given {@link Ga} in this tree and collects its dependencies declared through out
+     * its
+     * ancestor hierarchy and any transitive dependencies available in this tree. Consider caching the result as this is
+     * a
      * potentially expensive operation.
      *
      * @param  module

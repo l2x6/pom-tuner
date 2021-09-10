@@ -37,6 +37,7 @@ import org.l2x6.maven.utils.MavenSourceTree.Builder;
 import org.l2x6.maven.utils.MavenSourceTree.Dependency;
 import org.l2x6.maven.utils.MavenSourceTree.Expression;
 import org.l2x6.maven.utils.MavenSourceTree.Expression.Constant;
+import org.l2x6.maven.utils.MavenSourceTree.Expression.NoSuchPropertyException;
 import org.l2x6.maven.utils.MavenSourceTree.GavExpression;
 import org.l2x6.maven.utils.MavenSourceTree.Module;
 import org.l2x6.maven.utils.MavenSourceTree.Module.Profile;
@@ -94,7 +95,8 @@ public class MavenSourceTreeTest {
         Shell.execute(cmd.build()).assertSuccess();
         Assertions.assertEquals(expectedValue, output.toString().trim());
 
-        t.evaluate(Expression.of("${" + propertyName + "}", ga), ActiveProfiles.of(profiles));
+        Assertions.assertEquals(expectedValue,
+                t.evaluate(Expression.of("${" + propertyName + "}", ga), ActiveProfiles.of(profiles)));
     }
 
     static GavExpression moduleGae(String gavString) {
@@ -172,6 +174,13 @@ public class MavenSourceTreeTest {
         assertProperty(t, "empty2", Ga.of("org.srcdeps.properties:tree-parent"), "");
 
         Assertions.assertEquals(3, t.getRootModule().getProfiles().get(0).getProperties().size());
+
+        try {
+            t.evaluate(Expression.of("${non-existent}", Ga.of("org.srcdeps.properties:module-1")),
+                    ActiveProfiles.of());
+            Assertions.fail("NoSuchPropertyException expected");
+        } catch (NoSuchPropertyException expected) {
+        }
     }
 
     @Test
