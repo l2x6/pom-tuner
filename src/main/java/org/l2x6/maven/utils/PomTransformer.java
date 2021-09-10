@@ -1054,6 +1054,31 @@ public class PomTransformer {
             };
         }
 
+        /**
+         * @param  newVersion the new version to set on the given {@code gas}
+         * @param  gas        the list of {@link Ga} on which the {@code newVersion} should be set
+         * @return            a new {@link Transformation}
+         */
+        public static Transformation setManagedDependencyVersion(String newVersion, Collection<Ga> gas) {
+            return (Document document, TransformationContext context) -> {
+                final ContainerElement dependencyManagementDeps = context.getContainerElement("project", "dependencyManagement",
+                        "dependencies").orElseThrow(
+                                () -> new IllegalStateException("No dependencyManagement found in " + context.getPomXmlPath()));
+                for (WrappedNode<Element> child : dependencyManagementDeps.childElements()) {
+                    final ContainerElement dep = child.asContainerElement();
+                    final Ga ga = dep.asGavtcs().toGa();
+                    if (gas.contains(ga)) {
+                        WrappedNode<Element> versionNode = dep.childElementsStream()
+                                .filter(ch -> "version".equals(ch.getNode().getLocalName()))
+                                .findFirst()
+                                .orElseThrow(() -> new IllegalStateException(
+                                        "No <version> found for " + ga + " in " + context.getPomXmlPath()));
+                        versionNode.getNode().setTextContent(newVersion);
+                    }
+                }
+            };
+        }
+
         public static Transformation addDependencyIfNeeded(Gavtcs gavtcs, Comparator<Gavtcs> comparator) {
             return (Document document, TransformationContext context) -> context.addDependencyIfNeeded(gavtcs, comparator);
         }
