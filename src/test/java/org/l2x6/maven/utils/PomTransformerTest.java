@@ -816,6 +816,135 @@ public class PomTransformerTest {
     }
 
     @Test
+    void setManagedDependencyVersionInProfile() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <dependencyManagement>\n" //
+                + "        <dependencies>\n" //
+                + "            <dependency>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>dep1</artifactId>\n" //
+                + "                <version>${dep1.version}</version>\n" //
+                + "            </dependency>\n" //
+                + "            <dependency>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>dep2</artifactId>\n" //
+                + "                <version>${dep2.version}</version>\n" //
+                + "            </dependency>\n" //
+                + "        </dependencies>\n" //
+                + "    </dependencyManagement>\n" //
+                + "    <profiles>\n" //
+                + "        <profile>\n" //
+                + "            <id>profile1</id>\n" //
+                + "            <dependencyManagement>\n" //
+                + "                <dependencies>\n" //
+                + "                    <dependency>\n" //
+                + "                        <groupId>org.acme</groupId>\n" //
+                + "                        <artifactId>dep1</artifactId>\n" //
+                + "                        <version>${dep1.version}</version>\n" //
+                + "                    </dependency>\n" //
+                + "                    <dependency>\n" //
+                + "                        <groupId>org.acme</groupId>\n" //
+                + "                        <artifactId>dep2</artifactId>\n" //
+                + "                        <version>${dep2.version}</version>\n" //
+                + "                    </dependency>\n" //
+                + "                </dependencies>\n" //
+                + "            </dependencyManagement>\n" //
+                + "        </profile>\n" //
+                + "        <profile>\n" //
+                + "            <id>profile2</id>\n" //
+                + "            <dependencyManagement>\n" //
+                + "                <dependencies>\n" //
+                + "                    <dependency>\n" //
+                + "                        <groupId>org.acme</groupId>\n" //
+                + "                        <artifactId>dep1</artifactId>\n" //
+                + "                        <version>${dep1.version}</version>\n" //
+                + "                    </dependency>\n" //
+                + "                    <dependency>\n" //
+                + "                        <groupId>org.acme</groupId>\n" //
+                + "                        <artifactId>dep2</artifactId>\n" //
+                + "                        <version>${dep2.version}</version>\n" //
+                + "                    </dependency>\n" //
+                + "                </dependencies>\n" //
+                + "            </dependencyManagement>\n" //
+                + "        </profile>\n" //
+                + "    </profiles>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <dependencyManagement>\n" //
+                + "        <dependencies>\n" //
+                + "            <dependency>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>dep1</artifactId>\n" //
+                + "                <version>${dep1.version}</version>\n" //
+                + "            </dependency>\n" //
+                + "            <dependency>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>dep2</artifactId>\n" //
+                + "                <version>${dep2.version}</version>\n" //
+                + "            </dependency>\n" //
+                + "        </dependencies>\n" //
+                + "    </dependencyManagement>\n" //
+                + "    <profiles>\n" //
+                + "        <profile>\n" //
+                + "            <id>profile1</id>\n" //
+                + "            <dependencyManagement>\n" //
+                + "                <dependencies>\n" //
+                + "                    <dependency>\n" //
+                + "                        <groupId>org.acme</groupId>\n" //
+                + "                        <artifactId>dep1</artifactId>\n" //
+                + "                        <version>${dep1.version}</version>\n" //
+                + "                    </dependency>\n" //
+                + "                    <dependency>\n" //
+                + "                        <groupId>org.acme</groupId>\n" //
+                + "                        <artifactId>dep2</artifactId>\n" //
+                + "                        <version>${dep2-new.version}</version>\n" //
+                + "                    </dependency>\n" //
+                + "                </dependencies>\n" //
+                + "            </dependencyManagement>\n" //
+                + "        </profile>\n" //
+                + "        <profile>\n" //
+                + "            <id>profile2</id>\n" //
+                + "            <dependencyManagement>\n" //
+                + "                <dependencies>\n" //
+                + "                    <dependency>\n" //
+                + "                        <groupId>org.acme</groupId>\n" //
+                + "                        <artifactId>dep1</artifactId>\n" //
+                + "                        <version>${dep1.version}</version>\n" //
+                + "                    </dependency>\n" //
+                + "                    <dependency>\n" //
+                + "                        <groupId>org.acme</groupId>\n" //
+                + "                        <artifactId>dep2</artifactId>\n" //
+                + "                        <version>${dep2.version}</version>\n" //
+                + "                    </dependency>\n" //
+                + "                </dependencies>\n" //
+                + "            </dependencyManagement>\n" //
+                + "        </profile>\n" //
+                + "    </profiles>\n" //
+                + "</project>\n";
+        asserTransformation(source,
+                Collections.singletonList(
+                        Transformation.setManagedDependencyVersion("profile1", "${dep2-new.version}",
+                                Arrays.asList(Ga.of("org.acme:dep2")))),
+                expected);
+    }
+
+    @Test
     void addDependenciesIfNeeded() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //

@@ -435,6 +435,16 @@ public class PomTransformer {
             return new ContainerElement(context, result, newLastIndent, indentLevel + 1);
         }
 
+        public Optional<ContainerElement> getChildContainerElement(String elementName) {
+            for (WrappedNode<Element> child : childElements()) {
+                if (child.node.getNodeName().equals(elementName)) {
+                    /* No need to insert, return existing */
+                    return Optional.of(child.asContainerElement());
+                }
+            }
+            return Optional.empty();
+        }
+
         /**
          * Creates the given {@code elementName} under the given {@code parent} unless it exists already.
          *
@@ -868,6 +878,20 @@ public class PomTransformer {
             }
         }
 
+        public Optional<ContainerElement> getProfile(String profileId) {
+            try {
+                final Node node = (Node) xPath.evaluate(
+                        anyNs("project", "profiles", "profile") + "[." + anyNs("id") + "/text() = '" + profileId + "']",
+                        document, XPathConstants.NODE);
+                if (node != null) {
+                    return Optional.of(new ContainerElement(this, (Element) node, null, 2));
+                }
+                return Optional.empty();
+            } catch (XPathExpressionException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         public Optional<ContainerElement> getContainerElement(String... path) {
             try {
                 final Node node = (Node) xPath.evaluate(anyNs(path), document, XPathConstants.NODE);
@@ -1060,10 +1084,30 @@ public class PomTransformer {
          * @return            a new {@link Transformation}
          */
         public static Transformation setManagedDependencyVersion(String newVersion, Collection<Ga> gas) {
+            return setManagedDependencyVersion(null, newVersion, gas);
+        }
+
+        public static Transformation setManagedDependencyVersion(String profileId, String newVersion, Collection<Ga> gas) {
             return (Document document, TransformationContext context) -> {
-                final ContainerElement dependencyManagementDeps = context.getContainerElement("project", "dependencyManagement",
-                        "dependencies").orElseThrow(
-                                () -> new IllegalStateException("No dependencyManagement found in " + context.getPomXmlPath()));
+                final ContainerElement dependencyManagementDeps;
+                if (profileId == null) {
+                    dependencyManagementDeps = context.getContainerElement("project", "dependencyManagement",
+                            "dependencies").orElseThrow(
+                                    () -> new IllegalStateException(
+                                            "No dependencyManagement found in " + context.getPomXmlPath()));
+                } else {
+                    dependencyManagementDeps = context.getProfile(profileId).orElseThrow(
+                            () -> new IllegalStateException(
+                                    "Profile '" + profileId + "' not found in " + context.getPomXmlPath()))
+                            .getChildContainerElement("dependencyManagement").orElseThrow(
+                                    () -> new IllegalStateException("dependencyManagement not found under profile '" + profileId
+                                            + "' in " + context.getPomXmlPath()))
+                            .getChildContainerElement("dependencies").orElseThrow(
+                                    () -> new IllegalStateException(
+                                            "dependencyManagement/dependencies not found under profile '" + profileId + "' in "
+                                                    + context.getPomXmlPath()));
+                }
+
                 for (WrappedNode<Element> child : dependencyManagementDeps.childElements()) {
                     final ContainerElement dep = child.asContainerElement();
                     final Ga ga = dep.asGavtcs().toGa();
