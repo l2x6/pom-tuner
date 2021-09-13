@@ -457,6 +457,11 @@ public class PomTransformer {
                     return child.asContainerElement();
                 }
             }
+
+            if (indentLevel == 0) {
+                return context.getOrAddContainerElement(elementName);
+            }
+
             final Element result = node.getOwnerDocument().createElement(elementName);
             final Text newLastIndent = context.indent(indentLevel + 1);
             result.appendChild(newLastIndent);
@@ -644,6 +649,16 @@ public class PomTransformer {
                         return mapper.apply(node);
                     }
                 }
+            }
+
+            @Override
+            public void remove() {
+                if (current == null) {
+                    throw new IllegalStateException("current must be set first");
+                }
+                final Node node = nodes.item(currentIndex);
+                node.getParentNode().removeChild(node);
+                currentIndex--;
             }
 
         }
@@ -892,6 +907,18 @@ public class PomTransformer {
             }
         }
 
+        public Optional<ContainerElement> getProfileParent(String profileId) {
+            if (profileId == null) {
+                final Node node = document.getDocumentElement();
+                if (node != null) {
+                    return Optional.of(new ContainerElement(this, (Element) node, null, 0));
+                }
+                return Optional.empty();
+            } else {
+                return getProfile(profileId);
+            }
+        }
+
         public Optional<ContainerElement> getContainerElement(String... path) {
             try {
                 final Node node = (Node) xPath.evaluate(anyNs(path), document, XPathConstants.NODE);
@@ -1026,9 +1053,22 @@ public class PomTransformer {
     public interface Transformation {
 
         public static Transformation addModule(String module) {
+            return addModules(null, Collections.singleton(module));
+        }
+
+        public static Transformation addModules(String profileId, String... modulePaths) {
+            return addModules(profileId, Arrays.asList(modulePaths));
+        }
+
+        public static Transformation addModules(String profileId, Collection<String> modulePaths) {
             return (Document document, TransformationContext context) -> {
-                final ContainerElement modules = context.getOrAddContainerElement("modules");
-                modules.addChildTextElement("module", module);
+                final ContainerElement profileParent = context.getProfileParent(profileId)
+                        .orElseThrow(() -> new IllegalStateException(
+                                "No such profile '" + profileId + "' found in " + context.getPomXmlPath()));
+                final ContainerElement modules = profileParent.getOrAddChildContainerElement("modules");
+                for (String m : modulePaths) {
+                    modules.addChildTextElement("module", m);
+                }
             };
         }
 
@@ -1089,24 +1129,17 @@ public class PomTransformer {
 
         public static Transformation setManagedDependencyVersion(String profileId, String newVersion, Collection<Ga> gas) {
             return (Document document, TransformationContext context) -> {
-                final ContainerElement dependencyManagementDeps;
-                if (profileId == null) {
-                    dependencyManagementDeps = context.getContainerElement("project", "dependencyManagement",
-                            "dependencies").orElseThrow(
-                                    () -> new IllegalStateException(
-                                            "No dependencyManagement found in " + context.getPomXmlPath()));
-                } else {
-                    dependencyManagementDeps = context.getProfile(profileId).orElseThrow(
-                            () -> new IllegalStateException(
-                                    "Profile '" + profileId + "' not found in " + context.getPomXmlPath()))
-                            .getChildContainerElement("dependencyManagement").orElseThrow(
-                                    () -> new IllegalStateException("dependencyManagement not found under profile '" + profileId
-                                            + "' in " + context.getPomXmlPath()))
-                            .getChildContainerElement("dependencies").orElseThrow(
-                                    () -> new IllegalStateException(
-                                            "dependencyManagement/dependencies not found under profile '" + profileId + "' in "
-                                                    + context.getPomXmlPath()));
-                }
+                final ContainerElement profileParent = context.getProfileParent(profileId)
+                        .orElseThrow(() -> new IllegalStateException(
+                                "No such profile '" + profileId + "' found in " + context.getPomXmlPath()));
+                final ContainerElement dependencyManagementDeps = profileParent
+                        .getChildContainerElement("dependencyManagement").orElseThrow(
+                                () -> new IllegalStateException("dependencyManagement not found under profile '" + profileId
+                                        + "' in " + context.getPomXmlPath()))
+                        .getChildContainerElement("dependencies").orElseThrow(
+                                () -> new IllegalStateException(
+                                        "dependencyManagement/dependencies not found under profile '" + profileId + "' in "
+                                                + context.getPomXmlPath()));
 
                 for (WrappedNode<Element> child : dependencyManagementDeps.childElements()) {
                     final ContainerElement dep = child.asContainerElement();
@@ -1212,6 +1245,22 @@ public class PomTransformer {
             };
         }
 
+        public static Transformation removeAllModules(String profileId, boolean removePrecedingComments,
+                boolean removePrecedingWhitespace) {
+            return (Document document, TransformationContext context) -> {
+                context.getProfileParent(profileId)
+                        .flatMap(profileParent -> profileParent.getChildContainerElement("modules"))
+                        .ifPresent(modules -> {
+                            Iterator<WrappedNode<Element>> children = modules.childElements().iterator();
+                            while (children.hasNext()) {
+                                children.next().remove(removePrecedingComments, removePrecedingWhitespace);
+                                children = modules.childElements().iterator();
+                            }
+                        });
+                ;
+            };
+        }
+
         public static Transformation commentModules(Collection<String> modulesToComment, String commentText) {
             return (Document document, TransformationContext context) -> {
                 final String condition = modulesToComment.stream()
@@ -1231,6 +1280,10 @@ public class PomTransformer {
         }
 
         public static Transformation uncommentModules(String commentText) {
+            return uncommentModules(commentText, m -> true);
+        }
+
+        public static Transformation uncommentModules(String commentText, Predicate<String> modulePathFilter) {
             return (Document document, TransformationContext context) -> {
                 final String xPathExpr = anyNs("project", "modules") + "/comment()[starts-with(., '"
                         + MODULE_COMMENT_PREFIX
@@ -1245,10 +1298,12 @@ public class PomTransformer {
                         final String wholeText = commentNode.getTextContent();
                         final String modulePath = wholeText.substring(MODULE_COMMENT_PREFIX.length(),
                                 wholeText.length() - MODULE_COMMENT_INFIX.length() - commentText.length() - 1);
-                        final Node parent = commentNode.getParentNode();
-                        final Element newModuleNode = context.document.createElement("module");
-                        newModuleNode.appendChild(context.document.createTextNode(modulePath));
-                        parent.replaceChild(newModuleNode, commentNode);
+                        if (modulePathFilter.test(modulePath)) {
+                            final Node parent = commentNode.getParentNode();
+                            final Element newModuleNode = context.document.createElement("module");
+                            newModuleNode.appendChild(context.document.createTextNode(modulePath));
+                            parent.replaceChild(newModuleNode, commentNode);
+                        }
                     }
                 } catch (XPathExpressionException e) {
                     throw new RuntimeException("Could not evaluate '" + xPathExpr + "'", e);

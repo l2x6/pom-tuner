@@ -52,7 +52,7 @@ public class PomTransformerTest {
                 + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "</project>\n";
-        asserTransformation(source, Collections.emptyList(), expected);
+        assertTransformation(source, Collections.emptyList(), expected);
     }
 
     @Test
@@ -77,7 +77,7 @@ public class PomTransformerTest {
                 + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "</project>\n";
-        asserTransformation(source, Collections.emptyList(), expected);
+        assertTransformation(source, Collections.emptyList(), expected);
     }
 
     @Test
@@ -92,7 +92,7 @@ public class PomTransformerTest {
                 + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\r\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\r\n" //
                 + "</project>";
-        asserTransformation(source, Collections.emptyList(), expected);
+        assertTransformation(source, Collections.emptyList(), expected);
     }
 
     @Test
@@ -119,7 +119,7 @@ public class PomTransformerTest {
                 + "        <module>new-module</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        asserTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
     }
 
     @Test
@@ -145,7 +145,7 @@ public class PomTransformerTest {
                 + "        <module>new-module</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        asserTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
     }
 
     @Test
@@ -178,7 +178,7 @@ public class PomTransformerTest {
                 + "        <module>new-module</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        asserTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
     }
 
     @Test
@@ -210,7 +210,7 @@ public class PomTransformerTest {
                 + "        <module>new-module</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        asserTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
     }
 
     @Test
@@ -243,7 +243,7 @@ public class PomTransformerTest {
                 + "    <build>\n" //
                 + "    </build>\n" //
                 + "</project>\n";
-        asserTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
     }
 
     @Test
@@ -311,7 +311,7 @@ public class PomTransformerTest {
                 + "    <build>\n" //
                 + "    </build>\n" //
                 + "</project>\n";
-        asserTransformation(source, Collections.singletonList(Transformation.addModule("module-2")), expected);
+        assertTransformation(source, Collections.singletonList(Transformation.addModule("module-2")), expected);
     }
 
     @Test
@@ -344,7 +344,7 @@ public class PomTransformerTest {
                 + "        <baz>new</baz>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        asserTransformation(source, Collections.singletonList(Transformation.addOrSetProperty("baz", "new")), expected);
+        assertTransformation(source, Collections.singletonList(Transformation.addOrSetProperty("baz", "new")), expected);
     }
 
     @Test
@@ -376,7 +376,7 @@ public class PomTransformerTest {
                 + "        <baz>new</baz>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        asserTransformation(source, Collections.singletonList(Transformation.addOrSetProperty("baz", "new")), expected);
+        assertTransformation(source, Collections.singletonList(Transformation.addOrSetProperty("baz", "new")), expected);
     }
 
     @Test
@@ -407,7 +407,7 @@ public class PomTransformerTest {
                 + "    <build>\n" //
                 + "    </build>\n" //
                 + "</project>\n";
-        asserTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
     }
 
     @Test
@@ -439,7 +439,7 @@ public class PomTransformerTest {
                 + "        <module>module-1</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        asserTransformation(source, Arrays.asList(
+        assertTransformation(source, Arrays.asList(
                 Transformation.removeModule(true, true, "module-2"),
                 Transformation.removeContainerElementIfEmpty(true, true, true, "modules")), expected);
     }
@@ -475,13 +475,22 @@ public class PomTransformerTest {
                 + "    </modules>\n" //
                 + "</project>\n";
 
-        asserTransformation(source, Arrays.asList(
+        assertTransformation(source, Arrays.asList(
                 Transformation.commentModules(Arrays.asList("module-2"), "test comment")),
                 expected);
 
-        asserTransformation(expected, Arrays.asList(
+        assertTransformation(expected, Arrays.asList(
                 Transformation.uncommentModules("test comment")),
                 source);
+
+        assertTransformation(expected, Arrays.asList(
+                Transformation.uncommentModules("test comment", m -> "module-2".equals(m))),
+                source);
+
+        assertTransformation(expected, Arrays.asList(
+                Transformation.uncommentModules("test comment", m -> "foo".equals(m))),
+                expected);
+
     }
 
     @Test
@@ -509,7 +518,7 @@ public class PomTransformerTest {
                 + "    <version>0.1-SNAPSHOT</version>\n" //
                 + "    <packaging>pom</packaging>\n" //
                 + "</project>\n";
-        asserTransformation(source, Arrays.asList(
+        assertTransformation(source, Arrays.asList(
                 Transformation.removeModule(true, true, "module-1"),
                 Transformation.removeContainerElementIfEmpty(true, true, true, "modules")), expected);
     }
@@ -544,7 +553,7 @@ public class PomTransformerTest {
                 + "        <module>module-1</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        asserTransformation(source, Collections.singletonList(Transformation.removeModule(true, true, "module-2")), expected);
+        assertTransformation(source, Collections.singletonList(Transformation.removeModule(true, true, "module-2")), expected);
     }
 
     @Test
@@ -578,16 +587,159 @@ public class PomTransformerTest {
                 + "        <!-- comment -->\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        asserTransformation(source, Collections.singletonList(Transformation.removeModule(false, true, "module-2")), expected);
+        assertTransformation(source, Collections.singletonList(Transformation.removeModule(false, true, "module-2")), expected);
     }
 
-    static void asserTransformation(String src, Collection<Transformation> transformations,
+    @Test
+    void removeAllModulesDefaultProfile() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <!-- comment -->\n" //
+                + "        <module>module-2</module>\n" //
+                + "    </modules>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "    </modules>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(Transformation.removeAllModules(null, true, true)), expected);
+    }
+
+    @Test
+    void removeAllModulesInProfile() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <!-- comment -->\n" //
+                + "        <module>module-2</module>\n" //
+                + "    </modules>\n" //
+                + "    <profiles>\n" //
+                + "        <profile>\n" //
+                + "            <id>profile1</id>\n" //
+                + "            <modules>\n" //
+                + "                <module>module-4</module>\n" //
+                + "                <!-- comment -->\n" //
+                + "                <module>module-5</module>\n" //
+                + "                <module>../../module-6</module>\n" //
+                + "            </modules>\n" //
+                + "        </profile>\n" //
+                + "    </profiles>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <!-- comment -->\n" //
+                + "        <module>module-2</module>\n" //
+                + "    </modules>\n" //
+                + "    <profiles>\n" //
+                + "        <profile>\n" //
+                + "            <id>profile1</id>\n" //
+                + "            <modules>\n" //
+                + "            </modules>\n" //
+                + "        </profile>\n" //
+                + "    </profiles>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(Transformation.removeAllModules("profile1", true, true)),
+                expected);
+    }
+
+    @Test
+    void addModulesToProfile() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <!-- comment -->\n" //
+                + "        <module>module-2</module>\n" //
+                + "    </modules>\n" //
+                + "    <profiles>\n" //
+                + "        <profile>\n" //
+                + "            <id>profile1</id>\n" //
+                + "            <modules>\n" //
+                + "                <module>module-4</module>\n" //
+                + "                <!-- comment -->\n" //
+                + "                <module>module-5</module>\n" //
+                + "            </modules>\n" //
+                + "        </profile>\n" //
+                + "    </profiles>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <!-- comment -->\n" //
+                + "        <module>module-2</module>\n" //
+                + "    </modules>\n" //
+                + "    <profiles>\n" //
+                + "        <profile>\n" //
+                + "            <id>profile1</id>\n" //
+                + "            <modules>\n" //
+                + "                <module>module-4</module>\n" //
+                + "                <!-- comment -->\n" //
+                + "                <module>module-5</module>\n" //
+                + "                <module>module-6</module>\n" //
+                + "            </modules>\n" //
+                + "        </profile>\n" //
+                + "    </profiles>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(Transformation.addModules("profile1", "module-6")),
+                expected);
+    }
+
+    static void assertTransformation(String src, Collection<Transformation> transformations,
             SimpleElementWhitespace simpleElementWhitespace, String expected) {
         PomTransformer.transform(transformations, simpleElementWhitespace, Paths.get("pom.xml"),
                 () -> src, xml -> org.assertj.core.api.Assertions.assertThat(xml).isEqualTo(expected));
     }
 
-    static void asserTransformation(String src, Collection<Transformation> transformations, String expected) {
+    static void assertTransformation(String src, Collection<Transformation> transformations, String expected) {
         PomTransformer.transform(transformations, SimpleElementWhitespace.EMPTY, Paths.get("pom.xml"),
                 () -> src, xml -> org.assertj.core.api.Assertions.assertThat(xml).isEqualTo(expected));
     }
@@ -618,7 +770,7 @@ public class PomTransformerTest {
                 + "        </dependencies>\n" //
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
-        asserTransformation(source,
+        assertTransformation(source,
                 Collections.singletonList(Transformation.addContainerElementsIfNeeded("dependencyManagement", "dependencies")),
                 expected);
     }
@@ -648,7 +800,7 @@ public class PomTransformerTest {
                 + "        </dependencies>\n" //
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
-        asserTransformation(source,
+        assertTransformation(source,
                 Collections.singletonList(Transformation.addContainerElementsIfNeeded("dependencyManagement", "dependencies")),
                 expected);
     }
@@ -682,7 +834,7 @@ public class PomTransformerTest {
                 + "    <dependencies>\n" //
                 + "    </dependencies>\n" //
                 + "</project>\n";
-        asserTransformation(source,
+        assertTransformation(source,
                 Collections.singletonList(Transformation.addContainerElementsIfNeeded("dependencyManagement", "dependencies")),
                 expected);
     }
@@ -717,7 +869,7 @@ public class PomTransformerTest {
                 + "    <build>\n" //
                 + "    </build>\n" //
                 + "</project>\n";
-        asserTransformation(source,
+        assertTransformation(source,
                 Collections.singletonList(Transformation.addContainerElementsIfNeeded("dependencyManagement", "dependencies")),
                 expected);
     }
@@ -752,7 +904,7 @@ public class PomTransformerTest {
                 + "        </dependencies>\n" //
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
-        asserTransformation(source,
+        assertTransformation(source,
                 Collections.singletonList(
                         Transformation.addManagedDependency(new Gavtcs("org.acme", "my-ext", "${project.version}"))),
                 expected);
@@ -808,7 +960,7 @@ public class PomTransformerTest {
                 + "        </dependencies>\n" //
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
-        asserTransformation(source,
+        assertTransformation(source,
                 Collections.singletonList(
                         Transformation.setManagedDependencyVersion("${dep1-new.version}",
                                 Arrays.asList(Ga.of("org.acme:dep1")))),
@@ -937,7 +1089,7 @@ public class PomTransformerTest {
                 + "        </profile>\n" //
                 + "    </profiles>\n" //
                 + "</project>\n";
-        asserTransformation(source,
+        assertTransformation(source,
                 Collections.singletonList(
                         Transformation.setManagedDependencyVersion("profile1", "${dep2-new.version}",
                                 Arrays.asList(Ga.of("org.acme:dep2")))),
@@ -967,7 +1119,7 @@ public class PomTransformerTest {
                 + "    <dependencies>\n" //
                 + "    </dependencies>\n" //
                 + "</project>\n";
-        asserTransformation(source,
+        assertTransformation(source,
                 Collections.singletonList(Transformation.addContainerElementsIfNeeded("dependencies")),
                 expected);
     }
@@ -999,7 +1151,7 @@ public class PomTransformerTest {
                 + "\n" //
                 + "    <build/>\n" //
                 + "</project>\n";
-        asserTransformation(source,
+        assertTransformation(source,
                 Collections.singletonList(Transformation.addContainerElementsIfNeeded("dependencies")),
                 expected);
     }
@@ -1030,7 +1182,7 @@ public class PomTransformerTest {
                 + "\n" //
                 + "    <build/>\n" //
                 + "</project>\n";
-        asserTransformation(source,
+        assertTransformation(source,
                 Collections.singletonList(Transformation.addContainerElementsIfNeeded("dependencies")),
                 expected);
     }
@@ -1063,7 +1215,7 @@ public class PomTransformerTest {
                 + "\n" //
                 + "    <build/>\n" //
                 + "</project>\n";
-        asserTransformation(source,
+        assertTransformation(source,
                 Collections.singletonList(Transformation.addContainerElementsIfNeeded("dependencies")),
                 expected);
     }
@@ -1103,7 +1255,7 @@ public class PomTransformerTest {
                 + "\n" //
                 + "    <build/>\n" //
                 + "</project>\n";
-        asserTransformation(source,
+        assertTransformation(source,
                 Collections.singletonList(Transformation.addDependencyIfNeeded(new Gavtcs("org.acme", "a1", "1.2.3"),
                         Gavtcs.scopeAndTypeFirstComparator())),
                 expected);
@@ -1165,7 +1317,7 @@ public class PomTransformerTest {
                 + "\n" //
                 + "    <build/>\n" //
                 + "</project>\n";
-        asserTransformation(source,
+        assertTransformation(source,
                 Collections.singletonList(Transformation.addDependencyIfNeeded(Gavtcs.testJar("org.acme", "a1", "1.2.3"),
                         Gavtcs.scopeAndTypeFirstComparator())),
                 expected);
@@ -1214,7 +1366,7 @@ public class PomTransformerTest {
                 + "\n" //
                 + "    <build/>\n" //
                 + "</project>\n";
-        asserTransformation(source,
+        assertTransformation(source,
                 Collections.singletonList(Transformation.addDependencyIfNeeded(Gavtcs.virtual("org.acme", "a1", "1.2.3"),
                         Gavtcs.scopeAndTypeFirstComparator())),
                 expected);
@@ -1252,7 +1404,7 @@ public class PomTransformerTest {
                 + "        </dependencies>\n" //
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
-        asserTransformation(source,
+        assertTransformation(source,
                 Collections.singletonList(
                         Transformation.addManagedDependency(Gavtcs.importBom("org.acme", "bom", "${bom.version}"))),
                 expected);
@@ -1290,7 +1442,7 @@ public class PomTransformerTest {
                     + "    </properties>\n" //
                     + "\n" //
                     + "</project>\n";
-            asserTransformation(source,
+            assertTransformation(source,
                     Collections.emptyList(),
                     SimpleElementWhitespace.SPACE,
                     expected);
@@ -1310,7 +1462,7 @@ public class PomTransformerTest {
                     + "    </properties>\n" //
                     + "\n" //
                     + "</project>\n";
-            asserTransformation(source,
+            assertTransformation(source,
                     Collections.emptyList(),
                     SimpleElementWhitespace.EMPTY,
                     expected);
@@ -1350,7 +1502,7 @@ public class PomTransformerTest {
                     + "    </properties>\n" //
                     + "\n" //
                     + "</project>\n";
-            asserTransformation(source,
+            assertTransformation(source,
                     Collections.singletonList((Document document, TransformationContext context) -> {
                         final ContainerElement props = context.getOrAddContainerElement("properties");
                         props.addChildElement("bar", props.getOrAddLastIndent());
@@ -1453,7 +1605,7 @@ public class PomTransformerTest {
                 + "        </dependency>\n" //
                 + "    </dependencies>\n" //
                 + "</project>\n";
-        asserTransformation(source,
+        assertTransformation(source,
                 Collections.singletonList(
                         Transformation.keepFirst(
                                 "//comment()[contains(.,' The following dependencies guarantee that this module is built after them. You can update them by running `mvn process-resources -Pformat -N` from the source tree root directory ')]",
