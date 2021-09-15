@@ -1635,6 +1635,18 @@ public class MavenSourceTree {
     }
 
     /**
+     * @param  pomXmlPath an absolute path to a {@code pom.xml} file in this tree or a path relative to
+     *                    {@link #getRootDirectory()}
+     * @return            a {@link Module} or {@code null} if no {@link Module} is associated with the give path
+     */
+    public Module getModuleByPath(Path pomXmlPath) {
+        if (pomXmlPath.isAbsolute()) {
+            pomXmlPath = rootDirectory.relativize(pomXmlPath);
+        }
+        return modulesByPath.get(Utils.toUnixPath(pomXmlPath.toString()));
+    }
+
+    /**
      * @param  child
      * @return       the {@link Module} having the given gild in its {@code <modules>}
      */
