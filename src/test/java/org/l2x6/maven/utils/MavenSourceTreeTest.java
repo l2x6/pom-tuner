@@ -216,6 +216,26 @@ public class MavenSourceTreeTest {
     }
 
     @Test
+    public void getModuleByPath() throws IOException {
+        final Path root = BASEDIR.toAbsolutePath().normalize().resolve("target/test-classes/MavenSourceTree/tree-1");
+        final MavenSourceTree t = MavenSourceTree.of(root.resolve("pom.xml"), StandardCharsets.UTF_8);
+
+        final Path relPath = Paths.get("module-4/pom.xml");
+        {
+            final Module m4 = t.getModuleByPath(relPath);
+            org.assertj.core.api.Assertions.assertThat(m4).isNotNull();
+            org.assertj.core.api.Assertions.assertThat(m4.getGav().resolveGa(t, ActiveProfiles.of()).getArtifactId())
+                    .isEqualTo("tree-module-4");
+        }
+        {
+            final Module m4 = t.getModuleByPath(t.getRootDirectory().resolve(relPath));
+            org.assertj.core.api.Assertions.assertThat(m4).isNotNull();
+            org.assertj.core.api.Assertions.assertThat(m4.getGav().resolveGa(t, ActiveProfiles.of()).getArtifactId())
+                    .isEqualTo("tree-module-4");
+        }
+    }
+
+    @Test
     public void collectDependencies() throws IOException {
         final Path root = BASEDIR.resolve("target/test-classes/MavenSourceTree/tree-1");
         MavenSourceTree t = MavenSourceTree.of(root.resolve("pom.xml"), StandardCharsets.UTF_8);
