@@ -939,6 +939,14 @@ public class PomTransformer {
                     .orElse(Collections.emptySet());
         }
 
+        public Set<Gavtcs> getManagedDependencies() {
+            return getContainerElement("project", "dependencyManagement", "dependencies")
+                    .map(deps -> deps.childElementsStream()
+                            .map(dep -> dep.asContainerElement().asGavtcs())
+                            .collect(Collectors.toCollection(() -> (Set<Gavtcs>) new LinkedHashSet<Gavtcs>())))
+                    .orElse(Collections.emptySet());
+        }
+
         public Optional<ContainerElement> findDependency(Gavtcs gavtcs) {
             return getContainerElement("project", "dependencies")
                     .map(depsNode -> depsNode.childElementsStream()
@@ -951,6 +959,16 @@ public class PomTransformer {
         public void removeDependency(Gavtcs removedDependency, boolean removePrecedingComments,
                 boolean removePrecedingWhitespace) {
             getContainerElement("project", "dependencies")
+                    .ifPresent(deps -> deps.childElementsStream()
+                            .filter(wrappedDepNode -> wrappedDepNode.asContainerElement().asGavtcs().equals(removedDependency))
+                            .findFirst()
+                            .ifPresent(wrappedDepNode -> wrappedDepNode.remove(removePrecedingComments,
+                                    removePrecedingWhitespace)));
+        }
+
+        public void removeManagedDependency(Gavtcs removedDependency, boolean removePrecedingComments,
+                boolean removePrecedingWhitespace) {
+            getContainerElement("project", "dependencyManagement", "dependencies")
                     .ifPresent(deps -> deps.childElementsStream()
                             .filter(wrappedDepNode -> wrappedDepNode.asContainerElement().asGavtcs().equals(removedDependency))
                             .findFirst()
@@ -977,6 +995,26 @@ public class PomTransformer {
                 refNode = deps.getOrAddLastIndent();
             }
             deps.addGavtcs(gavtcs, refNode);
+        }
+
+        public void addTextChildIfNeeded(ContainerElement parent, String nodeName, String nodeValue,
+                Comparator<String> comparator) {
+            Node refNode = null;
+            for (WrappedNode<Element> child : parent.childElements()) {
+                int comparison = comparator.compare(nodeValue, child.getNode().getTextContent());
+                if (comparison == 0) {
+                    /* the given gavtcs is available, no need to add it */
+                    return;
+                }
+                if (refNode == null && comparison < 0) {
+                    refNode = child.previousSiblingInsertionRefNode();
+                }
+            }
+
+            if (refNode == null) {
+                refNode = parent.getOrAddLastIndent();
+            }
+            parent.addChildTextElement(nodeName, nodeValue, refNode);
         }
 
         public void removeNode(String xPathExpression, boolean removePrecedingComments, boolean removePrecedingWhitespace,
@@ -1060,6 +1098,13 @@ public class PomTransformer {
             return addModules(profileId, Arrays.asList(modulePaths));
         }
 
+        public static Transformation addModuleIfNeeded(String module, Comparator<String> comparator) {
+            return (Document document, TransformationContext context) -> {
+                ContainerElement modules = context.getOrAddContainerElement("modules");
+                context.addTextChildIfNeeded(modules, "module", module, comparator);
+            };
+        }
+
         public static Transformation addModules(String profileId, Collection<String> modulePaths) {
             return (Document document, TransformationContext context) -> {
                 final ContainerElement profileParent = context.getProfileParent(profileId)
@@ -1115,6 +1160,17 @@ public class PomTransformer {
                 final ContainerElement dependencyManagementDeps = context.getOrAddContainerElements("dependencyManagement",
                         "dependencies");
                 dependencyManagementDeps.addGavtcs(gavtcs);
+            };
+        }
+
+        public static Transformation removeManagedDependencies(boolean removePrecedingComments,
+                boolean removePrecedingWhitespace,
+                Predicate<Gavtcs> predicate) {
+            return (Document document, TransformationContext context) -> {
+                context.getManagedDependencies().stream()
+                        .filter(predicate)
+                        .forEach(dep -> context.removeManagedDependency(dep, removePrecedingComments,
+                                removePrecedingWhitespace));
             };
         }
 
@@ -1344,12 +1400,12 @@ public class PomTransformer {
             return (Document document, TransformationContext context) -> {
                 try {
                     {
-                        final String xPathExpression = anyNs("project", "parent", "artifactId") + "text()";
+                        final String xPathExpression = anyNs("project", "parent", "artifactId");
                         Node artifactIdNode = (Node) context.getXPath().evaluate(
                                 xPathExpression, document,
                                 XPathConstants.NODE);
                         if (artifactIdNode != null) {
-                            artifactIdNode.setNodeValue(artifactId);
+                            artifactIdNode.setTextContent(artifactId);
                         } else {
                             throw new IllegalStateException("Could not find " + xPathExpression + " in " + context.pomXmlPath);
                         }
@@ -1377,14 +1433,13 @@ public class PomTransformer {
                                 xPathExpression, document,
                                 XPathConstants.NODE);
                         if (node != null) {
-                            node.getFirstChild().setNodeValue(relativePath);
+                            node.setTextContent(relativePath);
                         } else {
                             node = document.createElement("relativePath");
                             ((Node) context.getXPath().evaluate(
                                     anyNs("project", "parent"), document,
                                     XPathConstants.NODE)).appendChild(node);
-                            final Text text = document.createTextNode(relativePath);
-                            node.appendChild(text);
+                            node.setTextContent(relativePath);
                         }
                     }
                 } catch (XPathExpressionException | DOMException e) {
