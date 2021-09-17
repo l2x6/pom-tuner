@@ -277,7 +277,7 @@ public class Gavtcs {
             return true;
         if (obj == null)
             return false;
-        if (getClass() != obj.getClass())
+        if (!(obj instanceof Gavtcs))
             return false;
         Gavtcs other = (Gavtcs) obj;
         if (artifactId == null) {
