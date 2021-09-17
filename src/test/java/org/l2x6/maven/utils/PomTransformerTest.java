@@ -1405,6 +1405,99 @@ public class PomTransformerTest {
     }
 
     @Test
+    void updateDependencySubset() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <dependencies>\n" //
+                + "        <dependency>\n" //
+                + "            <groupId>org.acme</groupId>\n" //
+                + "            <artifactId>a1</artifactId>\n" //
+                + "            <version>${project.version}</version>\n" //
+                + "        </dependency>\n" //
+                + "\n" //
+                + "        <!-- initial comment -->\n" //
+                + "        <dependency>\n" //
+                + "            <groupId>org.acme</groupId>\n" //
+                + "            <artifactId>a2</artifactId>\n" //
+                + "            <version>${project.version}</version>\n" //
+                + "            <type>pom</type>\n" //
+                + "            <scope>test</scope>\n" //
+                + "            <exclusions>\n" //
+                + "                <exclusion>\n" //
+                + "                    <groupId>*</groupId>\n" //
+                + "                    <artifactId>*</artifactId>\n" //
+                + "                </exclusion>\n" //
+                + "            </exclusions>\n" //
+                + "        </dependency>\n" //
+                + "        <dependency>\n" //
+                + "            <groupId>org.acme</groupId>\n" //
+                + "            <artifactId>a3</artifactId>\n" //
+                + "            <version>${project.version}</version>\n" //
+                + "            <type>pom</type>\n" //
+                + "            <scope>test</scope>\n" //
+                + "            <exclusions>\n" //
+                + "                <exclusion>\n" //
+                + "                    <groupId>*</groupId>\n" //
+                + "                    <artifactId>*</artifactId>\n" //
+                + "                </exclusion>\n" //
+                + "            </exclusions>\n" //
+                + "        </dependency>\n" //
+                + "    </dependencies>\n" //
+                + "\n" //
+                + "    <build/>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <dependencies>\n" //
+                + "        <dependency>\n" //
+                + "            <groupId>org.acme</groupId>\n" //
+                + "            <artifactId>a1</artifactId>\n" //
+                + "            <version>${project.version}</version>\n" //
+                + "        </dependency>\n" //
+                + "\n" //
+                + "        <!-- initial comment -->\n" //
+                + "        <dependency>\n" //
+                + "            <groupId>org.acme</groupId>\n" //
+                + "            <artifactId>a2</artifactId>\n" //
+                + "            <version>${project.version}</version>\n" //
+                + "            <type>pom</type>\n" //
+                + "            <scope>test</scope>\n" //
+                + "            <exclusions>\n" //
+                + "                <exclusion>\n" //
+                + "                    <groupId>*</groupId>\n" //
+                + "                    <artifactId>*</artifactId>\n" //
+                + "                </exclusion>\n" //
+                + "            </exclusions>\n" //
+                + "        </dependency>\n" //
+                + "    </dependencies>\n" //
+                + "\n" //
+                + "    <build/>\n" //
+                + "</project>\n";
+        assertTransformation(source,
+                Collections.singletonList(
+                        Transformation.updateDependencySubset(
+                                gavtcs -> gavtcs.isVirtual(),
+                                Collections.singleton(new Gavtcs("org.acme", "a2", "${project.version}").toVirtual()),
+                                Gavtcs.scopeAndTypeFirstComparator(),
+                                " initial comment ")),
+                expected);
+    }
+
+    @Test
     void addDependencyTestAfterCompile() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
