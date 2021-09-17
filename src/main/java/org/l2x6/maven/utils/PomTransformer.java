@@ -362,6 +362,27 @@ public class PomTransformer {
         }
     }
 
+    /**
+     * A {@link Gavtcs} storing the associated {@link ContainerElement} from the {@code pom.xml} file
+     * which can be used for modifications.
+     */
+    public static class NodeGavtcs extends Gavtcs {
+        private final ContainerElement node;
+
+        NodeGavtcs(String groupId, String artifactId, String version, String type, String classifier, String scope,
+                Collection<Ga> exclusions, ContainerElement node) {
+            super(groupId, artifactId, version, type, classifier, scope, exclusions);
+            this.node = node;
+        }
+
+        /**
+         * @return the associated {@link ContainerElement}.
+         */
+        public ContainerElement getNode() {
+            return node;
+        }
+    }
+
     public static class ContainerElement extends WrappedNode<Element> {
         private final Predicate<Node> ELEMENT_FILTER = n -> n.getNodeType() == Node.ELEMENT_NODE;
         protected Text lastIndent;
@@ -544,7 +565,7 @@ public class PomTransformer {
             }
         }
 
-        public Gavtcs asGavtcs() {
+        public NodeGavtcs asGavtcs() {
             String groupId = null;
             String artifactId = null;
             String version = null;
@@ -594,11 +615,7 @@ public class PomTransformer {
                     break;
                 }
             }
-            if (exclusions == null) {
-                return new Gavtcs(groupId, artifactId, version, type, classifier, scope);
-            } else {
-                return new Gavtcs(groupId, artifactId, version, type, classifier, scope, exclusions);
-            }
+            return new NodeGavtcs(groupId, artifactId, version, type, classifier, scope, exclusions, this);
         }
 
         static class NodeIterator<T> implements Iterator<T> {
@@ -931,19 +948,19 @@ public class PomTransformer {
             }
         }
 
-        public Set<Gavtcs> getDependencies() {
+        public Set<NodeGavtcs> getDependencies() {
             return getContainerElement("project", "dependencies")
                     .map(deps -> deps.childElementsStream()
                             .map(dep -> dep.asContainerElement().asGavtcs())
-                            .collect(Collectors.toCollection(() -> (Set<Gavtcs>) new LinkedHashSet<Gavtcs>())))
+                            .collect(Collectors.toCollection(() -> (Set<NodeGavtcs>) new LinkedHashSet<NodeGavtcs>())))
                     .orElse(Collections.emptySet());
         }
 
-        public Set<Gavtcs> getManagedDependencies() {
+        public Set<NodeGavtcs> getManagedDependencies() {
             return getContainerElement("project", "dependencyManagement", "dependencies")
                     .map(deps -> deps.childElementsStream()
                             .map(dep -> dep.asContainerElement().asGavtcs())
-                            .collect(Collectors.toCollection(() -> (Set<Gavtcs>) new LinkedHashSet<Gavtcs>())))
+                            .collect(Collectors.toCollection(() -> (Set<NodeGavtcs>) new LinkedHashSet<NodeGavtcs>())))
                     .orElse(Collections.emptySet());
         }
 
@@ -1222,7 +1239,7 @@ public class PomTransformer {
                 Comparator<Gavtcs> comparator,
                 String initialComment) {
             return (Document document, TransformationContext context) -> {
-                final Set<Gavtcs> deps = context.getDependencies();
+                final Set<? extends Gavtcs> deps = context.getDependencies();
                 final Set<Gavtcs> newMappedDeps = new TreeSet<>(comparator);
                 for (Gavtcs dep : deps) {
                     dependencyMapper
@@ -1261,7 +1278,7 @@ public class PomTransformer {
 
                 final Gavtcs firstSubsetNode = depsToAdd.isEmpty() ? null : depsToAdd.iterator().next();
 
-                Set<Gavtcs> deps = context.getDependencies();
+                Set<? extends Gavtcs> deps = context.getDependencies();
                 for (Gavtcs dep : deps) {
                     if (isSubsetMember.test(dep)) {
                         if (!newSubset.contains(dep)) {
