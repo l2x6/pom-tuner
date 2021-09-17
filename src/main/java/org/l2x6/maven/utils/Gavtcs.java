@@ -187,7 +187,8 @@ public class Gavtcs {
         this.type = type;
         this.classifier = classifier;
         this.scope = scope;
-        this.exclusions = Collections.unmodifiableSortedSet(new TreeSet<>(exclusions));
+        this.exclusions = exclusions == null ? Collections.emptySortedSet()
+                : Collections.unmodifiableSortedSet(new TreeSet<>(exclusions));
     }
 
     public String getGroupId() {
