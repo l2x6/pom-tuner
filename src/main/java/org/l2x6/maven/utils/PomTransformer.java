@@ -924,6 +924,23 @@ public class PomTransformer {
             }
         }
 
+        public ContainerElement getOrAddProfile(String profileId) {
+            try {
+                final Node node = (Node) xPath.evaluate(
+                        anyNs("project", "profiles", "profile") + "[." + anyNs("id") + "/text() = '" + profileId + "']",
+                        document, XPathConstants.NODE);
+                if (node != null) {
+                    return new ContainerElement(this, (Element) node, null, 2);
+                } else {
+                    ContainerElement profile = getOrAddContainerElement("profiles").addChildContainerElement("profile");
+                    profile.addChildTextElement("id", profileId);
+                    return profile;
+                }
+            } catch (XPathExpressionException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         public Optional<ContainerElement> getProfileParent(String profileId) {
             if (profileId == null) {
                 final Node node = document.getDocumentElement();
@@ -933,6 +950,18 @@ public class PomTransformer {
                 return Optional.empty();
             } else {
                 return getProfile(profileId);
+            }
+        }
+
+        public ContainerElement getOrAddProfileParent(String profileId) {
+            if (profileId == null) {
+                final Node node = document.getDocumentElement();
+                if (node == null) {
+                    throw new IllegalStateException("No document element in " + pomXmlPath);
+                }
+                return new ContainerElement(this, (Element) node, null, 0);
+            } else {
+                return getOrAddProfile(profileId);
             }
         }
 
@@ -1123,13 +1152,20 @@ public class PomTransformer {
         }
 
         public static Transformation addModules(String profileId, Collection<String> modulePaths) {
+            return addModulesIfNeeded(profileId, null, modulePaths);
+        }
+
+        public static Transformation addModulesIfNeeded(String profileId, Comparator<String> comparator,
+                Collection<String> modulePaths) {
             return (Document document, TransformationContext context) -> {
-                final ContainerElement profileParent = context.getProfileParent(profileId)
-                        .orElseThrow(() -> new IllegalStateException(
-                                "No such profile '" + profileId + "' found in " + context.getPomXmlPath()));
+                final ContainerElement profileParent = context.getOrAddProfileParent(profileId);
                 final ContainerElement modules = profileParent.getOrAddChildContainerElement("modules");
                 for (String m : modulePaths) {
-                    modules.addChildTextElement("module", m);
+                    if (comparator != null) {
+                        context.addTextChildIfNeeded(modules, "module", m, comparator);
+                    } else {
+                        modules.addChildTextElement("module", m);
+                    }
                 }
             };
         }
