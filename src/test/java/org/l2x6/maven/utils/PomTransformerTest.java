@@ -823,6 +823,51 @@ public class PomTransformerTest {
                 expected);
     }
 
+    @Test
+    void addModulesToNonExistentProfile() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <!-- comment -->\n" //
+                + "        <module>module-2</module>\n" //
+                + "    </modules>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <!-- comment -->\n" //
+                + "        <module>module-2</module>\n" //
+                + "    </modules>\n" //
+                + "\n" //
+                + "    <profiles>\n" //
+                + "        <profile>\n" //
+                + "            <id>profile1</id>\n" //
+                + "            <modules>\n" //
+                + "                <module>module-6</module>\n" //
+                + "            </modules>\n" //
+                + "        </profile>\n" //
+                + "    </profiles>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(Transformation.addModules("profile1", "module-6")),
+                expected);
+    }
+
     static void assertTransformation(String src, Collection<Transformation> transformations,
             SimpleElementWhitespace simpleElementWhitespace, String expected) {
         PomTransformer.transform(transformations, simpleElementWhitespace, Paths.get("pom.xml"),
