@@ -1,0 +1,60 @@
+= Maven Utils
+
+A library for analyzing and programmatic editing of Maven `pom.xml` files.
+
+Its two main parts are `PomTransformer` and `MavenSourceTree`
+
+== `PomTransformer`
+
+Transform a single `pom.xml` file by using any of the pre-cooked ``Transformation``s or by writing your own.
+
+A basic usage example:
+
+[source,java]
+----
+import org.l2x6.maven.utils.Gavtcs;
+import org.l2x6.maven.utils.PomTransformer;
+import org.l2x6.maven.utils.PomTransformer.SimpleElementWhitespace;
+import org.l2x6.maven.utils.PomTransformer.Transformation;
+
+new PomTransformer(Paths.get("pom.xml"), StandardCharsets.UTF_8, SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY)
+        .transform(
+            Transformation.addModuleIfNeeded("my-new-module", String::compareTo),
+            Transformation.addOrSetProperty("my-prop", "new-value"),
+            Transformation.addDependencyIfNeeded(new Gavtcs("org.acme", "a1", "1.2.3"),
+                    Gavtcs.scopeAndTypeFirstComparator())
+        );
+----
+
+Characteristics:
+
+* Parses the given `pom.xml` file once into a DOM, applies one or more ``Transformation``s and writes the file back to the disk.
+* Generally keeps all formatting and whitespace, including end of line (EOL) characters (unlike many DOM writers which use the current platform's default EOLs).
+* Indentation for newly added elements is auto-detected based on the first indent available in the file.
+* Respects the http://maven.apache.org/developers/conventions/code.html#POM_Code_Convention[canonical ordering] when adding new elements under `<project>`.
+
+== `MavenSourceTree`
+
+A representation of a Maven module hierarchy.
+
+It comes in handy in a variety of scenarios:
+
+* Analyze relationships in the dependency graph:
+** On which other modules (including transitives) depends some given module? - see `MavenSourceTree.collect[Own|Transitive]Dependencies()`
+** Which modules in the tree are required for building some given module? - see `MavenSourceTree.findRequiredModules()`
+* Transform the `pom.xml` files:
+** Set versions of the modules  - see `MavenSourceTree.setVersions()`
+** Reduce the tree by removing some modules from the `pom.xml` file  - see `MavenSourceTree.unlinkModules()`
+
+== Maven coordinates
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.l2x6.maven-utils</groupId>
+    <artifactId>maven-utils</artifactId>
+    <version><!-- see below --></version>
+</dependency>
+----
+
+Check the latest version on Maven Central: https://repo1.maven.org/maven2/org/l2x6/maven-utils/maven-utils/
