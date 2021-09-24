@@ -80,8 +80,11 @@ import org.w3c.dom.Text;
  */
 public class PomTransformer {
 
-    static final Pattern[] POSTPROCESS_PATTERNS = new Pattern[] { Pattern.compile("(<\\?xml[^>]*\\?>)?(\\s*)<"),
-            Pattern.compile("(\\s*)<project([^>]*)>"), Pattern.compile("\\s*$") };
+    static final Pattern[] POSTPROCESS_PATTERNS = new Pattern[] {
+            Pattern.compile("(<\\?xml[^>]*\\?>)?(\\s*)<"),
+            Pattern.compile("(\\s*)<project([^>]*)>"),
+            Pattern.compile(">\\s*(<!--.*?-->\\s*)*$", Pattern.DOTALL)
+    };
     static final Pattern EOL_PATTERN = Pattern.compile("\r?\n");
     static final Pattern WS_PATTERN = Pattern.compile("[ \t\n\r]+");
     static final Pattern EMPTY_LINE_PATTERN = Pattern.compile("[ \t]*\r?\n\r?\n[ \t\r\n]*");
