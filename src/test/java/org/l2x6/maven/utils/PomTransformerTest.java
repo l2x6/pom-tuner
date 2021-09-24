@@ -1692,6 +1692,321 @@ public class PomTransformerTest {
     }
 
     @Test
+    void trailingNewLine() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo />\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>\n";
+
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo />\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>\n";
+        assertTransformation(source,
+                Collections.emptyList(),
+                SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
+                expected);
+    }
+
+    @Test
+    void trailingTwoNewLines() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo />\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>\n\n";
+
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo />\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>\n\n";
+        assertTransformation(source,
+                Collections.emptyList(),
+                SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
+                expected);
+    }
+
+    @Test
+    void noTrailingWhiteSpace() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo />\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>";
+
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo />\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>";
+        assertTransformation(source,
+                Collections.emptyList(),
+                SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
+                expected);
+    }
+
+    @Test
+    void trailingSpaces() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo />\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>    ";
+
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo />\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>    ";
+        assertTransformation(source,
+                Collections.emptyList(),
+                SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
+                expected);
+    }
+
+    @Test
+    void trailingComment() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo />\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project><!-- trailing comment -->";
+
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo>val</foo>\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project><!-- trailing comment -->";
+        assertTransformation(source,
+                Collections.singleton(Transformation.addOrSetProperty("foo", "val")),
+                SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
+                expected);
+    }
+
+    @Test
+    void trailingCommentOnNewline() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo />\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>" //
+                + "<!-- trailing comment -->";
+
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo>val</foo>\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project><!-- trailing comment -->";
+        assertTransformation(source,
+                Collections.singleton(Transformation.addOrSetProperty("foo", "val")),
+                SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
+                expected);
+    }
+
+    @Test
+    void trailingMultilineComment() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo />\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>\n"
+                + "<!--\n"
+                + "Modified by POM Manipulation Extension for Maven 4.5 ( SHA: 698c5e7b )\n"
+                + "-->\n";
+
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo>val</foo>\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>\n"
+                + "<!--\n"
+                + "Modified by POM Manipulation Extension for Maven 4.5 ( SHA: 698c5e7b )\n"
+                + "-->\n";
+        assertTransformation(source,
+                Collections.singleton(Transformation.addOrSetProperty("foo", "val")),
+                SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
+                expected);
+    }
+
+    @Test
+    void trailingMultilineComments() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo />\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>\n"
+                + "<!--\n"
+                + "Modified by POM Manipulation Extension for Maven 4.5 ( SHA: 698c5e7b )\n"
+                + "-->\n"
+                + "<!--\n"
+                + "Modified by POM Manipulation Extension for Maven 4.5 ( SHA: 698c5e7b )\n"
+                + "-->\n";
+
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo>val</foo>\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>\n"
+                + "<!--\n"
+                + "Modified by POM Manipulation Extension for Maven 4.5 ( SHA: 698c5e7b )\n"
+                + "-->\n"
+                + "<!--\n"
+                + "Modified by POM Manipulation Extension for Maven 4.5 ( SHA: 698c5e7b )\n"
+                + "-->\n";
+        assertTransformation(source,
+                Collections.singleton(Transformation.addOrSetProperty("foo", "val")),
+                SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
+                expected);
+    }
+
+    @Test
     void elementWhitespace() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
