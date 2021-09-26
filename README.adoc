@@ -1,4 +1,4 @@
-= Maven Utils
+= POM Tuner
 
 A library for analyzing and programmatic editing of Maven `pom.xml` files.
 
@@ -12,10 +12,10 @@ A basic usage example:
 
 [source,java]
 ----
-import org.l2x6.maven.utils.Gavtcs;
-import org.l2x6.maven.utils.PomTransformer;
-import org.l2x6.maven.utils.PomTransformer.SimpleElementWhitespace;
-import org.l2x6.maven.utils.PomTransformer.Transformation;
+import org.l2x6.pom.tuner.Gavtcs;
+import org.l2x6.pom.tuner.PomTransformer;
+import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
+import org.l2x6.pom.tuner.PomTransformer.Transformation;
 
 new PomTransformer(Paths.get("pom.xml"), StandardCharsets.UTF_8, SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY)
         .transform(
@@ -51,10 +51,14 @@ It comes in handy in a variety of scenarios:
 [source,xml]
 ----
 <dependency>
-    <groupId>org.l2x6.maven-utils</groupId>
-    <artifactId>maven-utils</artifactId>
+    <groupId>org.l2x6.pom-tuner</groupId>
+    <artifactId>pom-tuner</artifactId>
     <version><!-- see below --></version>
 </dependency>
 ----
 
-Check the latest version on Maven Central: https://repo1.maven.org/maven2/org/l2x6/maven-utils/maven-utils/
+Check the latest version on Maven Central: https://repo1.maven.org/maven2/org/l2x6/pom-tuner/pom-tuner/
+
+== History
+
+This project beared the name `maven-utils` initially for a short period of time.

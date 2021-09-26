@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.l2x6.maven.utils;
+package org.l2x6.pom.tuner;
 
 import java.io.StringReader;
 import java.nio.file.Paths;
@@ -31,10 +31,10 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.l2x6.maven.utils.PomTransformer.ContainerElement;
-import org.l2x6.maven.utils.PomTransformer.SimpleElementWhitespace;
-import org.l2x6.maven.utils.PomTransformer.Transformation;
-import org.l2x6.maven.utils.PomTransformer.TransformationContext;
+import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
+import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
+import org.l2x6.pom.tuner.PomTransformer.Transformation;
+import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 

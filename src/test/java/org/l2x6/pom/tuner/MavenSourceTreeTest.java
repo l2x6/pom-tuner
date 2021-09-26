@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.l2x6.maven.utils;
+package org.l2x6.pom.tuner;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -32,24 +32,24 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.l2x6.maven.utils.MavenSourceTree.ActiveProfiles;
-import org.l2x6.maven.utils.MavenSourceTree.Builder;
-import org.l2x6.maven.utils.MavenSourceTree.Dependency;
-import org.l2x6.maven.utils.MavenSourceTree.Expression;
-import org.l2x6.maven.utils.MavenSourceTree.Expression.Constant;
-import org.l2x6.maven.utils.MavenSourceTree.Expression.NoSuchPropertyException;
-import org.l2x6.maven.utils.MavenSourceTree.GavExpression;
-import org.l2x6.maven.utils.MavenSourceTree.Module;
-import org.l2x6.maven.utils.MavenSourceTree.Module.Profile;
-import org.l2x6.maven.utils.MavenSourceTree.Module.Profile.PropertyBuilder;
-import org.l2x6.maven.utils.PomTransformer.SimpleElementWhitespace;
-import org.l2x6.maven.utils.shell.BadExitCodeException;
-import org.l2x6.maven.utils.shell.BuildException;
-import org.l2x6.maven.utils.shell.CommandTimeoutException;
-import org.l2x6.maven.utils.shell.LineConsumer;
-import org.l2x6.maven.utils.shell.Shell;
-import org.l2x6.maven.utils.shell.ShellCommand;
-import org.l2x6.maven.utils.shell.ShellCommand.ShellCommandBuilder;
+import org.l2x6.pom.tuner.MavenSourceTree.ActiveProfiles;
+import org.l2x6.pom.tuner.MavenSourceTree.Builder;
+import org.l2x6.pom.tuner.MavenSourceTree.Dependency;
+import org.l2x6.pom.tuner.MavenSourceTree.Expression;
+import org.l2x6.pom.tuner.MavenSourceTree.Expression.Constant;
+import org.l2x6.pom.tuner.MavenSourceTree.Expression.NoSuchPropertyException;
+import org.l2x6.pom.tuner.MavenSourceTree.GavExpression;
+import org.l2x6.pom.tuner.MavenSourceTree.Module;
+import org.l2x6.pom.tuner.MavenSourceTree.Module.Profile;
+import org.l2x6.pom.tuner.MavenSourceTree.Module.Profile.PropertyBuilder;
+import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
+import org.l2x6.pom.tuner.shell.BadExitCodeException;
+import org.l2x6.pom.tuner.shell.BuildException;
+import org.l2x6.pom.tuner.shell.CommandTimeoutException;
+import org.l2x6.pom.tuner.shell.LineConsumer;
+import org.l2x6.pom.tuner.shell.Shell;
+import org.l2x6.pom.tuner.shell.ShellCommand;
+import org.l2x6.pom.tuner.shell.ShellCommand.ShellCommandBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

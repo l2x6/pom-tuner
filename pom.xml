@@ -20,14 +20,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.l2x6.maven-utils</groupId>
-    <artifactId>maven-utils</artifactId>
-    <version>3.7.2-SNAPSHOT</version>
+    <groupId>org.l2x6.pom-tuner</groupId>
+    <artifactId>pom-tuner</artifactId>
+    <version>1.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>Maven utilities</name>
-    <description>Maven utilities</description>
-    <url>https://github.com/l2x6/maven-utils</url>
+    <name>Maven POM Tuner</name>
+    <description>A library to analyze and edit Maven pom.xml files programmatically</description>
+    <url>https://github.com/l2x6/pom-tuner</url>
     <inceptionYear>2015</inceptionYear>
     <licenses>
         <license>
@@ -46,14 +46,14 @@
     </developers>
 
     <scm>
-        <connection>scm:git:git@github.com:l2x6/maven-utils.git</connection>
-        <developerConnection>scm:git:git@github.com:l2x6/maven-utils.git</developerConnection>
-        <url>https://github.com/l2x6/maven-utils</url>
+        <connection>scm:git:git@github.com:l2x6/pom-tuner.git</connection>
+        <developerConnection>scm:git:git@github.com:l2x6/pom-tuner.git</developerConnection>
+        <url>https://github.com/l2x6/pom-tuner</url>
         <tag>head</tag>
     </scm>
     <issueManagement>
         <system>GitHub Issues</system>
-        <url>https://github.com/l2x6/maven-utils/issues</url>
+        <url>https://github.com/l2x6/pom-tuner/issues</url>
     </issueManagement>
     <distributionManagement>
         <snapshotRepository>
@@ -521,7 +521,7 @@ limitations under the License.</inlineHeader>
             <id>release</id>
 
             <properties>
-        <!-- This makes the buildnumber-maven-plugin fail in case of uncommitted local changes -->
+                <!-- This makes the buildnumber-maven-plugin fail in case of uncommitted local changes -->
                 <maven.buildNumber.doCheck>true</maven.buildNumber.doCheck>
             </properties>
 

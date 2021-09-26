@@ -14,27 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.l2x6.maven.utils;
+package org.l2x6.pom.tuner.shell;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import java.util.Arrays;
 
 /**
+ * Thrown when a shell command exits with a non-zero exit code.
+ *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
-public class GavTest {
-    @Test
-    public void of() {
-        Assertions.assertEquals(new Gav("g", "a", "v"), Gav.of("g:a:v"));
+public class BadExitCodeException extends BuildException {
+    private static final long serialVersionUID = 5437686562879042682L;
+    private final int exitCode;
+
+    public BadExitCodeException(String[] cmdArray, int exitCode) {
+        super(String.format("Command returned exit code [%d]: %s", exitCode, Arrays.toString(cmdArray)));
+        this.exitCode = exitCode;
     }
 
-    @Test
-    public void ofMissingArtifactId() {
-        Assertions.assertThrows(IllegalStateException.class, () -> Gav.of("g"));
+    /**
+     * @return the exist code of a command that caused this {@link BadExitCodeException} to be thrown
+     */
+    public int getExitCode() {
+        return exitCode;
     }
 
-    @Test
-    public void ofMissingVersion() {
-        Assertions.assertThrows(IllegalStateException.class, () -> Gav.of("g:a"));
-    }
 }
