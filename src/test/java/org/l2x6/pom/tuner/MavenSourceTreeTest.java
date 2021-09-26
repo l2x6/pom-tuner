@@ -62,7 +62,7 @@ public class MavenSourceTreeTest {
 
     static {
         MVN_LOCAL_REPO = BASEDIR.resolve("target/mvn-local-repo");
-        MVNW = Utils.findMvnw(BASEDIR);
+        MVNW = ShellCommand.findMvnw(BASEDIR);
     }
 
     static void assertProperty(MavenSourceTree t, String propertyName, Ga ga, String expectedValue, String... profiles)
