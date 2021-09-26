@@ -16,7 +16,10 @@
  */
 package org.l2x6.pom.tuner;
 
-public class Utils {
+public class PomTunerUtils {
+
+    private PomTunerUtils() {
+    }
 
     /**
      * @param  anyPath a path with either slashes or backslashes
