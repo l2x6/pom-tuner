@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.StringTokenizer;
+import org.l2x6.pom.tuner.model.Gav;
 
 /**
  * A set of {@link Gav}s defined by included and excluded {@link GavPattern}s.

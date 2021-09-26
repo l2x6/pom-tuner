@@ -35,6 +35,8 @@ import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
+import org.l2x6.pom.tuner.model.Ga;
+import org.l2x6.pom.tuner.model.Gavtcs;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
