@@ -22,7 +22,6 @@ import javax.xml.stream.events.Characters;
 import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.XMLEvent;
 import org.l2x6.pom.tuner.MavenSourceTree;
-import org.l2x6.pom.tuner.MavenSourceTree.ValueDefinition;
 import org.l2x6.pom.tuner.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.MavenSourceTree.ActiveProfiles;
 import org.l2x6.pom.tuner.MavenSourceTree.Builder;
-import org.l2x6.pom.tuner.MavenSourceTree.SourceTreeExpressionEvaluator;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
 import org.l2x6.pom.tuner.model.Dependency;
 import org.l2x6.pom.tuner.model.Expression;
@@ -96,7 +95,7 @@ public class MavenSourceTreeTest {
         }
         Shell.execute(cmd.build()).assertSuccess();
         Assertions.assertEquals(expectedValue, output.toString().trim());
-        SourceTreeExpressionEvaluator evaluator = t.new SourceTreeExpressionEvaluator(ActiveProfiles.of(profiles));
+        ExpressionEvaluator evaluator = t.getExpressionEvaluator(ActiveProfiles.of(profiles));
         Assertions.assertEquals(expectedValue, evaluator.evaluate(Expression.of("${" + propertyName + "}", ga)));
     }
 
@@ -177,7 +176,7 @@ public class MavenSourceTreeTest {
         Assertions.assertEquals(3, t.getRootModule().getProfiles().get(0).getProperties().size());
 
         try {
-            t.new SourceTreeExpressionEvaluator(ActiveProfiles.of())
+            t.getExpressionEvaluator(ActiveProfiles.of())
                     .evaluate(Expression.of("${non-existent}", Ga.of("org.srcdeps.properties:module-1")));
             Assertions.fail("NoSuchPropertyException expected");
         } catch (NoSuchPropertyException expected) {
@@ -230,7 +229,7 @@ public class MavenSourceTreeTest {
             final Module m4 = t.getModuleByPath(relPath);
             org.assertj.core.api.Assertions.assertThat(m4).isNotNull();
             org.assertj.core.api.Assertions.assertThat(
-                    t.new SourceTreeExpressionEvaluator(ActiveProfiles.of()).evaluateGa(m4.getGav())
+                    t.getExpressionEvaluator(ActiveProfiles.of()).evaluateGa(m4.getGav())
                             .getArtifactId())
                     .isEqualTo("tree-module-4");
         }
@@ -239,7 +238,7 @@ public class MavenSourceTreeTest {
             org.assertj.core.api.Assertions.assertThat(m4).isNotNull();
             org.assertj.core.api.Assertions
                     .assertThat(
-                            t.new SourceTreeExpressionEvaluator(ActiveProfiles.of()).evaluateGa(m4.getGav()).getArtifactId())
+                            t.getExpressionEvaluator(ActiveProfiles.of()).evaluateGa(m4.getGav()).getArtifactId())
                     .isEqualTo("tree-module-4");
         }
     }
@@ -251,7 +250,7 @@ public class MavenSourceTreeTest {
 
         final Predicate<Profile> profiles = ActiveProfiles.of();
         final Ga m1 = new Ga("org.srcdeps.tree-1", "tree-module-1");
-        final SourceTreeExpressionEvaluator evaluator = t.new SourceTreeExpressionEvaluator(profiles);
+        final ExpressionEvaluator evaluator = t.getExpressionEvaluator(profiles);
         assertThat(
                 t.collectOwnDependencies(m1, profiles).stream()
                         .map(dep -> evaluator.evaluateGa(dep).toString()))
@@ -411,7 +410,7 @@ public class MavenSourceTreeTest {
                         "org.srcdeps.tree-1:declared-parent", "org.srcdeps.tree-1:tree-plugin")
                 .stream().map(Ga::of).collect(Collectors.toCollection(LinkedHashSet::new)), expandedIncludes);
 
-        SourceTreeExpressionEvaluator evaluator = t.new SourceTreeExpressionEvaluator(profileSelector);
+        ExpressionEvaluator evaluator = t.getExpressionEvaluator(profileSelector);
         final Map<String, Set<Path>> removeChildPaths = t.unlinkModules(expandedIncludes, t.getRootModule(),
                 new LinkedHashMap<String, Set<Path>>(), profileSelector, evaluator);
         Assertions.assertEquals(1, removeChildPaths.size());
