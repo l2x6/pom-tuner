@@ -34,9 +34,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.MavenSourceTree.ActiveProfiles;
 import org.l2x6.pom.tuner.MavenSourceTree.Builder;
-import org.l2x6.pom.tuner.MavenSourceTree.Module;
-import org.l2x6.pom.tuner.MavenSourceTree.Module.Profile;
-import org.l2x6.pom.tuner.MavenSourceTree.Module.Profile.PropertyBuilder;
 import org.l2x6.pom.tuner.MavenSourceTree.SourceTreeExpressionEvaluator;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
 import org.l2x6.pom.tuner.model.Dependency;
@@ -45,6 +42,9 @@ import org.l2x6.pom.tuner.model.Expression.NoSuchPropertyException;
 import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.model.GavExpression;
+import org.l2x6.pom.tuner.model.Module;
+import org.l2x6.pom.tuner.model.Profile;
+import org.l2x6.pom.tuner.model.Profile.PropertyBuilder;
 import org.l2x6.pom.tuner.shell.BadExitCodeException;
 import org.l2x6.pom.tuner.shell.BuildException;
 import org.l2x6.pom.tuner.shell.CommandTimeoutException;
@@ -281,103 +281,105 @@ public class MavenSourceTreeTest {
 
         final Module.Builder parent = b.modulesByGa.get(Ga.of("org.srcdeps.tree-1:tree-parent"));
         Assertions.assertTrue(b.modulesByPath.get("pom.xml") == parent);
-        Assertions.assertEquals("pom.xml", parent.pomPath);
+        Assertions.assertEquals("pom.xml", parent.getPomPath());
         final GavExpression treeParentGav = moduleGae("org.srcdeps.tree-1:tree-parent:0.0.1");
-        Assertions.assertEquals(treeParentGav, parent.moduleGav.build());
-        Assertions.assertEquals(moduleGae("org.srcdeps.external:external-parent:1.2.3"), parent.parentGav.build());
+        Assertions.assertEquals(treeParentGav, parent.getModuleGav().build());
+        Assertions.assertEquals(moduleGae("org.srcdeps.external:external-parent:1.2.3"), parent.getParentGav().build());
 
         Assertions.assertEquals(new LinkedHashSet<String>(Arrays.asList("module-1/pom.xml", "module-2/pom.xml",
                 "module-3/pom.xml", "module-4/pom.xml", "module-6/pom.xml", "module-7/pom.xml", "plugin/pom.xml",
-                "proper-parent/pom.xml", "declared-parent/pom.xml")), parent.profiles.get(0).children);
-        Assertions.assertEquals(Collections.emptyList(), parent.profiles.get(0).dependencies.stream()
+                "proper-parent/pom.xml", "declared-parent/pom.xml")), parent.getProfiles().get(0).getChildren());
+        Assertions.assertEquals(Collections.emptyList(), parent.getProfiles().get(0).getDependencies().stream()
                 .map(bu -> bu.build().toString()).collect(Collectors.toList()));
         Assertions.assertEquals(//
                 props(new ExpressionEvaluator.ConstantOnlyExpressionEvaluator().evaluateGa(treeParentGav), "prop1",
                         "val-parent").entrySet(), //
-                parent.profiles.get(0).properties.stream().map(PropertyBuilder::build)
+                parent.getProfiles().get(0).getProperties().stream().map(PropertyBuilder::build)
                         .collect(Collectors.toCollection(LinkedHashSet::new)));
 
         {
             final Module.Builder properParent = b.modulesByGa.get(Ga.of("org.srcdeps.tree-1:proper-parent"));
             Assertions.assertTrue(b.modulesByPath.get("proper-parent/pom.xml") == properParent);
-            Assertions.assertEquals("proper-parent/pom.xml", properParent.pomPath);
+            Assertions.assertEquals("proper-parent/pom.xml", properParent.getPomPath());
             GavExpression gav = moduleGae("org.srcdeps.tree-1:proper-parent:0.0.1");
-            Assertions.assertEquals(gav, properParent.moduleGav.build());
-            Assertions.assertEquals(treeParentGav, properParent.parentGav.build());
+            Assertions.assertEquals(gav, properParent.getModuleGav().build());
+            Assertions.assertEquals(treeParentGav, properParent.getParentGav().build());
             Assertions.assertEquals(new LinkedHashSet<String>(Arrays.asList("proper-parent/module-5/pom.xml")),
-                    properParent.profiles.get(0).children);
-            Assertions.assertEquals(Collections.emptyList(), properParent.profiles.get(0).dependencies.stream()
+                    properParent.getProfiles().get(0).getChildren());
+            Assertions.assertEquals(Collections.emptyList(), properParent.getProfiles().get(0).getDependencies().stream()
                     .map(bu -> bu.build().toString()).collect(Collectors.toList()));
             Assertions.assertEquals(//
                     props(new ExpressionEvaluator.ConstantOnlyExpressionEvaluator().evaluateGa(gav), "prop1",
                             "val-proper-parent").entrySet(), //
-                    properParent.profiles.get(0).properties.stream().map(PropertyBuilder::build)
+                    properParent.getProfiles().get(0).getProperties().stream().map(PropertyBuilder::build)
                             .collect(Collectors.toCollection(LinkedHashSet::new)));
         }
 
         {
             final Module.Builder m1 = b.modulesByGa.get(Ga.of("org.srcdeps.tree-1:tree-module-1"));
             Assertions.assertTrue(b.modulesByPath.get("module-1/pom.xml") == m1);
-            Assertions.assertEquals("module-1/pom.xml", m1.pomPath);
-            Assertions.assertEquals(moduleGae("org.srcdeps.tree-1:tree-module-1:0.0.1"), m1.moduleGav.build());
-            Assertions.assertEquals(treeParentGav, m1.parentGav.build());
-            Assertions.assertEquals(Arrays.asList("org.srcdeps.external:artifact-3:1.2.3"), m1.profiles.get(0).dependencies
-                    .stream().map(bu -> bu.build().toString()).collect(Collectors.toList()));
-            Assertions.assertEquals(Collections.emptySet(), m1.profiles.get(0).children);
+            Assertions.assertEquals("module-1/pom.xml", m1.getPomPath());
+            Assertions.assertEquals(moduleGae("org.srcdeps.tree-1:tree-module-1:0.0.1"), m1.getModuleGav().build());
+            Assertions.assertEquals(treeParentGav, m1.getParentGav().build());
+            Assertions.assertEquals(Arrays.asList("org.srcdeps.external:artifact-3:1.2.3"),
+                    m1.getProfiles().get(0).getDependencies()
+                            .stream().map(bu -> bu.build().toString()).collect(Collectors.toList()));
+            Assertions.assertEquals(Collections.emptySet(), m1.getProfiles().get(0).getChildren());
         }
 
         {
             final Module.Builder m2 = b.modulesByGa.get(Ga.of("org.srcdeps.tree-1:tree-module-2"));
             Assertions.assertTrue(b.modulesByPath.get("module-2/pom.xml") == m2);
-            Assertions.assertEquals("module-2/pom.xml", m2.pomPath);
-            Assertions.assertEquals(moduleGae("org.srcdeps.tree-1:tree-module-2:0.0.1"), m2.moduleGav.build());
-            Assertions.assertEquals(treeParentGav, m2.parentGav.build());
+            Assertions.assertEquals("module-2/pom.xml", m2.getPomPath());
+            Assertions.assertEquals(moduleGae("org.srcdeps.tree-1:tree-module-2:0.0.1"), m2.getModuleGav().build());
+            Assertions.assertEquals(treeParentGav, m2.getParentGav().build());
             Assertions.assertEquals(
                     Arrays.asList("org.srcdeps.tree-1:tree-module-4:0.0.1", "org.srcdeps.tree-1:tree-module-7:0.0.1",
                             "org.srcdeps.tree-1:tree-module-8:0.0.1", "org.srcdeps.external:artifact-4:1.2.3"),
-                    m2.profiles.get(0).dependencies.stream().map(bu -> bu.build().toString())
+                    m2.getProfiles().get(0).getDependencies().stream().map(bu -> bu.build().toString())
                             .collect(Collectors.toList()));
-            Assertions.assertEquals(Collections.emptySet(), m2.profiles.get(0).children);
+            Assertions.assertEquals(Collections.emptySet(), m2.getProfiles().get(0).getChildren());
         }
 
         {
             final Module.Builder m3 = b.modulesByGa.get(Ga.of("org.srcdeps.tree-1:tree-module-3"));
             Assertions.assertTrue(b.modulesByPath.get("module-3/pom.xml") == m3);
-            Assertions.assertEquals("module-3/pom.xml", m3.pomPath);
-            Assertions.assertEquals(moduleGae("org.srcdeps.tree-1:tree-module-3:0.0.1"), m3.moduleGav.build());
-            Assertions.assertEquals(treeParentGav, m3.parentGav.build());
-            Assertions.assertEquals(Arrays.asList("org.srcdeps.external:artifact-1:1.2.3"), m3.profiles.get(0).dependencies
-                    .stream().map(bu -> bu.build().toString()).collect(Collectors.toList()));
-            Assertions.assertEquals(Collections.emptySet(), m3.profiles.get(0).children);
+            Assertions.assertEquals("module-3/pom.xml", m3.getPomPath());
+            Assertions.assertEquals(moduleGae("org.srcdeps.tree-1:tree-module-3:0.0.1"), m3.getModuleGav().build());
+            Assertions.assertEquals(treeParentGav, m3.getParentGav().build());
+            Assertions.assertEquals(Arrays.asList("org.srcdeps.external:artifact-1:1.2.3"),
+                    m3.getProfiles().get(0).getDependencies()
+                            .stream().map(bu -> bu.build().toString()).collect(Collectors.toList()));
+            Assertions.assertEquals(Collections.emptySet(), m3.getProfiles().get(0).getChildren());
         }
 
         {
             final Module.Builder m4 = b.modulesByGa.get(Ga.of("org.srcdeps.tree-1:tree-module-4"));
             Assertions.assertTrue(b.modulesByPath.get("module-4/pom.xml") == m4);
-            Assertions.assertEquals("module-4/pom.xml", m4.pomPath);
-            Assertions.assertEquals(moduleGae("org.srcdeps.tree-1:tree-module-4:0.0.1"), m4.moduleGav.build());
-            Assertions.assertEquals(treeParentGav, m4.parentGav.build());
+            Assertions.assertEquals("module-4/pom.xml", m4.getPomPath());
+            Assertions.assertEquals(moduleGae("org.srcdeps.tree-1:tree-module-4:0.0.1"), m4.getModuleGav().build());
+            Assertions.assertEquals(treeParentGav, m4.getParentGav().build());
             Assertions.assertEquals(
                     Arrays.asList("org.srcdeps.tree-1:tree-module-1:0.0.1", "org.srcdeps.tree-1:tree-module-5:0.0.1"),
-                    m4.profiles.get(0).dependencies.stream().map(bu -> bu.build().toString())
+                    m4.getProfiles().get(0).getDependencies().stream().map(bu -> bu.build().toString())
                             .collect(Collectors.toList()));
-            Assertions.assertEquals(Collections.emptySet(), m4.profiles.get(0).children);
+            Assertions.assertEquals(Collections.emptySet(), m4.getProfiles().get(0).getChildren());
         }
 
         {
             final Module.Builder m5 = b.modulesByGa.get(Ga.of("org.srcdeps.tree-1:tree-module-5"));
             Assertions.assertTrue(b.modulesByPath.get("proper-parent/module-5/pom.xml") == m5);
-            Assertions.assertEquals("proper-parent/module-5/pom.xml", m5.pomPath);
+            Assertions.assertEquals("proper-parent/module-5/pom.xml", m5.getPomPath());
             GavExpression gav = moduleGae("org.srcdeps.tree-1:tree-module-5:0.0.1");
-            Assertions.assertEquals(gav, m5.moduleGav.build());
-            Assertions.assertEquals(treeParentGav, m5.parentGav.build());
-            Assertions.assertEquals(Collections.emptyList(), m5.profiles.get(0).dependencies.stream()
+            Assertions.assertEquals(gav, m5.getModuleGav().build());
+            Assertions.assertEquals(treeParentGav, m5.getParentGav().build());
+            Assertions.assertEquals(Collections.emptyList(), m5.getProfiles().get(0).getDependencies().stream()
                     .map(bu -> bu.build().toString()).collect(Collectors.toList()));
-            Assertions.assertEquals(Collections.emptySet(), m5.profiles.get(0).children);
+            Assertions.assertEquals(Collections.emptySet(), m5.getProfiles().get(0).getChildren());
             Assertions.assertEquals(//
                     props(new ExpressionEvaluator.ConstantOnlyExpressionEvaluator().evaluateGa(gav), "prop1", "val-5")
                             .entrySet(), //
-                    m5.profiles.get(0).properties.stream().map(PropertyBuilder::build)
+                    m5.getProfiles().get(0).getProperties().stream().map(PropertyBuilder::build)
                             .collect(Collectors.toCollection(LinkedHashSet::new)));
         }
 
