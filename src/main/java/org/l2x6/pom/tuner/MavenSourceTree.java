@@ -385,7 +385,7 @@ public class MavenSourceTree {
         return "/*[local-name()='project']" + (id == null ? ""
                 : "/*[local-name()='profiles']/*[local-name()='profile' and *[local-name()='id' and text()='" + id
                         + "']]")
-                + PomTransformer.anyNs(elements);
+                + PomTunerUtils.anyNs(elements);
     }
 
     private final Charset encoding;
@@ -543,7 +543,7 @@ public class MavenSourceTree {
                     }
                     if (!pluginGav.getDependencies().isEmpty()) {
                         final String prefix = xPathProfile + xPathDependency("plugin", pluginGav)
-                                + PomTransformer.anyNs("dependencies");
+                                + PomTunerUtils.anyNs("dependencies");
                         for (GavExpression dep : pluginGav.getDependencies()) {
                             if (dep.getVersion() != null
                                     && modulesByGa.containsKey(evaluator.evaluateGa(dep))) {
@@ -799,7 +799,7 @@ public class MavenSourceTree {
             final Expression moduleVersion = module.getGav().getVersion();
             if (parentGav == null || !moduleVersion.equals(module.getParentGav().getVersion())) {
                 /* explicitly defined version */
-                edit(newVersion, isProfileActive, edits, module, moduleVersion, PomTransformer.anyNs("project", "version"),
+                edit(newVersion, isProfileActive, edits, module, moduleVersion, PomTunerUtils.anyNs("project", "version"),
                         evaluator);
             }
 
@@ -807,7 +807,7 @@ public class MavenSourceTree {
             if (parentGav != null && modulesByGa.containsKey(evaluator.evaluateGa(parentGav))) {
                 final Expression parentVersion = parentGav.getVersion();
                 edit(newVersion, isProfileActive, edits, module, parentVersion,
-                        PomTransformer.anyNs("project", "parent", "version"), evaluator);
+                        PomTunerUtils.anyNs("project", "parent", "version"), evaluator);
             }
 
             for (Profile profile : module.getProfiles()) {
