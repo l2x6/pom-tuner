@@ -43,6 +43,8 @@ import org.l2x6.pom.tuner.MavenSourceTree.Module;
 import org.l2x6.pom.tuner.MavenSourceTree.Module.Profile;
 import org.l2x6.pom.tuner.MavenSourceTree.Module.Profile.PropertyBuilder;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
+import org.l2x6.pom.tuner.model.Ga;
+import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.shell.BadExitCodeException;
 import org.l2x6.pom.tuner.shell.BuildException;
 import org.l2x6.pom.tuner.shell.CommandTimeoutException;

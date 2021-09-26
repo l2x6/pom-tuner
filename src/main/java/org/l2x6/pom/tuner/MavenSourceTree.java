@@ -61,6 +61,8 @@ import org.l2x6.pom.tuner.MavenSourceTree.GavExpression.PluginGavBuilder;
 import org.l2x6.pom.tuner.MavenSourceTree.Module.Profile;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
+import org.l2x6.pom.tuner.model.Ga;
+import org.l2x6.pom.tuner.model.Gav;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
