@@ -122,7 +122,7 @@ public class PomTransformer {
      * @param transformations the {@link Transformation}s to apply
      */
     public void transform(Collection<Transformation> transformations) {
-        LazyWriter lazyWriter = new LazyWriter();
+        LazyWriter lazyWriter = new LazyWriter(path, charset);
         transform(transformations, simpleElementWhitespace, path, lazyWriter::read, lazyWriter::write);
     }
 
@@ -246,21 +246,52 @@ public class PomTransformer {
 
     }
 
-    public static class WrappedNode<T extends Node> {
+    /**
+     * A {@link Gavtcs} storing the associated {@link ContainerElement} from the {@code pom.xml} file.
+     * This is useful for DOM modifications.
+     */
+    public static class NodeGavtcs extends Gavtcs {
+        private final ContainerElement node;
+
+        NodeGavtcs(String groupId, String artifactId, String version, String type, String classifier, String scope,
+                Collection<Ga> exclusions, ContainerElement node) {
+            super(groupId, artifactId, version, type, classifier, scope, exclusions);
+            this.node = node;
+        }
+
+        /**
+         * @return the associated {@link ContainerElement}.
+         */
+        public ContainerElement getNode() {
+            return node;
+        }
+    }
+
+    /**
+     * An XML element in a {@code pom.xml} file that possibly has child {@link ContainerElement}s.
+     */
+    public static class ContainerElement {
+        private final Predicate<Node> ELEMENT_FILTER = n -> n.getNodeType() == Node.ELEMENT_NODE;
+        protected Text lastIndent;
         protected final TransformationContext context;
-        protected final T node;
+        protected final Element node;
         protected final int indentLevel;
 
-        public WrappedNode(TransformationContext context, T node, int indentLevel) {
+        public ContainerElement(TransformationContext context, Element node, int indentLevel) {
             this.context = context;
             this.node = node;
             this.indentLevel = indentLevel;
         }
 
-        public ContainerElement asContainerElement() {
-            return new ContainerElement(context, (Element) node, null, indentLevel);
+        public ContainerElement(TransformationContext context, Element containerElement, Text lastIndent, int indentLevel) {
+            this(context, containerElement, indentLevel);
+            this.lastIndent = lastIndent;
         }
 
+        /**
+         * @return a {@link Comment} preceding this {@link ContainerElement} or {@code null} if no comment precedes this
+         *         {@link ContainerElement}
+         */
         public Comment previousSiblingCommentNode() {
             Node currentNode = this.node;
             while (true) {
@@ -280,6 +311,11 @@ public class PomTransformer {
             }
         }
 
+        /**
+         * @return a DOM {@link Node} to use as a second argument for {@link Node#insertBefore(Node, Node)} when
+         *         inserting before {@link #node}; this can be either {@link #node} itself or a comment or an
+         *         indentation whitespace preceding {@link #node}
+         */
         public Node previousSiblingInsertionRefNode() {
             Node currentNode = this.node;
             while (true) {
@@ -303,6 +339,12 @@ public class PomTransformer {
             }
         }
 
+        /**
+         * Remove {@link #node} from the underlying DOM, optionally with preceding comments and preceding whitespace
+         *
+         * @param removePrecedingComments
+         * @param removePrecedingWhitespace
+         */
         public void remove(boolean removePrecedingComments, boolean removePrecedingWhitespace) {
             if (removePrecedingComments || removePrecedingWhitespace) {
                 Node prevSibling = null;
@@ -319,6 +361,15 @@ public class PomTransformer {
             }
         }
 
+        /**
+         * Add a properly indented comment before {@link #node}.
+         * Note that this method does not add any whitespace around the specified comment text.
+         * So of you want to add {@code <!-- my comment -->}, you need to call this as
+         * {@code prependComment(" my comment ")}.
+         *
+         * @param  comment the text of the comment
+         * @return         the newly created {@link Comment} node
+         */
         public Comment prependComment(String comment) {
             final Node refNode = previousSiblingInsertionRefNode();
             Comment result = node.getOwnerDocument().createComment(comment);
@@ -328,6 +379,29 @@ public class PomTransformer {
             return result;
         }
 
+        /**
+         * Add a properly indented comment before {@link #node} and return it if a comment with the given
+         * {@code comment} text does not precede {@link #node}; otherwise return the preceding {@link Comment} node.
+         *
+         * Note that this method does not add any whitespace around the specified comment text.
+         * So of you want to add {@code <!-- my comment -->}, you need to call this as
+         * {@code prependComment(" my comment ")}.
+         *
+         * @param  comment the text of the comment
+         * @return         an existing or the newly created {@link Comment} node
+         */
+        public Comment prependCommentIfNeeded(String comment) {
+            Comment precedingComment = previousSiblingCommentNode();
+            if (precedingComment == null || !comment.equals(precedingComment.getTextContent())) {
+                return prependComment(comment);
+            }
+            return precedingComment;
+        }
+
+        /**
+         * @return a comment node following after {@link #node} (ignoring any whitespace in between) or {@code null} no
+         *         comment follows after {@link #node}
+         */
         public Comment nextSiblingCommentNode() {
             Node currentNode = this.node;
             while (true) {
@@ -347,52 +421,34 @@ public class PomTransformer {
             }
         }
 
-        public T getNode() {
+        /**
+         * @return the associated DOM {@link Node}
+         */
+        public Element getNode() {
             return node;
-        }
-    }
-
-    /**
-     * A {@link Gavtcs} storing the associated {@link ContainerElement} from the {@code pom.xml} file
-     * which can be used for modifications.
-     */
-    public static class NodeGavtcs extends Gavtcs {
-        private final ContainerElement node;
-
-        NodeGavtcs(String groupId, String artifactId, String version, String type, String classifier, String scope,
-                Collection<Ga> exclusions, ContainerElement node) {
-            super(groupId, artifactId, version, type, classifier, scope, exclusions);
-            this.node = node;
         }
 
         /**
-         * @return the associated {@link ContainerElement}.
+         * @return an {@link Iterable} containing child elements of this {@link ContainerElement}
          */
-        public ContainerElement getNode() {
-            return node;
-        }
-    }
-
-    public static class ContainerElement extends WrappedNode<Element> {
-        private final Predicate<Node> ELEMENT_FILTER = n -> n.getNodeType() == Node.ELEMENT_NODE;
-        protected Text lastIndent;
-
-        public ContainerElement(TransformationContext context, Element containerElement, Text lastIndent, int indentLevel) {
-            super(context, containerElement, indentLevel);
-            this.lastIndent = lastIndent;
-        }
-
-        public Iterable<WrappedNode<Element>> childElements() {
-            return () -> new NodeIterator<WrappedNode<Element>>(
+        public Iterable<ContainerElement> childElements() {
+            return () -> new NodeIterator<ContainerElement>(
                     node.getChildNodes(),
                     ELEMENT_FILTER,
-                    n -> new WrappedNode<Element>(context, (Element) n, indentLevel + 1));
+                    n -> new ContainerElement(context, (Element) n, indentLevel + 1));
         }
 
-        public Stream<WrappedNode<Element>> childElementsStream() {
+        /**
+         * @return a {@link Stream} containing child elements of this {@link ContainerElement}
+         */
+        public Stream<ContainerElement> childElementsStream() {
             return StreamSupport.stream(childElements().spliterator(), false);
         }
 
+        /**
+         * @return an existing whitespace node preceding the closing tag of {@link #node} or a newly added whitespace
+         *         node preceding the closing tag of {@link #node}
+         */
         public Node getOrAddLastIndent() {
             if (lastIndent == null) {
                 Node ws = node.getLastChild();
@@ -405,10 +461,25 @@ public class PomTransformer {
             return lastIndent;
         }
 
+        /**
+         * An equivalent of {@code addChildContainerElement(elementName, null, false, false)}
+         *
+         * @param  elementName the name of the DOM {@link Element} to add
+         * @return             a new {@link ContainerElement}
+         */
         public ContainerElement addChildContainerElement(String elementName) {
             return addChildContainerElement(elementName, null, false, false);
         }
 
+        /**
+         * Add a child {@link ContainerElement} and return it.
+         *
+         * @param  elementName     the name of the {@link Element} to add
+         * @param  refNode         a node to use as the second argument of {@link Node#insertBefore(Node, Node)}
+         * @param  emptyLineBefore if {@code true} and empty line will be added before the newly created {@link Element}
+         * @param  emptyLineAfter  if {@code true} and empty line will be added after the newly created {@link Element}
+         * @return                 the newly created {@link ContainerElement}
+         */
         public ContainerElement addChildContainerElement(
                 String elementName,
                 Node refNode,
@@ -446,11 +517,16 @@ public class PomTransformer {
             return new ContainerElement(context, result, newLastIndent, indentLevel + 1);
         }
 
+        /**
+         * @param  elementName the name of an element to search for
+         * @return             an Optional containing the first child with the given {@code elementName} or an empty
+         *                     {@link Optional} if no such child exists
+         */
         public Optional<ContainerElement> getChildContainerElement(String elementName) {
-            for (WrappedNode<Element> child : childElements()) {
+            for (ContainerElement child : childElements()) {
                 if (child.node.getNodeName().equals(elementName)) {
                     /* No need to insert, return existing */
-                    return Optional.of(child.asContainerElement());
+                    return Optional.of(child);
                 }
             }
             return Optional.empty();
@@ -462,10 +538,10 @@ public class PomTransformer {
          * @return an existing or newly created {@link Element} with the given {@code elementName}
          */
         public ContainerElement getOrAddChildContainerElement(String elementName) {
-            for (WrappedNode<Element> child : childElements()) {
+            for (ContainerElement child : childElements()) {
                 if (child.node.getNodeName().equals(elementName)) {
                     /* No need to insert, return existing */
-                    return child.asContainerElement();
+                    return child;
                 }
             }
 
@@ -487,28 +563,55 @@ public class PomTransformer {
                     indentLevel + 1);
         }
 
-        public void addChildTextElement(String nodeName, final String text) {
-            addChildTextElement(nodeName, text, getOrAddLastIndent());
+        /**
+         * An equivalent of {@code addChildTextElement(elementName, text, getOrAddLastIndent())}
+         *
+         * @param elementName the name of the {@link Element} to add
+         * @param text        the text content of the newly added {@link Element}
+         */
+        public void addChildTextElement(String elementName, final String text) {
+            addChildTextElement(elementName, text, getOrAddLastIndent());
         }
 
-        public void addChildTextElement(String nodeName, final String text, Node refNode) {
+        /**
+         * Add a new {@link Element} under {@link #node} and before {@code refNode} with the given {@code elementName}
+         * and {@code text} content.
+         *
+         * @param elementName the name of the {@link Element} to add
+         * @param text        the text content of the newly added {@link Element}
+         * @param refNode     a {@link Node} before which the new {@link Element} should be added
+         */
+        public void addChildTextElement(String elementName, final String text, Node refNode) {
             if (text != null) {
                 node.insertBefore(context.indent(indentLevel + 1), refNode);
-                final Element result1 = context.document.createElement(nodeName);
+                final Element result1 = context.document.createElement(elementName);
                 result1.appendChild(context.document.createTextNode(text));
                 final Node result = result1;
                 node.insertBefore(result, refNode);
             }
         }
 
-        public void addChildElement(String nodeName, Node refNode) {
+        /**
+         * Add a new {@link Element} under {@link #node} and before {@code refNode} with the given {@code elementName}.
+         *
+         * @param elementName the name of the {@link Element} to add
+         * @param refNode     a {@link Node} before which the new {@link Element} should be added
+         */
+        public void addChildElement(String elementName, Node refNode) {
             node.insertBefore(context.indent(indentLevel + 1), refNode);
-            final Element result = context.document.createElement(nodeName);
+            final Element result = context.document.createElement(elementName);
             node.insertBefore(result, refNode);
         }
 
+        /**
+         * Find an {@link Element} under {@link #node} having the given {@code elementName} or create a new one and set
+         * the given {@code value} as its text content.
+         *
+         * @param elementName the name of the {@link Element} to add
+         * @param value       the text content of the newly added {@link Element}
+         */
         public void addOrSetChildTextElement(String name, String value) {
-            for (WrappedNode<Element> prop : childElements()) {
+            for (ContainerElement prop : childElements()) {
                 if (prop.node.getNodeName().equals(name)) {
                     prop.node.setTextContent(value);
                     return;
@@ -517,10 +620,19 @@ public class PomTransformer {
             addChildTextElement(name, value, getOrAddLastIndent());
         }
 
+        /**
+         * An equivalent of {@code addFragment(fragment, getOrAddLastIndent())}.
+         *
+         * @param fragment the {@link DocumentFragment} to add
+         */
         public void addFragment(DocumentFragment fragment) {
             addFragment(fragment, getOrAddLastIndent());
         }
 
+        /**
+         * @param fragment the {@link DocumentFragment} to add
+         * @param refNode  a {@link Node} before which the {@link DocumentFragment} should be added
+         */
         public void addFragment(DocumentFragment fragment, Node refNode) {
             final NodeList children = fragment.getChildNodes();
             for (int i = 0; i < children.getLength(); i++) {
@@ -530,10 +642,22 @@ public class PomTransformer {
             }
         }
 
+        /**
+         * A equivalent of {@code addGavtcs(gavtcs, getOrAddLastIndent())}
+         *
+         * @param gavtcs the {@link Gavtcs} to add
+         */
         public void addGavtcs(Gavtcs gavtcs) {
             addGavtcs(gavtcs, getOrAddLastIndent());
         }
 
+        /**
+         * Add a new {@code <dependency>} node under {@link #node} with {@code <groupId>}, {@code <artifactId>}, etc.
+         * set to value taken from the specified {@link Gavtcs}
+         *
+         * @param gavtcs  the GAV coordinates to use when creating the new {@code <dependency>}
+         * @param refNode a {@link Node} before which the new {@link Element} should be added
+         */
         public void addGavtcs(Gavtcs gavtcs, Node refNode) {
             final ContainerElement dep = addChildContainerElement("dependency", refNode, false, false);
             dep.addChildTextElement("groupId", gavtcs.getGroupId());
@@ -555,6 +679,12 @@ public class PomTransformer {
             }
         }
 
+        /**
+         * Transform this {@link ContainerElement} to a {@link NodeGavtcs} assuming that it has {@code <groupId>},
+         * {@code <artifactId>}, etc. children
+         *
+         * @return a new {@link NodeGavtcs}
+         */
         public NodeGavtcs asGavtcs() {
             String groupId = null;
             String artifactId = null;
@@ -563,7 +693,7 @@ public class PomTransformer {
             String classifier = null;
             String scope = null;
             List<Ga> exclusions = null;
-            for (WrappedNode<Element> depChild : childElements()) {
+            for (ContainerElement depChild : childElements()) {
                 switch (depChild.node.getNodeName()) {
                 case "groupId":
                     groupId = depChild.node.getTextContent();
@@ -585,10 +715,10 @@ public class PomTransformer {
                     break;
                 case "exclusions":
                     exclusions = new ArrayList<>();
-                    for (WrappedNode<Element> excl : depChild.asContainerElement().childElements()) {
+                    for (ContainerElement excl : depChild.childElements()) {
                         String exclGroupId = null;
                         String exclArtifactId = null;
-                        for (WrappedNode<Element> exclChild : excl.asContainerElement().childElements()) {
+                        for (ContainerElement exclChild : excl.childElements()) {
                             switch (exclChild.node.getNodeName()) {
                             case "groupId":
                                 exclGroupId = exclChild.node.getTextContent();
@@ -669,18 +799,20 @@ public class PomTransformer {
             }
 
         }
-
-        public Comment ensureCommentPrepended(String comment) {
-            Comment precedingComment = previousSiblingCommentNode();
-            if (precedingComment == null || !comment.equals(precedingComment.getTextContent())) {
-                return prependComment(comment);
-            }
-            return precedingComment;
-        }
     }
 
-    class LazyWriter {
+    /**
+     * Writes to {@link #path} only if the content is different from the content read by {@link #read()}
+     */
+    static class LazyWriter {
         private String oldContent;
+        private final Path path;
+        private final Charset charset;
+
+        LazyWriter(Path path, Charset charset) {
+            this.path = path;
+            this.charset = charset;
+        }
 
         String read() {
             try {
@@ -703,7 +835,7 @@ public class PomTransformer {
     }
 
     /**
-     * A context of a set of {@link Transformation}s.
+     * A context of a set of {@link Transformation} operations.
      */
     public static class TransformationContext {
         private final Path pomXmlPath;
@@ -714,7 +846,7 @@ public class PomTransformer {
         private static volatile Map<String, ElementOrderEntry> elementOrdering;
         private static final Object elementOrderingLock = new Object();
 
-        public TransformationContext(Path pomXmlPath, Document document, String indentationString, XPath xPath) {
+        TransformationContext(Path pomXmlPath, Document document, String indentationString, XPath xPath) {
             super();
             this.pomXmlPath = pomXmlPath;
             this.document = document;
@@ -786,11 +918,11 @@ public class PomTransformer {
             Node refNode = null;
             boolean emptyLineBefore = false;
             boolean emptyLineAfter = false;
-            for (WrappedNode<Element> projectChild : project.childElements()) {
+            for (ContainerElement projectChild : project.childElements()) {
                 final String projectChildName = projectChild.node.getNodeName();
                 if (projectChildName.equals(elementName)) {
                     /* No need to insert, return existing */
-                    return projectChild.asContainerElement();
+                    return projectChild;
                 }
                 if (refNode == null) {
                     final ElementOrderEntry projectChildEntry = elementOrdering.get(projectChildName);
@@ -972,7 +1104,7 @@ public class PomTransformer {
         public Set<NodeGavtcs> getDependencies() {
             return getContainerElement("project", "dependencies")
                     .map(deps -> deps.childElementsStream()
-                            .map(dep -> dep.asContainerElement().asGavtcs())
+                            .map(dep -> dep.asGavtcs())
                             .collect(Collectors.toCollection(() -> (Set<NodeGavtcs>) new LinkedHashSet<NodeGavtcs>())))
                     .orElse(Collections.emptySet());
         }
@@ -980,7 +1112,7 @@ public class PomTransformer {
         public Set<NodeGavtcs> getManagedDependencies() {
             return getContainerElement("project", "dependencyManagement", "dependencies")
                     .map(deps -> deps.childElementsStream()
-                            .map(dep -> dep.asContainerElement().asGavtcs())
+                            .map(dep -> dep.asGavtcs())
                             .collect(Collectors.toCollection(() -> (Set<NodeGavtcs>) new LinkedHashSet<NodeGavtcs>())))
                     .orElse(Collections.emptySet());
         }
@@ -988,7 +1120,6 @@ public class PomTransformer {
         public Optional<ContainerElement> findDependency(Gavtcs gavtcs) {
             return getContainerElement("project", "dependencies")
                     .map(depsNode -> depsNode.childElementsStream()
-                            .map(WrappedNode::asContainerElement)
                             .filter(depNode -> depNode.asGavtcs().equals(gavtcs))
                             .findFirst()
                             .orElse(null));
@@ -998,7 +1129,7 @@ public class PomTransformer {
                 boolean removePrecedingWhitespace) {
             getContainerElement("project", "dependencies")
                     .ifPresent(deps -> deps.childElementsStream()
-                            .filter(wrappedDepNode -> wrappedDepNode.asContainerElement().asGavtcs().equals(removedDependency))
+                            .filter(wrappedDepNode -> wrappedDepNode.asGavtcs().equals(removedDependency))
                             .findFirst()
                             .ifPresent(wrappedDepNode -> wrappedDepNode.remove(removePrecedingComments,
                                     removePrecedingWhitespace)));
@@ -1008,7 +1139,7 @@ public class PomTransformer {
                 boolean removePrecedingWhitespace) {
             getContainerElement("project", "dependencyManagement", "dependencies")
                     .ifPresent(deps -> deps.childElementsStream()
-                            .filter(wrappedDepNode -> wrappedDepNode.asContainerElement().asGavtcs().equals(removedDependency))
+                            .filter(wrappedDepNode -> wrappedDepNode.asGavtcs().equals(removedDependency))
                             .findFirst()
                             .ifPresent(wrappedDepNode -> wrappedDepNode.remove(removePrecedingComments,
                                     removePrecedingWhitespace)));
@@ -1017,8 +1148,8 @@ public class PomTransformer {
         public void addDependencyIfNeeded(Gavtcs gavtcs, Comparator<Gavtcs> comparator) {
             final ContainerElement deps = getOrAddContainerElement("dependencies");
             Node refNode = null;
-            for (WrappedNode<Element> dep : deps.childElements()) {
-                final Gavtcs depGavtcs = dep.asContainerElement().asGavtcs();
+            for (ContainerElement dep : deps.childElements()) {
+                final Gavtcs depGavtcs = dep.asGavtcs();
                 int comparison = comparator.compare(gavtcs, depGavtcs);
                 if (comparison == 0) {
                     /* the given gavtcs is available, no need to add it */
@@ -1038,7 +1169,7 @@ public class PomTransformer {
         public void addTextChildIfNeeded(ContainerElement parent, String nodeName, String nodeValue,
                 Comparator<String> comparator) {
             Node refNode = null;
-            for (WrappedNode<Element> child : parent.childElements()) {
+            for (ContainerElement child : parent.childElements()) {
                 int comparison = comparator.compare(nodeValue, child.getNode().getTextContent());
                 if (comparison == 0) {
                     /* the given gavtcs is available, no need to add it */
@@ -1242,11 +1373,10 @@ public class PomTransformer {
                                         "dependencyManagement/dependencies not found under profile '" + profileId + "' in "
                                                 + context.getPomXmlPath()));
 
-                for (WrappedNode<Element> child : dependencyManagementDeps.childElements()) {
-                    final ContainerElement dep = child.asContainerElement();
+                for (ContainerElement dep : dependencyManagementDeps.childElements()) {
                     final Ga ga = dep.asGavtcs().toGa();
                     if (gas.contains(ga)) {
-                        WrappedNode<Element> versionNode = dep.childElementsStream()
+                        ContainerElement versionNode = dep.childElementsStream()
                                 .filter(ch -> "version".equals(ch.getNode().getLocalName()))
                                 .findFirst()
                                 .orElseThrow(() -> new IllegalStateException(
@@ -1289,7 +1419,7 @@ public class PomTransformer {
                 if (initialComment != null && !newMappedDeps.isEmpty()) {
                     final Gavtcs firstMappedNode = newMappedDeps.iterator().next();
                     context.findDependency(firstMappedNode)
-                            .ifPresent(firstDepNode -> firstDepNode.ensureCommentPrepended(initialComment));
+                            .ifPresent(firstDepNode -> firstDepNode.prependCommentIfNeeded(initialComment));
                 }
 
             };
@@ -1322,7 +1452,7 @@ public class PomTransformer {
 
                 if (initialComment != null && firstSubsetNode != null) {
                     context.findDependency(firstSubsetNode)
-                            .ifPresent(firstDepNode -> firstDepNode.ensureCommentPrepended(initialComment));
+                            .ifPresent(firstDepNode -> firstDepNode.prependCommentIfNeeded(initialComment));
                 }
 
             };
@@ -1352,7 +1482,7 @@ public class PomTransformer {
                 context.getProfileParent(profileId)
                         .flatMap(profileParent -> profileParent.getChildContainerElement("modules"))
                         .ifPresent(modules -> {
-                            Iterator<WrappedNode<Element>> children = modules.childElements().iterator();
+                            Iterator<ContainerElement> children = modules.childElements().iterator();
                             while (children.hasNext()) {
                                 children.next().remove(removePrecedingComments, removePrecedingWhitespace);
                                 children = modules.childElements().iterator();
