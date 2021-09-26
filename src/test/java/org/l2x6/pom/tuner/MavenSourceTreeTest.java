@@ -35,14 +35,14 @@ import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.MavenSourceTree.ActiveProfiles;
 import org.l2x6.pom.tuner.MavenSourceTree.Builder;
 import org.l2x6.pom.tuner.MavenSourceTree.Dependency;
-import org.l2x6.pom.tuner.MavenSourceTree.Expression;
-import org.l2x6.pom.tuner.MavenSourceTree.Expression.Constant;
-import org.l2x6.pom.tuner.MavenSourceTree.Expression.NoSuchPropertyException;
 import org.l2x6.pom.tuner.MavenSourceTree.GavExpression;
 import org.l2x6.pom.tuner.MavenSourceTree.Module;
 import org.l2x6.pom.tuner.MavenSourceTree.Module.Profile;
 import org.l2x6.pom.tuner.MavenSourceTree.Module.Profile.PropertyBuilder;
+import org.l2x6.pom.tuner.MavenSourceTree.SourceTreeExpressionEvaluator;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
+import org.l2x6.pom.tuner.model.Expression;
+import org.l2x6.pom.tuner.model.Expression.NoSuchPropertyException;
 import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.shell.BadExitCodeException;
@@ -96,9 +96,8 @@ public class MavenSourceTreeTest {
         }
         Shell.execute(cmd.build()).assertSuccess();
         Assertions.assertEquals(expectedValue, output.toString().trim());
-
-        Assertions.assertEquals(expectedValue,
-                t.evaluate(Expression.of("${" + propertyName + "}", ga), ActiveProfiles.of(profiles)));
+        SourceTreeExpressionEvaluator evaluator = t.new SourceTreeExpressionEvaluator(ActiveProfiles.of(profiles));
+        Assertions.assertEquals(expectedValue, evaluator.evaluate(Expression.of("${" + propertyName + "}", ga)));
     }
 
     static GavExpression moduleGae(String gavString) {
@@ -150,13 +149,13 @@ public class MavenSourceTreeTest {
         final MavenSourceTree t = new Builder(root, StandardCharsets.UTF_8).pomXml(root.resolve("pom.xml")).build();
 
         final Module m8 = t.getModulesByGa().get(Ga.of("org.srcdeps.properties:module-1"));
-        Assertions.assertEquals(new Expression.Constant("val-1/main"),
+        Assertions.assertEquals(new Expression("val-1/main", new Ga("org.srcdeps.properties", "module-1")),
                 m8.findPropertyDefinition("prop1", ActiveProfiles.of()).getValue());
-        Assertions.assertEquals(new Expression.Constant("val-1/p1"),
+        Assertions.assertEquals(new Expression("val-1/p1", new Ga("org.srcdeps.properties", "module-1")),
                 m8.findPropertyDefinition("prop1", ActiveProfiles.of("p1")).getValue());
-        Assertions.assertEquals(new Expression.Constant("val-1/p2"),
+        Assertions.assertEquals(new Expression("val-1/p2", new Ga("org.srcdeps.properties", "module-1")),
                 m8.findPropertyDefinition("prop1", ActiveProfiles.of("p2")).getValue());
-        Assertions.assertEquals(new Expression.Constant("val-1/p2"),
+        Assertions.assertEquals(new Expression("val-1/p2", new Ga("org.srcdeps.properties", "module-1")),
                 m8.findPropertyDefinition("prop1", ActiveProfiles.of("p1", "p2")).getValue());
 
         final ShellCommand cmd = ShellCommand.builder() //
@@ -178,8 +177,8 @@ public class MavenSourceTreeTest {
         Assertions.assertEquals(3, t.getRootModule().getProfiles().get(0).getProperties().size());
 
         try {
-            t.evaluate(Expression.of("${non-existent}", Ga.of("org.srcdeps.properties:module-1")),
-                    ActiveProfiles.of());
+            t.new SourceTreeExpressionEvaluator(ActiveProfiles.of())
+                    .evaluate(Expression.of("${non-existent}", Ga.of("org.srcdeps.properties:module-1")));
             Assertions.fail("NoSuchPropertyException expected");
         } catch (NoSuchPropertyException expected) {
         }
@@ -211,9 +210,13 @@ public class MavenSourceTreeTest {
                 dep -> dep.getGroupId().toString().equals("org.srcdeps.tree-1")
                         && dep.getArtifactId().toString().equals("tree-module-5"));
         final Module m4 = t.getModulesByGa().get(Ga.of("org.srcdeps.tree-1:tree-module-4"));
+        final Ga m4Ga = new Ga("org.srcdeps.tree-1", "tree-module-4");
         Assertions.assertEquals(
-                new LinkedHashSet<>(Arrays.asList(new Dependency(new Constant("org.srcdeps.tree-1"),
-                        new Constant("tree-module-1"), new Constant("0.0.1"), "jar", "compile"))),
+                new LinkedHashSet<>(Arrays.asList(
+                        new Dependency(
+                                new Expression("org.srcdeps.tree-1", m4Ga),
+                                new Expression("tree-module-1", m4Ga),
+                                new Expression("0.0.1", m4Ga), "jar", "compile"))),
                 m4.getProfiles().get(0).getDependencies());
     }
 
@@ -226,13 +229,17 @@ public class MavenSourceTreeTest {
         {
             final Module m4 = t.getModuleByPath(relPath);
             org.assertj.core.api.Assertions.assertThat(m4).isNotNull();
-            org.assertj.core.api.Assertions.assertThat(m4.getGav().resolveGa(t, ActiveProfiles.of()).getArtifactId())
+            org.assertj.core.api.Assertions.assertThat(
+                    t.new SourceTreeExpressionEvaluator(ActiveProfiles.of()).evaluateGa(m4.getGav())
+                            .getArtifactId())
                     .isEqualTo("tree-module-4");
         }
         {
             final Module m4 = t.getModuleByPath(t.getRootDirectory().resolve(relPath));
             org.assertj.core.api.Assertions.assertThat(m4).isNotNull();
-            org.assertj.core.api.Assertions.assertThat(m4.getGav().resolveGa(t, ActiveProfiles.of()).getArtifactId())
+            org.assertj.core.api.Assertions
+                    .assertThat(
+                            t.new SourceTreeExpressionEvaluator(ActiveProfiles.of()).evaluateGa(m4.getGav()).getArtifactId())
                     .isEqualTo("tree-module-4");
         }
     }
@@ -244,20 +251,21 @@ public class MavenSourceTreeTest {
 
         final Predicate<Profile> profiles = ActiveProfiles.of();
         final Ga m1 = new Ga("org.srcdeps.tree-1", "tree-module-1");
+        final SourceTreeExpressionEvaluator evaluator = t.new SourceTreeExpressionEvaluator(profiles);
         assertThat(
                 t.collectOwnDependencies(m1, profiles).stream()
-                        .map(dep -> dep.resolveGa(t, profiles).toString()))
+                        .map(dep -> evaluator.evaluateGa(dep).toString()))
                                 .containsExactly("org.srcdeps.external:artifact-3");
 
         final Ga m8 = new Ga("org.srcdeps.tree-1", "tree-module-8");
         assertThat(
                 t.collectOwnDependencies(m8, profiles).stream()
-                        .map(dep -> dep.resolveGa(t, profiles).toString()))
+                        .map(dep -> evaluator.evaluateGa(dep).toString()))
                                 .containsExactly("org.srcdeps.tree-1:tree-module-1", "org.srcdeps.external:artifact-5");
 
         assertThat(
                 t.collectTransitiveDependencies(m8, profiles).stream()
-                        .map(dep -> dep.resolveGa(t, profiles).toString()))
+                        .map(dep -> evaluator.evaluateGa(dep).toString()))
                                 .containsExactly("org.srcdeps.tree-1:tree-module-1", "org.srcdeps.external:artifact-3",
                                         "org.srcdeps.external:artifact-5");
 
@@ -284,7 +292,8 @@ public class MavenSourceTreeTest {
         Assertions.assertEquals(Collections.emptyList(), parent.profiles.get(0).dependencies.stream()
                 .map(bu -> bu.build().toString()).collect(Collectors.toList()));
         Assertions.assertEquals(//
-                props(treeParentGav.resolveGa(null, null), "prop1", "val-parent").entrySet(), //
+                props(new ExpressionEvaluator.ConstantOnlyExpressionEvaluator().evaluateGa(treeParentGav), "prop1",
+                        "val-parent").entrySet(), //
                 parent.profiles.get(0).properties.stream().map(PropertyBuilder::build)
                         .collect(Collectors.toCollection(LinkedHashSet::new)));
 
@@ -300,7 +309,8 @@ public class MavenSourceTreeTest {
             Assertions.assertEquals(Collections.emptyList(), properParent.profiles.get(0).dependencies.stream()
                     .map(bu -> bu.build().toString()).collect(Collectors.toList()));
             Assertions.assertEquals(//
-                    props(gav.resolveGa(null, null), "prop1", "val-proper-parent").entrySet(), //
+                    props(new ExpressionEvaluator.ConstantOnlyExpressionEvaluator().evaluateGa(gav), "prop1",
+                            "val-proper-parent").entrySet(), //
                     properParent.profiles.get(0).properties.stream().map(PropertyBuilder::build)
                             .collect(Collectors.toCollection(LinkedHashSet::new)));
         }
@@ -365,25 +375,26 @@ public class MavenSourceTreeTest {
                     .map(bu -> bu.build().toString()).collect(Collectors.toList()));
             Assertions.assertEquals(Collections.emptySet(), m5.profiles.get(0).children);
             Assertions.assertEquals(//
-                    props(gav.resolveGa(null, null), "prop1", "val-5").entrySet(), //
+                    props(new ExpressionEvaluator.ConstantOnlyExpressionEvaluator().evaluateGa(gav), "prop1", "val-5")
+                            .entrySet(), //
                     m5.profiles.get(0).properties.stream().map(PropertyBuilder::build)
                             .collect(Collectors.toCollection(LinkedHashSet::new)));
         }
 
         final MavenSourceTree t = b.build();
-        Assertions.assertEquals(new Expression.Constant("val-parent"),
+        Assertions.assertEquals(new Expression("val-parent", new Ga("org.srcdeps.tree-1", "tree-parent")),
                 t.getRootModule().findPropertyDefinition("prop1", ActiveProfiles.of()).getValue());
         {
             final Module m8 = t.getModulesByGa().get(Ga.of("org.srcdeps.tree-1:tree-module-8"));
-            Assertions.assertEquals(new Expression.Constant("val-8/main"),
+            Assertions.assertEquals(new Expression("val-8/main", new Ga("org.srcdeps.tree-1", "tree-module-8")),
                     m8.findPropertyDefinition("prop2", ActiveProfiles.of()).getValue());
-            Assertions.assertEquals(new Expression.Constant("val-8/p1"),
+            Assertions.assertEquals(new Expression("val-8/p1", new Ga("org.srcdeps.tree-1", "tree-module-8")),
                     m8.findPropertyDefinition("prop2", ActiveProfiles.of("p1")).getValue());
-            Assertions.assertEquals(new Expression.Constant("val-8/p2"),
+            Assertions.assertEquals(new Expression("val-8/p2", new Ga("org.srcdeps.tree-1", "tree-module-8")),
                     m8.findPropertyDefinition("prop2", ActiveProfiles.of("p2")).getValue());
-            Assertions.assertEquals(new Expression.Constant("val-8/p2"),
+            Assertions.assertEquals(new Expression("val-8/p2", new Ga("org.srcdeps.tree-1", "tree-module-8")),
                     m8.findPropertyDefinition("prop2", ActiveProfiles.of("p1", "p2")).getValue());
-            Assertions.assertEquals(new Expression.Constant("val-8/p2"),
+            Assertions.assertEquals(new Expression("val-8/p2", new Ga("org.srcdeps.tree-1", "tree-module-8")),
                     m8.findPropertyDefinition("prop2", ActiveProfiles.of("p1", "p2")).getValue());
         }
 
@@ -398,8 +409,9 @@ public class MavenSourceTreeTest {
                         "org.srcdeps.tree-1:declared-parent", "org.srcdeps.tree-1:tree-plugin")
                 .stream().map(Ga::of).collect(Collectors.toCollection(LinkedHashSet::new)), expandedIncludes);
 
+        SourceTreeExpressionEvaluator evaluator = t.new SourceTreeExpressionEvaluator(profileSelector);
         final Map<String, Set<Path>> removeChildPaths = t.unlinkModules(expandedIncludes, t.getRootModule(),
-                new LinkedHashMap<String, Set<Path>>(), profileSelector);
+                new LinkedHashMap<String, Set<Path>>(), profileSelector, evaluator);
         Assertions.assertEquals(1, removeChildPaths.size());
         Set<Path> rootUnlinks = removeChildPaths.get("pom.xml");
         org.assertj.core.api.Assertions
