@@ -41,6 +41,7 @@ import org.l2x6.pom.tuner.model.Expression.NoSuchPropertyException;
 import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.model.GavExpression;
+import org.l2x6.pom.tuner.model.GavSet;
 import org.l2x6.pom.tuner.model.Module;
 import org.l2x6.pom.tuner.model.Profile;
 import org.l2x6.pom.tuner.model.Profile.PropertyBuilder;
