@@ -20,6 +20,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -46,6 +47,7 @@ import org.l2x6.pom.tuner.model.GavExpression;
 import org.l2x6.pom.tuner.model.Module;
 import org.l2x6.pom.tuner.model.Plugin;
 import org.l2x6.pom.tuner.model.Profile;
+import org.l2x6.pom.tuner.model.ValueDefinition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +58,8 @@ import org.slf4j.LoggerFactory;
  * @since  1.0.0
  */
 public class MavenSourceTree {
+    private static final Pattern PLACE_HOLDER_PATTERN = Pattern.compile("\\$\\{([^\\}]+)\\}");
+
     public static class ActiveProfiles implements Predicate<Profile> {
 
         static final Predicate<Profile> EMPTY = new ActiveProfiles();
@@ -254,43 +258,42 @@ public class MavenSourceTree {
 
     }
 
-    private static final Pattern PLACE_HOLDER_PATTERN = Pattern.compile("\\$\\{([^\\}]+)\\}");
-
-    public static class ValueDefinition {
-        private final Module module;
-        private final Expression value;
-        private final String xPath;
-
-        public ValueDefinition(Module module, String xPath, Expression value) {
-            super();
-            this.module = module;
-            this.xPath = xPath;
-            this.value = value;
-        }
-
-        /**
-         * @return the {@link Module} in which {@link #value} is defined
-         */
-        public Module getModule() {
-            return module;
-        }
-
-        /**
-         * @return the value of the {@link Expression}
-         */
-        public Expression getValue() {
-            return value;
-        }
-
-        /**
-         * @return an XPath expression pointing at the element where the {@link #value} is defined
-         */
-        public String getXPath() {
-            return xPath;
-        }
-    }
-
     class SourceTreeExpressionEvaluator implements ExpressionEvaluator {
+
+        static final String PROJECT_ARTIFACT_ID_XPATH = "/*[local-name()='project']/*[local-name()='artifactId']";
+        static final String PROJECT_GROUP_ID_XPATH = "/*[local-name()='project']/*[local-name()='groupId']";
+        public static final String PROJECT_VERSION_XPATH = "/*[local-name()='project']/*[local-name()='version']";
+
+        private final Predicate<Profile> isProfileActive;
+        private final Map<Expression, String> cache = new HashMap<>();
+
+        public SourceTreeExpressionEvaluator(Predicate<Profile> isProfileActive) {
+            this.isProfileActive = isProfileActive;
+        }
+
+        @Override
+        public String evaluate(Expression expression) {
+            if (expression.isConstant()) {
+                return expression.getRawExpression();
+            } else {
+                return cache.computeIfAbsent(expression, k -> {
+                    final StringBuffer result = new StringBuffer();
+                    final Consumer<ValueDefinition> consumer = new Consumer<ValueDefinition>() {
+                        @Override
+                        public void accept(ValueDefinition propertyDefinition) {
+                            final Expression propertyValue = propertyDefinition.getValue();
+                            if (propertyValue.isConstant()) {
+                                result.append(evaluate(propertyValue));
+                            } else {
+                                evaluateExpression(propertyValue, this);
+                            }
+                        }
+                    };
+                    evaluateExpression(k, consumer);
+                    return result.toString();
+                });
+            }
+        }
 
         void evaluateExpression(final Expression expression, final Consumer<ValueDefinition> consumer) {
             final Module context = MavenSourceTree.this.getModulesByGa().get(expression.getGa());
@@ -311,10 +314,6 @@ public class MavenSourceTree {
                         new Expression(src.substring(offset, src.length()), expression.getGa())));
             }
         }
-
-        static final String PROJECT_ARTIFACT_ID_XPATH = "/*[local-name()='project']/*[local-name()='artifactId']";
-        static final String PROJECT_GROUP_ID_XPATH = "/*[local-name()='project']/*[local-name()='groupId']";
-        public static final String PROJECT_VERSION_XPATH = "/*[local-name()='project']/*[local-name()='version']";
 
         void evaluateProperty(final Module context,
                 final String propertyName,
@@ -344,35 +343,6 @@ public class MavenSourceTree {
                     consumer.accept(propertyDefinition);
                 }
 
-            }
-        }
-
-        private final Predicate<Profile> isProfileActive;
-
-        public SourceTreeExpressionEvaluator(Predicate<Profile> isProfileActive) {
-            this.isProfileActive = isProfileActive;
-        }
-
-        @Override
-        public String evaluate(Expression expression) {
-            if (expression.isConstant()) {
-                return expression.getRawExpression();
-            } else {
-                final StringBuffer result = new StringBuffer();
-                final Consumer<ValueDefinition> consumer = new Consumer<ValueDefinition>() {
-                    @Override
-                    public void accept(ValueDefinition propertyDefinition) {
-                        final Expression propertyValue = propertyDefinition.getValue();
-                        if (propertyValue.isConstant()) {
-                            result.append(evaluate(propertyValue));
-                        } else {
-                            evaluateExpression(propertyValue, this);
-                        }
-                    }
-                };
-
-                evaluateExpression(expression, consumer);
-                return result.toString();
             }
         }
 
@@ -427,6 +397,8 @@ public class MavenSourceTree {
 
     private final Predicate<Dependency> dependencyExcludes;
 
+    private final Map<Predicate<Profile>, ExpressionEvaluator> evaluators = new HashMap<>();
+
     MavenSourceTree(Path rootDirectory, Charset encoding, Map<String, Module> modulesByPath,
             Map<Ga, Module> modulesByGa, Predicate<Dependency> dependencyExcludes) {
         this.rootDirectory = rootDirectory;
@@ -437,7 +409,7 @@ public class MavenSourceTree {
     }
 
     private void addDeclaredParents(final Module module, final Set<Ga> result, Set<Ga> visited,
-            Predicate<Profile> isProfileActive, SourceTreeExpressionEvaluator evaluator) {
+            Predicate<Profile> isProfileActive, ExpressionEvaluator evaluator) {
         Module parent;
         Module child = module;
         while ((parent = getDeclaredParentModule(child)) != null) {
@@ -447,7 +419,7 @@ public class MavenSourceTree {
     }
 
     private void addModule(Ga includeGa, Set<Ga> result, Set<Ga> visited, Predicate<Profile> isProfileActive,
-            SourceTreeExpressionEvaluator evaluator) {
+            ExpressionEvaluator evaluator) {
         final Module module = modulesByGa.get(includeGa);
         if (module != null && !visited.contains(includeGa)) {
             visited.add(includeGa);
@@ -473,7 +445,7 @@ public class MavenSourceTree {
     }
 
     private void addProperParents(final Module module, final Set<Ga> result, Set<Ga> visited,
-            Predicate<Profile> isProfileActive, SourceTreeExpressionEvaluator evaluator) {
+            Predicate<Profile> isProfileActive, ExpressionEvaluator evaluator) {
         Module parent;
         Module child = module;
         while ((parent = getProperParentModule(child, isProfileActive, evaluator)) != null) {
@@ -494,7 +466,7 @@ public class MavenSourceTree {
     public Set<Ga> findRequiredModules(Collection<Ga> initialModules, Predicate<Profile> isProfileActive) {
         final Set<Ga> visited = new HashSet<>();
         final Set<Ga> result = new LinkedHashSet<>();
-        final SourceTreeExpressionEvaluator evaluator = new SourceTreeExpressionEvaluator(isProfileActive);
+        final ExpressionEvaluator evaluator = getExpressionEvaluator(isProfileActive);
         for (Ga includeGa : initialModules) {
             addModule(includeGa, result, visited, isProfileActive, evaluator);
         }
@@ -519,16 +491,17 @@ public class MavenSourceTree {
     }
 
     void edit(final String newVersion, final Predicate<Profile> isProfileActive, final DomEdits edits, Module module,
-            final Expression moduleVersion, String xPath, SourceTreeExpressionEvaluator evaluator) {
+            final Expression moduleVersion, String xPath, ExpressionEvaluator evaluator) {
         if (!moduleVersion.isConstant()) {
-            evaluator.evaluateExpression(moduleVersion, new SimplePlaceHolderConsumer(edits, newVersion));
+            ((SourceTreeExpressionEvaluator) evaluator).evaluateExpression(moduleVersion,
+                    new SimplePlaceHolderConsumer(edits, newVersion));
         } else {
             edits.add(module.getPomPath(), Transformation.setTextValue(xPath, newVersion));
         }
     }
 
     void editDependencies(String newVersion, final Predicate<Profile> isProfileActive, final DomEdits edits,
-            Module module, String profileId, Set<Dependency> dependencies, SourceTreeExpressionEvaluator evaluator,
+            Module module, String profileId, Set<Dependency> dependencies, ExpressionEvaluator evaluator,
             String... path) {
         if (!dependencies.isEmpty()) {
             final String xPathProfile = xPathProfile(profileId, path);
@@ -542,7 +515,7 @@ public class MavenSourceTree {
     }
 
     void editExtensions(String newVersion, final Predicate<Profile> isProfileActive, final DomEdits edits,
-            Module module, String profileId, Set<GavExpression> dependencies, SourceTreeExpressionEvaluator evaluator,
+            Module module, String profileId, Set<GavExpression> dependencies, ExpressionEvaluator evaluator,
             String... path) {
         if (!dependencies.isEmpty()) {
             final String xPathProfile = xPathProfile(profileId, path);
@@ -556,7 +529,7 @@ public class MavenSourceTree {
     }
 
     void editPlugins(String newVersion, final Predicate<Profile> isProfileActive, final DomEdits edits, Module module,
-            String profileId, Set<Plugin> dependencies, SourceTreeExpressionEvaluator evaluator, String... path) {
+            String profileId, Set<Plugin> dependencies, ExpressionEvaluator evaluator, String... path) {
         if (!dependencies.isEmpty()) {
             final String xPathProfile = xPathProfile(profileId, path);
             for (Plugin pluginGav : dependencies) {
@@ -593,7 +566,7 @@ public class MavenSourceTree {
      */
     public Set<Ga> filterDependencies(GavSet gavSet, final Predicate<Profile> isProfileActive) {
         final Set<Ga> result = new TreeSet<>();
-        final SourceTreeExpressionEvaluator evaluator = new SourceTreeExpressionEvaluator(isProfileActive);
+        final ExpressionEvaluator evaluator = getExpressionEvaluator(isProfileActive);
         for (Module module : getModulesByGa().values()) {
             final GavExpression parentGav = module.getParentGav();
             if (parentGav != null) {
@@ -675,7 +648,7 @@ public class MavenSourceTree {
      * @return          a {@link Set}
      */
     public Set<Dependency> collectOwnDependencies(Ga module, Predicate<Profile> profiles) {
-        SourceTreeExpressionEvaluator evaluator = new SourceTreeExpressionEvaluator(profiles);
+        ExpressionEvaluator evaluator = getExpressionEvaluator(profiles);
         Set<Dependency> result = new LinkedHashSet<>();
         Module m = modulesByGa.get(module);
         if (m == null) {
@@ -711,13 +684,13 @@ public class MavenSourceTree {
                     "Can collect own dependencies only for modules available in this tree; " + module + " was not found here");
         }
         final Set<Dependency> result = new LinkedHashSet<>();
-        final SourceTreeExpressionEvaluator evaluator = new SourceTreeExpressionEvaluator(profiles);
+        final ExpressionEvaluator evaluator = getExpressionEvaluator(profiles);
         collectTransitiveDependencies(module, profiles, result, new HashSet<>(), evaluator);
         return result;
     }
 
     void collectTransitiveDependencies(Ga module, Predicate<Profile> profiles, Set<Dependency> result, Set<Ga> visited,
-            SourceTreeExpressionEvaluator evaluator) {
+            ExpressionEvaluator evaluator) {
         if (visited.contains(module)) {
             return;
         }
@@ -780,7 +753,7 @@ public class MavenSourceTree {
      * @param  child
      * @return       the {@link Module} having the given gild in its {@code <modules>}
      */
-    Module getProperParentModule(Module child, Predicate<Profile> isProfileActive, SourceTreeExpressionEvaluator evaluator) {
+    Module getProperParentModule(Module child, Predicate<Profile> isProfileActive, ExpressionEvaluator evaluator) {
         final GavExpression parentGa = child.getParentGav();
         if (parentGa != null) {
             final Module declaredParent = modulesByGa.get(evaluator.evaluateGa(parentGa));
@@ -817,7 +790,7 @@ public class MavenSourceTree {
     public void setVersions(final String newVersion, final Predicate<Profile> isProfileActive,
             SimpleElementWhitespace simpleElementWhitespace) {
         final DomEdits edits = new DomEdits();
-        final SourceTreeExpressionEvaluator evaluator = new SourceTreeExpressionEvaluator(isProfileActive);
+        final ExpressionEvaluator evaluator = getExpressionEvaluator(isProfileActive);
         for (Module module : modulesByGa.values()) {
 
             /* self */
@@ -859,7 +832,7 @@ public class MavenSourceTree {
 
     Map<String, Set<Path>> unlinkModules(Set<Ga> includes, Module module,
             Map<String, Set<Path>> removeChildPaths, Predicate<Profile> isProfileActive,
-            SourceTreeExpressionEvaluator evaluator) {
+            ExpressionEvaluator evaluator) {
         for (Profile p : module.getProfiles()) {
             if (isProfileActive.test(p)) {
                 for (String childPath : p.getChildren()) {
@@ -914,7 +887,7 @@ public class MavenSourceTree {
     public void unlinkModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
             SimpleElementWhitespace simpleElementWhitespace, Function<Set<String>, PomTransformer.Transformation> remover) {
         final Module rootModule = modulesByPath.get("pom.xml");
-        final SourceTreeExpressionEvaluator evaluator = new SourceTreeExpressionEvaluator(isProfileActive);
+        final ExpressionEvaluator evaluator = getExpressionEvaluator(isProfileActive);
         final Map<String, Set<Path>> removeChildPaths = unlinkModules(requiredModules, rootModule,
                 new LinkedHashMap<String, Set<Path>>(), isProfileActive, evaluator);
         for (Entry<String, Set<Path>> e : removeChildPaths.entrySet()) {
@@ -978,6 +951,10 @@ public class MavenSourceTree {
     public MavenSourceTree reload() {
         return new Builder(rootDirectory, encoding).dependencyExcludes(dependencyExcludes)
                 .pomXml(rootDirectory.resolve("pom.xml")).build();
+    }
+
+    public ExpressionEvaluator getExpressionEvaluator(Predicate<Profile> profiles) {
+        return evaluators.computeIfAbsent(profiles, SourceTreeExpressionEvaluator::new);
     }
 
 }
