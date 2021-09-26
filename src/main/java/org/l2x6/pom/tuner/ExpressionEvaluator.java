@@ -1,9 +1,9 @@
 package org.l2x6.pom.tuner;
 
-import org.l2x6.pom.tuner.MavenSourceTree.GavExpression;
 import org.l2x6.pom.tuner.model.Expression;
 import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.Gav;
+import org.l2x6.pom.tuner.model.GavExpression;
 
 public interface ExpressionEvaluator {
     String evaluate(Expression expression);

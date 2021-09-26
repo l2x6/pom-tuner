@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Set;
 import java.util.Stack;
 import java.util.TreeSet;
@@ -51,19 +50,15 @@ import javax.xml.stream.events.Characters;
 import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.XMLEvent;
 import org.l2x6.pom.tuner.ExpressionEvaluator.ConstantOnlyExpressionEvaluator;
-import org.l2x6.pom.tuner.MavenSourceTree.GavExpression.DependencyBuilder;
-import org.l2x6.pom.tuner.MavenSourceTree.GavExpression.GavBuilder;
-import org.l2x6.pom.tuner.MavenSourceTree.GavExpression.ModuleGavBuilder;
-import org.l2x6.pom.tuner.MavenSourceTree.GavExpression.ParentGavBuilder;
-import org.l2x6.pom.tuner.MavenSourceTree.GavExpression.PlainGavBuilder;
-import org.l2x6.pom.tuner.MavenSourceTree.GavExpression.PluginGavBuilder;
-import org.l2x6.pom.tuner.MavenSourceTree.Module;
 import org.l2x6.pom.tuner.MavenSourceTree.Module.Profile;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
+import org.l2x6.pom.tuner.model.Dependency;
 import org.l2x6.pom.tuner.model.Expression;
 import org.l2x6.pom.tuner.model.Expression.NoSuchPropertyException;
 import org.l2x6.pom.tuner.model.Ga;
+import org.l2x6.pom.tuner.model.GavExpression;
+import org.l2x6.pom.tuner.model.Plugin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -201,29 +196,6 @@ public class MavenSourceTree {
         }
     }
 
-    public static class Dependency extends GavExpression {
-        private final String scope;
-        private final String type;
-
-        public Dependency(Expression groupId, Expression artifactId, Expression version, String type, String scope) {
-            super(groupId, artifactId, version);
-            this.type = type;
-            this.scope = scope;
-        }
-
-        public String getScope() {
-            return scope;
-        }
-
-        public String getType() {
-            return type;
-        }
-
-        public boolean isVirtual() {
-            return "pom".equals(type) && "test".equals(scope);
-        }
-    }
-
     /**
      * A set of {@link DomEdit}s.
      */
@@ -258,212 +230,140 @@ public class MavenSourceTree {
         }
     }
 
-    /**
-     * A {@link Ga} combined with a version {@link Expression}.
-     */
-    public static class GavExpression {
+    public static class DependencyBuilder extends PlainGavBuilder {
 
-        public static class DependencyBuilder extends PlainGavBuilder {
+        private String scope = "compile";
+        private String type = "jar";
 
-            private String scope = "compile";
-            private String type = "jar";
-
-            public DependencyBuilder(ModuleGavBuilder module) {
-                super(module);
-            }
-
-            public Dependency build() {
-                final Ga ga = module.getGa();
-                return new Dependency(Expression.of(groupId, ga), Expression.of(artifactId, ga),
-                        version != null ? Expression.of(version, ga) : null, type, scope);
-            }
-
-            public void scope(String scope) {
-                this.scope = scope;
-            }
-
-            public void type(String type) {
-                this.type = type;
-            }
-
+        public DependencyBuilder(ModuleGavBuilder module) {
+            super(module);
         }
 
-        interface GavBuilder {
-            void artifactId(String artifactId);
-
-            void groupId(String groupId);
-
-            void version(String version);
-
+        public Dependency build() {
+            final Ga ga = module.getGa();
+            return new Dependency(Expression.of(groupId, ga), Expression.of(artifactId, ga),
+                    version != null ? Expression.of(version, ga) : null, type, scope);
         }
 
-        static class ModuleGavBuilder extends ParentGavBuilder {
-            private Ga ga;
-            private final ParentGavBuilder parent;
-
-            ModuleGavBuilder(ParentGavBuilder parent) {
-                super();
-                this.parent = parent;
-            }
-
-            public GavExpression build() {
-                final Ga ga = getGa();
-                final Expression v = version != null ? Expression.of(version, ga) : parent.build().getVersion();
-                return new GavExpression(Expression.of(ga.getGroupId(), ga), Expression.of(ga.getArtifactId(), ga), v);
-            }
-
-            public Ga getGa() {
-                if (this.ga == null) {
-                    final String g = groupId != null ? groupId : parent.groupId;
-                    this.ga = new Ga(g, artifactId);
-                }
-                return this.ga;
-            }
+        public void scope(String scope) {
+            this.scope = scope;
         }
 
-        static class ParentGavBuilder implements GavBuilder {
-
-            String artifactId;
-            String groupId;
-            String version;
-
-            @Override
-            public void artifactId(String artifactId) {
-                this.artifactId = artifactId;
-            }
-
-            public GavExpression build() {
-                final int sum = (groupId != null ? 1 : 0) + (artifactId != null ? 1 : 0) + (version != null ? 1 : 0);
-                switch (sum) {
-                case 0:
-                    /* none of the three set */
-                    return null;
-                case 3:
-                    final Ga ga = new Ga(groupId, artifactId);
-                    return new GavExpression(Expression.of(groupId, ga), Expression.of(artifactId, ga),
-                            Expression.of(version, ga));
-                default:
-                    throw new IllegalStateException(String.format(
-                            "groupId, artifactId and version must be all null or both not null: groupId: [%s], artifactId: [%s], version: [%s]",
-                            groupId, artifactId, version));
-                }
-            }
-
-            @Override
-            public void groupId(String groupId) {
-                this.groupId = groupId;
-            }
-
-            @Override
-            public void version(String version) {
-                this.version = version;
-            }
+        public void type(String type) {
+            this.type = type;
         }
 
-        public static class PlainGavBuilder extends ParentGavBuilder {
+    }
 
-            final ModuleGavBuilder module;
+    interface GavBuilder {
+        void artifactId(String artifactId);
 
-            PlainGavBuilder(ModuleGavBuilder module) {
-                super();
-                this.module = module;
+        void groupId(String groupId);
+
+        void version(String version);
+
+    }
+
+    static class ModuleGavBuilder extends ParentGavBuilder {
+        private Ga ga;
+        private final ParentGavBuilder parent;
+
+        ModuleGavBuilder(ParentGavBuilder parent) {
+            super();
+            this.parent = parent;
+        }
+
+        public GavExpression build() {
+            final Ga ga = getGa();
+            final Expression v = version != null ? Expression.of(version, ga) : parent.build().getVersion();
+            return new GavExpression(Expression.of(ga.getGroupId(), ga), Expression.of(ga.getArtifactId(), ga), v);
+        }
+
+        public Ga getGa() {
+            if (this.ga == null) {
+                final String g = groupId != null ? groupId : parent.groupId;
+                this.ga = new Ga(g, artifactId);
             }
+            return this.ga;
+        }
+    }
 
-            public GavExpression build() {
-                final Ga ga = module.getGa();
+    static class ParentGavBuilder implements GavBuilder {
+
+        String artifactId;
+        String groupId;
+        String version;
+
+        @Override
+        public void artifactId(String artifactId) {
+            this.artifactId = artifactId;
+        }
+
+        public GavExpression build() {
+            final int sum = (groupId != null ? 1 : 0) + (artifactId != null ? 1 : 0) + (version != null ? 1 : 0);
+            switch (sum) {
+            case 0:
+                /* none of the three set */
+                return null;
+            case 3:
+                final Ga ga = new Ga(groupId, artifactId);
                 return new GavExpression(Expression.of(groupId, ga), Expression.of(artifactId, ga),
-                        version != null ? Expression.of(version, ga) : null);
+                        Expression.of(version, ga));
+            default:
+                throw new IllegalStateException(String.format(
+                        "groupId, artifactId and version must be all null or both not null: groupId: [%s], artifactId: [%s], version: [%s]",
+                        groupId, artifactId, version));
             }
         }
 
-        public static class PluginGavBuilder extends PlainGavBuilder {
-
-            private List<PlainGavBuilder> dependencies = new ArrayList<>();
-
-            PluginGavBuilder(ModuleGavBuilder module) {
-                super(module);
-                this.groupId = "org.apache.maven.plugins";
-            }
-
-            public Plugin build() {
-                final Set<GavExpression> deps = dependencies.stream()
-                        .map(PlainGavBuilder::build).collect(Collectors.toCollection(LinkedHashSet::new));
-                final Set<GavExpression> useDependencies = Collections.unmodifiableSet(deps);
-                dependencies = null;
-                final Ga ga = module.getGa();
-                return new Plugin(Expression.of(groupId, ga), Expression.of(artifactId, ga),
-                        version != null ? Expression.of(version, ga) : null, useDependencies);
-            }
-
-            public void dependency(PlainGavBuilder gav) {
-                dependencies.add(gav);
-            }
-
+        @Override
+        public void groupId(String groupId) {
+            this.groupId = groupId;
         }
 
-        private final Expression artifactId;
-        private final Expression groupId;
-
-        private final Expression version;
-
-        GavExpression(Expression groupId, Expression artifactId, Expression version) {
-            this.groupId = Objects.requireNonNull(groupId, "groupId");
-            this.artifactId = Objects.requireNonNull(artifactId, "artifactId");
+        @Override
+        public void version(String version) {
             this.version = version;
         }
+    }
 
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            GavExpression other = (GavExpression) obj;
-            if (artifactId == null) {
-                if (other.artifactId != null)
-                    return false;
-            } else if (!artifactId.equals(other.artifactId))
-                return false;
-            if (groupId == null) {
-                if (other.groupId != null)
-                    return false;
-            } else if (!groupId.equals(other.groupId))
-                return false;
-            if (version == null) {
-                if (other.version != null)
-                    return false;
-            } else if (!version.equals(other.version))
-                return false;
-            return true;
+    public static class PlainGavBuilder extends ParentGavBuilder {
+
+        final ModuleGavBuilder module;
+
+        PlainGavBuilder(ModuleGavBuilder module) {
+            super();
+            this.module = module;
         }
 
-        public Expression getArtifactId() {
-            return artifactId;
+        public GavExpression build() {
+            final Ga ga = module.getGa();
+            return new GavExpression(Expression.of(groupId, ga), Expression.of(artifactId, ga),
+                    version != null ? Expression.of(version, ga) : null);
+        }
+    }
+
+    public static class PluginGavBuilder extends PlainGavBuilder {
+
+        private List<PlainGavBuilder> dependencies = new ArrayList<>();
+
+        PluginGavBuilder(ModuleGavBuilder module) {
+            super(module);
+            this.groupId = "org.apache.maven.plugins";
         }
 
-        public Expression getGroupId() {
-            return groupId;
+        public Plugin build() {
+            final Set<GavExpression> deps = dependencies.stream()
+                    .map(PlainGavBuilder::build).collect(Collectors.toCollection(LinkedHashSet::new));
+            final Set<GavExpression> useDependencies = Collections.unmodifiableSet(deps);
+            dependencies = null;
+            final Ga ga = module.getGa();
+            return new Plugin(Expression.of(groupId, ga), Expression.of(artifactId, ga),
+                    version != null ? Expression.of(version, ga) : null, useDependencies);
         }
 
-        public Expression getVersion() {
-            return version;
-        }
-
-        @Override
-        public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((artifactId == null) ? 0 : artifactId.hashCode());
-            result = prime * result + ((groupId == null) ? 0 : groupId.hashCode());
-            result = prime * result + ((version == null) ? 0 : version.hashCode());
-            return result;
-        }
-
-        @Override
-        public String toString() {
-            return groupId.getRawExpression() + ":" + artifactId.getRawExpression() + ":" + version;
+        public void dependency(PlainGavBuilder gav) {
+            dependencies.add(gav);
         }
 
     }
@@ -498,7 +398,7 @@ public class MavenSourceTree {
                     final XMLEventReader r = xmlInputFactory.createXMLEventReader(in);
                     this.pomPath = Utils.toUnixPath(rootDirectory.relativize(pomXml).toString());
 
-                    final Stack<GavExpression.GavBuilder> gavBuilderStack = new Stack<>();
+                    final Stack<GavBuilder> gavBuilderStack = new Stack<>();
                     gavBuilderStack.push(moduleGav);
                     Profile.Builder profile = implicitProfile;
 
@@ -915,19 +815,6 @@ public class MavenSourceTree {
             return gav.toString() + "@" + pomPath;
         }
 
-    }
-
-    public static class Plugin extends GavExpression {
-        private final Set<GavExpression> dependencies;
-
-        public Plugin(Expression groupId, Expression artifactId, Expression version, Set<GavExpression> dependencies) {
-            super(groupId, artifactId, version);
-            this.dependencies = dependencies;
-        }
-
-        public Set<GavExpression> getDependencies() {
-            return dependencies;
-        }
     }
 
     /**
