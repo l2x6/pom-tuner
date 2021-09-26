@@ -747,7 +747,7 @@ public class MavenSourceTree {
         if (pomXmlPath.isAbsolute()) {
             pomXmlPath = rootDirectory.relativize(pomXmlPath);
         }
-        return modulesByPath.get(Utils.toUnixPath(pomXmlPath.toString()));
+        return modulesByPath.get(PomTunerUtils.toUnixPath(pomXmlPath.toString()));
     }
 
     /**
@@ -911,7 +911,7 @@ public class MavenSourceTree {
                 .map(Path::getParent) // path/to/pom.xml -> path/to
                 .map(p -> parentDir.relativize(p))
                 .map(Path::toString)
-                .map(Utils::toUnixPath)
+                .map(PomTunerUtils::toUnixPath)
                 .collect(Collectors.toSet());
         final PomTransformer transformer = new PomTransformer(pomXml, encoding, simpleElementWhitespace);
         transformer.transform(remover.apply(relPathsToRemove));

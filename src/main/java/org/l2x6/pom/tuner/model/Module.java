@@ -22,7 +22,7 @@ import javax.xml.stream.events.Characters;
 import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.XMLEvent;
 import org.l2x6.pom.tuner.MavenSourceTree;
-import org.l2x6.pom.tuner.Utils;
+import org.l2x6.pom.tuner.PomTunerUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +57,7 @@ public class Module {
             final Path dir = pomXml.getParent();
             try (Reader in = Files.newBufferedReader(pomXml, encoding)) {
                 final XMLEventReader r = xmlInputFactory.createXMLEventReader(in);
-                this.pomPath = Utils.toUnixPath(rootDirectory.relativize(pomXml).toString());
+                this.pomPath = PomTunerUtils.toUnixPath(rootDirectory.relativize(pomXml).toString());
 
                 final Stack<GavBuilder> gavBuilderStack = new Stack<>();
                 gavBuilderStack.push(moduleGav);
@@ -116,7 +116,7 @@ public class Module {
                             final String relPath = r.nextEvent().asCharacters().getData() + "/pom.xml";
                             final Path childPomXml = dir.resolve(relPath).normalize();
                             final String rootRelPath = rootDirectory.relativize(childPomXml).toString();
-                            profile.children.add(Utils.toUnixPath(rootRelPath));
+                            profile.children.add(PomTunerUtils.toUnixPath(rootRelPath));
                         } else if (elementStackSize > 0 && "properties".equals(elementStack.peek())) {
                             final XMLEvent nextEvent = r.peek();
                             if (nextEvent instanceof Characters) {
