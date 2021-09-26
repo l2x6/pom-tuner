@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.l2x6.maven.utils.shell;
+package org.l2x6.pom.tuner.shell;
 
 /**
  * Thrown on any build related problems. Note that {@link BuildException} has a few subclasses that are thrown in some

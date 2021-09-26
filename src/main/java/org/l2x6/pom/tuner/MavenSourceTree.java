@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.l2x6.maven.utils;
+package org.l2x6.pom.tuner;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -50,17 +50,17 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.events.Characters;
 import javax.xml.stream.events.EndElement;
 import javax.xml.stream.events.XMLEvent;
-import org.l2x6.maven.utils.MavenSourceTree.Expression.Constant;
-import org.l2x6.maven.utils.MavenSourceTree.Expression.NonConstant;
-import org.l2x6.maven.utils.MavenSourceTree.GavExpression.DependencyBuilder;
-import org.l2x6.maven.utils.MavenSourceTree.GavExpression.GavBuilder;
-import org.l2x6.maven.utils.MavenSourceTree.GavExpression.ModuleGavBuilder;
-import org.l2x6.maven.utils.MavenSourceTree.GavExpression.ParentGavBuilder;
-import org.l2x6.maven.utils.MavenSourceTree.GavExpression.PlainGavBuilder;
-import org.l2x6.maven.utils.MavenSourceTree.GavExpression.PluginGavBuilder;
-import org.l2x6.maven.utils.MavenSourceTree.Module.Profile;
-import org.l2x6.maven.utils.PomTransformer.SimpleElementWhitespace;
-import org.l2x6.maven.utils.PomTransformer.Transformation;
+import org.l2x6.pom.tuner.MavenSourceTree.Expression.Constant;
+import org.l2x6.pom.tuner.MavenSourceTree.Expression.NonConstant;
+import org.l2x6.pom.tuner.MavenSourceTree.GavExpression.DependencyBuilder;
+import org.l2x6.pom.tuner.MavenSourceTree.GavExpression.GavBuilder;
+import org.l2x6.pom.tuner.MavenSourceTree.GavExpression.ModuleGavBuilder;
+import org.l2x6.pom.tuner.MavenSourceTree.GavExpression.ParentGavBuilder;
+import org.l2x6.pom.tuner.MavenSourceTree.GavExpression.PlainGavBuilder;
+import org.l2x6.pom.tuner.MavenSourceTree.GavExpression.PluginGavBuilder;
+import org.l2x6.pom.tuner.MavenSourceTree.Module.Profile;
+import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
+import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
  * A representation of a Maven module hierarchy.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
- * @since  4.1
+ * @since  1.0.0
  */
 public class MavenSourceTree {
     public static class ActiveProfiles implements Predicate<Profile> {

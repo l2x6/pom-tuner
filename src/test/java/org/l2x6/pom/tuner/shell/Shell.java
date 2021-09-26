@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.l2x6.maven.utils.shell;
+package org.l2x6.pom.tuner.shell;
 
 import java.io.BufferedReader;
 import java.io.Closeable;

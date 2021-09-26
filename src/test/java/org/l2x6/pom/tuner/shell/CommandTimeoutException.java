@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.l2x6.maven.utils.shell;
+package org.l2x6.pom.tuner.shell;
 
 /**
  * Thrown when an execution of a shell command is not finished within some given timeout.
