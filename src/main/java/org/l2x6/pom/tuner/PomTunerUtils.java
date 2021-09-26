@@ -32,4 +32,20 @@ public class PomTunerUtils {
         return anyPath.replace('\\', '/');
     }
 
+    /**
+     * A generator of XPath 1.0 "any namespace" selector, such as
+     * {@code /*:[local-name()='foo']/*:[local-name()='bar']}. In XPath 2.0, this would be just {@code /*:foo/*:bar},
+     * but as of Java 13, there is only XPath 1.0 available in the JDK.
+     *
+     * @param  elements namespace-less element names
+     * @return          am XPath 1.0 style selector
+     */
+    public static String anyNs(String... elements) {
+        StringBuilder sb = new StringBuilder();
+        for (String e : elements) {
+            sb.append("/*[local-name()='").append(e).append("']");
+        }
+        return sb.toString();
+    }
+
 }

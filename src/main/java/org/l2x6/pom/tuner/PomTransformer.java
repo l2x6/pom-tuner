@@ -199,7 +199,8 @@ public class PomTransformer {
 
     static String detectIndentation(Node document, XPath xPath) {
         try {
-            final String ws = (String) xPath.evaluate(anyNs("project") + "/*[1]/preceding-sibling::text()[last()]",
+            final String ws = (String) xPath.evaluate(
+                    PomTunerUtils.anyNs("project") + "/*[1]/preceding-sibling::text()[last()]",
                     document, XPathConstants.STRING);
             if (ws != null && !ws.isEmpty()) {
                 int i = ws.length() - 1;
@@ -223,22 +224,6 @@ public class PomTransformer {
 
     static String detectEol(String src) {
         return src.indexOf('\r') >= 0 ? "\r\n" : "\n";
-    }
-
-    /**
-     * A generator of XPath 1.0 "any namespace" selector, such as
-     * {@code /*:[local-name()='foo']/*:[local-name()='bar']}. In XPath 2.0, this would be just {@code /*:foo/*:bar},
-     * but as of Java 13, there is only XPath 1.0 available in the JDK.
-     *
-     * @param  elements namespace-less element names
-     * @return          am XPath 1.0 style selector
-     */
-    public static String anyNs(String... elements) {
-        StringBuilder sb = new StringBuilder();
-        for (String e : elements) {
-            sb.append("/*[local-name()='").append(e).append("']");
-        }
-        return sb.toString();
     }
 
     /**
@@ -918,7 +903,8 @@ public class PomTransformer {
         public Optional<ContainerElement> getProfile(String profileId) {
             try {
                 final Node node = (Node) xPath.evaluate(
-                        anyNs("project", "profiles", "profile") + "[." + anyNs("id") + "/text() = '" + profileId + "']",
+                        PomTunerUtils.anyNs("project", "profiles", "profile") + "[." + PomTunerUtils.anyNs("id") + "/text() = '"
+                                + profileId + "']",
                         document, XPathConstants.NODE);
                 if (node != null) {
                     return Optional.of(new ContainerElement(this, (Element) node, null, 2));
@@ -932,7 +918,8 @@ public class PomTransformer {
         public ContainerElement getOrAddProfile(String profileId) {
             try {
                 final Node node = (Node) xPath.evaluate(
-                        anyNs("project", "profiles", "profile") + "[." + anyNs("id") + "/text() = '" + profileId + "']",
+                        PomTunerUtils.anyNs("project", "profiles", "profile") + "[." + PomTunerUtils.anyNs("id") + "/text() = '"
+                                + profileId + "']",
                         document, XPathConstants.NODE);
                 if (node != null) {
                     return new ContainerElement(this, (Element) node, null, 2);
@@ -972,7 +959,7 @@ public class PomTransformer {
 
         public Optional<ContainerElement> getContainerElement(String... path) {
             try {
-                final Node node = (Node) xPath.evaluate(anyNs(path), document, XPathConstants.NODE);
+                final Node node = (Node) xPath.evaluate(PomTunerUtils.anyNs(path), document, XPathConstants.NODE);
                 if (node != null) {
                     return Optional.of(new ContainerElement(this, (Element) node, null, path.length - 1));
                 }
@@ -1204,7 +1191,7 @@ public class PomTransformer {
                 for (String n : furtherNames) {
                     path[i++] = n;
                 }
-                final String xPath = anyNs(path);
+                final String xPath = PomTunerUtils.anyNs(path);
                 context.removeNode(xPath, removePrecedingComments, removePrecedingWhitespace, onlyIfEmpty);
             };
         }
@@ -1344,7 +1331,7 @@ public class PomTransformer {
         public static Transformation removeModule(boolean removePrecedingComments, boolean removePrecedingWhitespace,
                 String module) {
             return (Document document, TransformationContext context) -> {
-                final String xPath = anyNs("project", "modules", "module") + "[text() = '" + module + "']";
+                final String xPath = PomTunerUtils.anyNs("project", "modules", "module") + "[text() = '" + module + "']";
                 context.removeNode(xPath, removePrecedingComments, removePrecedingWhitespace, false);
             };
         }
@@ -1353,7 +1340,7 @@ public class PomTransformer {
                 Set<String> modules) {
             return (Document document, TransformationContext context) -> {
                 for (String module : modules) {
-                    final String xPath = anyNs("project", "modules", "module") + "[text() = '" + module + "']";
+                    final String xPath = PomTunerUtils.anyNs("project", "modules", "module") + "[text() = '" + module + "']";
                     context.removeNode(xPath, removePrecedingComments, removePrecedingWhitespace, false);
                 }
             };
@@ -1380,7 +1367,7 @@ public class PomTransformer {
                 final String condition = modulesToComment.stream()
                         .map(m -> "text() = '" + m + "'")
                         .collect(Collectors.joining(" or "));
-                final String xPathExpr = anyNs("project", "modules", "module") + "[" + condition + "]";
+                final String xPathExpr = PomTunerUtils.anyNs("project", "modules", "module") + "[" + condition + "]";
                 try {
                     final NodeList moduleNodes = (NodeList) context.getXPath().evaluate(xPathExpr, document,
                             XPathConstants.NODESET);
@@ -1399,7 +1386,7 @@ public class PomTransformer {
 
         public static Transformation uncommentModules(String commentText, Predicate<String> modulePathFilter) {
             return (Document document, TransformationContext context) -> {
-                final String xPathExpr = anyNs("project", "modules") + "/comment()[starts-with(., '"
+                final String xPathExpr = PomTunerUtils.anyNs("project", "modules") + "/comment()[starts-with(., '"
                         + MODULE_COMMENT_PREFIX
                         + "') and substring(., string-length(.) - "
                         + (MODULE_COMMENT_INFIX.length() + commentText.length()) + ")  = '" + MODULE_COMMENT_INFIX
@@ -1430,7 +1417,7 @@ public class PomTransformer {
         public static Transformation removeProperty(boolean removePrecedingComments, boolean removePrecedingWhitespace,
                 String propertyName) {
             return (Document document, TransformationContext context) -> {
-                final String xPath = anyNs("project", "properties", propertyName);
+                final String xPath = PomTunerUtils.anyNs("project", "properties", propertyName);
                 context.removeNode(xPath, removePrecedingComments, removePrecedingWhitespace, false);
             };
         }
@@ -1438,8 +1425,9 @@ public class PomTransformer {
         public static Transformation removePlugin(boolean removePrecedingComments, boolean removePrecedingWhitespace,
                 String groupId, String artifactId) {
             return (Document document, TransformationContext context) -> {
-                final String xPath = anyNs("project", "build", "plugins", "plugin")
-                        + "[." + anyNs("groupId") + "/text() = '" + groupId + "' and ." + anyNs("artifactId") + "/text() = '"
+                final String xPath = PomTunerUtils.anyNs("project", "build", "plugins", "plugin")
+                        + "[." + PomTunerUtils.anyNs("groupId") + "/text() = '" + groupId + "' and ."
+                        + PomTunerUtils.anyNs("artifactId") + "/text() = '"
                         + artifactId + "']";
                 context.removeNode(xPath, removePrecedingComments, removePrecedingWhitespace, false);
             };
@@ -1458,7 +1446,7 @@ public class PomTransformer {
             return (Document document, TransformationContext context) -> {
                 try {
                     {
-                        final String xPathExpression = anyNs("project", "parent", "artifactId");
+                        final String xPathExpression = PomTunerUtils.anyNs("project", "parent", "artifactId");
                         Node artifactIdNode = (Node) context.getXPath().evaluate(
                                 xPathExpression, document,
                                 XPathConstants.NODE);
@@ -1471,7 +1459,7 @@ public class PomTransformer {
                     }
                     if (relativePath == null) {
                         /* remove relativePath */
-                        final String xPathExpression = anyNs("project", "parent", "relativePath");
+                        final String xPathExpression = PomTunerUtils.anyNs("project", "parent", "relativePath");
                         Node node = (Node) context.getXPath().evaluate(
                                 xPathExpression, document,
                                 XPathConstants.NODE);
@@ -1486,7 +1474,7 @@ public class PomTransformer {
                         }
                     } else {
                         /* Add or set relativePath */
-                        final String xPathExpression = anyNs("project", "parent", "relativePath");
+                        final String xPathExpression = PomTunerUtils.anyNs("project", "parent", "relativePath");
                         Node node = (Node) context.getXPath().evaluate(
                                 xPathExpression, document,
                                 XPathConstants.NODE);
@@ -1495,7 +1483,7 @@ public class PomTransformer {
                         } else {
                             node = document.createElement("relativePath");
                             ((Node) context.getXPath().evaluate(
-                                    anyNs("project", "parent"), document,
+                                    PomTunerUtils.anyNs("project", "parent"), document,
                                     XPathConstants.NODE)).appendChild(node);
                             node.setTextContent(relativePath);
                         }
