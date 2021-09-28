@@ -1640,6 +1640,28 @@ public class PomTransformer {
         }
 
         /**
+         * Remove the element specified by the given {@code path} if it has no child elements (child whitespace and comments do
+         * not matter).
+         * The {@code path} is vararg of element names, e.g. {@code removeIfEmpty(true, true, "project", "properties")}
+         * would remove the {@code <properties>} element if there are no properties defined under it.
+         *
+         * @param  removePrecedingComments
+         * @param  removePrecedingWhitespace
+         * @param  path                      a vararg of element names
+         * @return                           a new {@link Transformation}
+         */
+        public static Transformation removeIfEmpty(boolean removePrecedingComments, boolean removePrecedingWhitespace,
+                String... path) {
+            return (Document document, TransformationContext context) -> {
+                context.getContainerElement(path).ifPresent(element -> {
+                    if (!element.childElements().iterator().hasNext()) {
+                        element.remove(removePrecedingComments, removePrecedingWhitespace);
+                    }
+                });
+            };
+        }
+
+        /**
          * Perform this {@link Transformation} on the given {@code document}
          *
          * @param document the {@link Document} to transform

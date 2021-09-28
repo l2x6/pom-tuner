@@ -2238,6 +2238,40 @@ public class PomTransformerTest {
                 expected);
     }
 
+    @Test
+    void removeIfEmpty() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <dependencyManagement>\n" //
+                + "        <dependencies>\n" //
+                + "        </dependencies>\n" //
+                + "    </dependencyManagement>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <dependencyManagement>\n" //
+                + "    </dependencyManagement>\n" //
+                + "</project>\n";
+        assertTransformation(source,
+                Collections.singletonList(
+                        Transformation.removeIfEmpty(true, true, "project", "dependencyManagement", "dependencies")),
+                expected);
+    }
+
     static void assertFormat(String xml, String expectedIndent, String expectedEol)
             throws TransformerConfigurationException, TransformerException, TransformerFactoryConfigurationError {
         final XPath xPath = XPathFactory.newInstance().newXPath();
@@ -2247,5 +2281,4 @@ public class PomTransformerTest {
         Assertions.assertEquals(expectedIndent, PomTransformer.detectIndentation(document, xPath));
         Assertions.assertEquals(expectedEol, PomTransformer.detectEol(xml));
     }
-
 }
