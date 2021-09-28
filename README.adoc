@@ -12,7 +12,7 @@ A basic usage example:
 
 [source,java]
 ----
-import org.l2x6.pom.tuner.Gavtcs;
+import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
