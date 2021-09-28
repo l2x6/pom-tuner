@@ -1572,54 +1572,23 @@ public class PomTransformer {
             };
         }
 
+        /**
+         * Set the {@code artifactId} and {@code relativePath} in the {@code parent} element. {@code artifactId} cannot
+         * be {@code null}. If {@code relativePath} is {@code null}, the {@code relativePath} element will be removed.
+         *
+         * @param  artifactId   the {@code artifactId} for the {@code parent} element
+         * @param  relativePath a value for the {@code relativePath} element or {@code null} if it should be removed
+         * @return              a new {@link Transformation}
+         */
         public static Transformation setParent(String artifactId, String relativePath) {
             return (Document document, TransformationContext context) -> {
-                try {
-                    {
-                        final String xPathExpression = PomTunerUtils.anyNs("project", "parent", "artifactId");
-                        Node artifactIdNode = (Node) context.getXPath().evaluate(
-                                xPathExpression, document,
-                                XPathConstants.NODE);
-                        if (artifactIdNode != null) {
-                            artifactIdNode.setTextContent(artifactId);
-                        } else {
-                            throw new IllegalStateException("Could not find " + xPathExpression + " in " + context.pomXmlPath);
-                        }
-
-                    }
-                    if (relativePath == null) {
-                        /* remove relativePath */
-                        final String xPathExpression = PomTunerUtils.anyNs("project", "parent", "relativePath");
-                        Node node = (Node) context.getXPath().evaluate(
-                                xPathExpression, document,
-                                XPathConstants.NODE);
-                        if (node != null) {
-                            final Node prevSibling = node.getPreviousSibling();
-                            if (prevSibling != null && prevSibling.getNodeType() == Node.TEXT_NODE
-                                    && WS_PATTERN.matcher(prevSibling.getTextContent()).matches()) {
-                                /* remove any preceding whitespace */
-                                prevSibling.getParentNode().removeChild(prevSibling);
-                            }
-                            node.getParentNode().removeChild(node);
-                        }
-                    } else {
-                        /* Add or set relativePath */
-                        final String xPathExpression = PomTunerUtils.anyNs("project", "parent", "relativePath");
-                        Node node = (Node) context.getXPath().evaluate(
-                                xPathExpression, document,
-                                XPathConstants.NODE);
-                        if (node != null) {
-                            node.setTextContent(relativePath);
-                        } else {
-                            node = document.createElement("relativePath");
-                            ((Node) context.getXPath().evaluate(
-                                    PomTunerUtils.anyNs("project", "parent"), document,
-                                    XPathConstants.NODE)).appendChild(node);
-                            node.setTextContent(relativePath);
-                        }
-                    }
-                } catch (XPathExpressionException | DOMException e) {
-                    throw new RuntimeException(e);
+                ContainerElement parent = context.getContainerElement("project", "parent")
+                        .orElseThrow(() -> new IllegalStateException("No parent element in " + context.getPomXmlPath()));
+                parent.addOrSetChildTextElement("artifactId", artifactId);
+                if (relativePath == null) {
+                    parent.getChildContainerElement("relativePath").ifPresent(relPath -> relPath.remove(true, true));
+                } else {
+                    parent.addOrSetChildTextElement("relativePath", relativePath);
                 }
             };
         }

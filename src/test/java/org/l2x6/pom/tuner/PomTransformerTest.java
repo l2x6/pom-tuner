@@ -86,6 +86,33 @@ public class PomTransformerTest {
     }
 
     @Test
+    void setParentNoRelPath() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <parent>\n" //
+                + "        <groupId>org.acme</groupId>\n" //
+                + "        <artifactId>old-parent</artifactId>\n" //
+                + "        <version>1.2.3</version>\n" //
+                + "    </parent>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <parent>\n" //
+                + "        <groupId>org.acme</groupId>\n" //
+                + "        <artifactId>new-parent</artifactId>\n" //
+                + "        <version>1.2.3</version>\n" //
+                + "        <relativePath>../../pom.xml</relativePath>\n" //
+                + "    </parent>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(Transformation.setParent("new-parent", "../../pom.xml")),
+                expected);
+    }
+
+    @Test
     void postProcessLicenseHeader() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<!--\n" //
