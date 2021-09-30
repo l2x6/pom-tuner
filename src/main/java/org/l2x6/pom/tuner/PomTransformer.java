@@ -1339,6 +1339,20 @@ public class PomTransformer {
             };
         }
 
+        public static Transformation addManagedDependencyIfNeeded(Gavtcs gavtcs) {
+            return (Document document, TransformationContext context) -> {
+                final ContainerElement dependencyManagementDeps = context.getOrAddContainerElements("dependencyManagement",
+                        "dependencies");
+
+                if (!dependencyManagementDeps.childElementsStream()
+                        .map(ContainerElement::asGavtcs)
+                        .anyMatch(dep -> dep.equals(gavtcs))) {
+                    dependencyManagementDeps.addGavtcs(gavtcs);
+                }
+
+            };
+        }
+
         public static Transformation removeManagedDependencies(boolean removePrecedingComments,
                 boolean removePrecedingWhitespace,
                 Predicate<Gavtcs> predicate) {

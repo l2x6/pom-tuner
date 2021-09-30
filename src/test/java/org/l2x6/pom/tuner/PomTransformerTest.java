@@ -1075,6 +1075,68 @@ public class PomTransformerTest {
     }
 
     @Test
+    void addManagedDependencyIfNeeded() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <dependencyManagement>\n" //
+                + "        <dependencies>\n" //
+                + "            <dependency>\n" //
+                + "                <groupId>${quarkus.platform.group-id}</groupId>\n" //
+                + "                <artifactId>${quarkus.platform.artifact-id}</artifactId>\n" //
+                + "                <version>${quarkus.platform.version}</version>\n" //
+                + "                <type>pom</type>\n" //
+                + "                <scope>import</scope>\n" //
+                + "            </dependency>\n" //
+                + "            <dependency>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>my-ext2</artifactId>\n" //
+                + "                <version>${project.version}</version>\n" //
+                + "            </dependency>\n" //
+                + "        </dependencies>\n" //
+                + "    </dependencyManagement>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <dependencyManagement>\n" //
+                + "        <dependencies>\n" //
+                + "            <dependency>\n" //
+                + "                <groupId>${quarkus.platform.group-id}</groupId>\n" //
+                + "                <artifactId>${quarkus.platform.artifact-id}</artifactId>\n" //
+                + "                <version>${quarkus.platform.version}</version>\n" //
+                + "                <type>pom</type>\n" //
+                + "                <scope>import</scope>\n" //
+                + "            </dependency>\n" //
+                + "            <dependency>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>my-ext2</artifactId>\n" //
+                + "                <version>${project.version}</version>\n" //
+                + "            </dependency>\n" //
+                + "        </dependencies>\n" //
+                + "    </dependencyManagement>\n" //
+                + "</project>\n";
+        assertTransformation(source,
+                Collections.singletonList(
+                        Transformation.addManagedDependencyIfNeeded(
+                                new Gavtcs("${quarkus.platform.group-id}", "${quarkus.platform.artifact-id}",
+                                        "${quarkus.platform.version}", "pom", null, "import"))),
+                expected);
+    }
+
+    @Test
     void removeManagedDependencies() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
