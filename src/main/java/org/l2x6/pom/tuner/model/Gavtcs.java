@@ -138,6 +138,10 @@ public class Gavtcs {
         return SCOPE_AND_TYPE_FIRST_COMPARATOR;
     }
 
+    public static Predicate<Gavtcs> equalGroupIdAndArtifactId(String groupId, String artifactId) {
+        return gavtcs -> groupId.equals(gavtcs.getGroupId()) && artifactId.equals(gavtcs.getArtifactId());
+    }
+
     private static String emptyToNull(String string) {
         return string != null && !string.isEmpty() ? string : null;
     }
