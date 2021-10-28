@@ -533,6 +533,30 @@ public class PomTransformer {
         }
 
         /**
+         * Find a child container element under the given path.
+         * E.g. {@code project.getChildContainerElement("dependencyManagement", "dependencies")} would return the
+         * dependencies node under dependencyManagement
+         *
+         * @param  elementName       the name of an element to search for
+         * @param  otherElementNames optional array of further element names to search for
+         * @return                   an Optional containing the first child with the given {@code elementName} or an empty
+         *                           {@link Optional} if no such child exists
+         */
+        public Optional<ContainerElement> getChildContainerElement(String elementName, String... otherElementNames) {
+            Optional<ContainerElement> result = getChildContainerElement(elementName);
+            if (!result.isPresent()) {
+                return Optional.empty();
+            }
+            for (String otherName : otherElementNames) {
+                result = result.get().getChildContainerElement(otherName);
+                if (!result.isPresent()) {
+                    return Optional.empty();
+                }
+            }
+            return result;
+        }
+
+        /**
          * Creates the given {@code elementName} under the given {@code parent} unless it exists already.
          *
          * @return an existing or newly created {@link Element} with the given {@code elementName}
@@ -611,13 +635,12 @@ public class PomTransformer {
          * @param value       the text content of the newly added {@link Element}
          */
         public void addOrSetChildTextElement(String name, String value) {
-            for (ContainerElement prop : childElements()) {
-                if (prop.node.getNodeName().equals(name)) {
-                    prop.node.setTextContent(value);
-                    return;
-                }
+            Optional<ContainerElement> existingChild = getChildContainerElement(name);
+            if (existingChild.isPresent()) {
+                existingChild.get().node.setTextContent(value);
+            } else {
+                addChildTextElement(name, value, getOrAddLastIndent());
             }
-            addChildTextElement(name, value, getOrAddLastIndent());
         }
 
         /**
@@ -1252,6 +1275,40 @@ public class PomTransformer {
             parent.replaceChild(moduleComment, node);
             return moduleComment;
         }
+
+        /**
+         * Remove {@link Gavtcs}-like nodes (such as {@code <dependency>}, {@code <plugin>}, etc.) matching the given
+         * {@code predicate} from the given profile.
+         *
+         * @param profileId                 the {@code id} of the profile under which the changes should happen or {@code null}
+         *                                  if the
+         *                                  changes should happen in the default profile-less area
+         * @param removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
+         *                                  otherwise the preceding comments won't be removed
+         * @param removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
+         *                                  also be removed; otherwise the preceding whitespace nodes won't be removed
+         * @param predicate                 the predicate to select the nodes to remove, such as
+         *                                  {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
+         * @param nodeName                  the first node name of the path to remove
+         * @param otherNodeNames            other optional node names to remove
+         */
+        void removeGavtcs(String profileId, boolean removePrecedingComments, boolean removePrecedingWhitespace,
+                Predicate<Gavtcs> predicate, String nodeName, String... otherNodeNames) {
+            getProfileParent(profileId).ifPresent(profileParent -> {
+                profileParent
+                        .getChildContainerElement(nodeName, otherNodeNames)
+                        .ifPresent(gavtcsNode -> {
+                            List<NodeGavtcs> deletionList = gavtcsNode.childElementsStream()
+                                    .map(dep -> dep.asGavtcs())
+                                    .filter(predicate)
+                                    .collect(Collectors.toList());
+
+                            deletionList
+                                    .forEach(dep -> dep.getNode().remove(removePrecedingComments, removePrecedingWhitespace));
+                        });
+            });
+
+        }
     }
 
     /**
@@ -1312,21 +1369,6 @@ public class PomTransformer {
                     furtherNames);
         }
 
-        public static Transformation removeContainerElementIfEmpty(boolean removePrecedingComments,
-                boolean removePrecedingWhitespace, boolean onlyIfEmpty, String elementName, String... furtherNames) {
-            return (Document document, TransformationContext context) -> {
-                final String[] path = new String[furtherNames.length + 2];
-                int i = 0;
-                path[i++] = "project";
-                path[i++] = elementName;
-                for (String n : furtherNames) {
-                    path[i++] = n;
-                }
-                final String xPath = PomTunerUtils.anyNs(path);
-                context.removeNode(xPath, removePrecedingComments, removePrecedingWhitespace, onlyIfEmpty);
-            };
-        }
-
         public static Transformation addManagedDependency(String groupId, String artifactId, String version) {
             return addManagedDependency(new Gavtcs(groupId, artifactId, version, null, null, null));
         }
@@ -1353,14 +1395,21 @@ public class PomTransformer {
             };
         }
 
-        public static Transformation removeManagedDependencies(boolean removePrecedingComments,
-                boolean removePrecedingWhitespace,
-                Predicate<Gavtcs> predicate) {
+        public static Transformation commentModules(Collection<String> modulesToComment, String commentText) {
             return (Document document, TransformationContext context) -> {
-                context.getManagedDependencies().stream()
-                        .filter(predicate)
-                        .forEach(dep -> context.removeManagedDependency(dep, removePrecedingComments,
-                                removePrecedingWhitespace));
+                final String condition = modulesToComment.stream()
+                        .map(m -> "text() = '" + m + "'")
+                        .collect(Collectors.joining(" or "));
+                final String xPathExpr = PomTunerUtils.anyNs("project", "modules", "module") + "[" + condition + "]";
+                try {
+                    final NodeList moduleNodes = (NodeList) context.getXPath().evaluate(xPathExpr, document,
+                            XPathConstants.NODESET);
+                    for (int i = 0; i < moduleNodes.getLength(); i++) {
+                        TransformationContext.commentTextNode(moduleNodes.item(i), commentText);
+                    }
+                } catch (XPathExpressionException | DOMException e) {
+                    throw new RuntimeException(e);
+                }
             };
         }
 
@@ -1388,6 +1437,35 @@ public class PomTransformer {
                                                 + context.getPomXmlPath()));
 
                 for (ContainerElement dep : dependencyManagementDeps.childElements()) {
+                    final Ga ga = dep.asGavtcs().toGa();
+                    if (gas.contains(ga)) {
+                        ContainerElement versionNode = dep.childElementsStream()
+                                .filter(ch -> "version".equals(ch.getNode().getLocalName()))
+                                .findFirst()
+                                .orElseThrow(() -> new IllegalStateException(
+                                        "No <version> found for " + ga + " in " + context.getPomXmlPath()));
+                        versionNode.getNode().setTextContent(newVersion);
+                    }
+                }
+            };
+        }
+
+        public static Transformation setDependencyVersion(String newVersion, Collection<Ga> gas) {
+            return setDependencyVersion(null, newVersion, gas);
+        }
+
+        public static Transformation setDependencyVersion(String profileId, String newVersion, Collection<Ga> gas) {
+            return (Document document, TransformationContext context) -> {
+                final ContainerElement profileParent = context.getProfileParent(profileId)
+                        .orElseThrow(() -> new IllegalStateException(
+                                "No such profile '" + profileId + "' found in " + context.getPomXmlPath()));
+                final ContainerElement deps = profileParent
+                        .getChildContainerElement("dependencies").orElseThrow(
+                                () -> new IllegalStateException(
+                                        "dependencies not found under profile '" + profileId + "' in "
+                                                + context.getPomXmlPath()));
+
+                for (ContainerElement dep : deps.childElements()) {
                     final Ga ga = dep.asGavtcs().toGa();
                     if (gas.contains(ga)) {
                         ContainerElement versionNode = dep.childElementsStream()
@@ -1472,6 +1550,21 @@ public class PomTransformer {
             };
         }
 
+        public static Transformation removeContainerElementIfEmpty(boolean removePrecedingComments,
+                boolean removePrecedingWhitespace, boolean onlyIfEmpty, String elementName, String... furtherNames) {
+            return (Document document, TransformationContext context) -> {
+                final String[] path = new String[furtherNames.length + 2];
+                int i = 0;
+                path[i++] = "project";
+                path[i++] = elementName;
+                for (String n : furtherNames) {
+                    path[i++] = n;
+                }
+                final String xPath = PomTunerUtils.anyNs(path);
+                context.removeNode(xPath, removePrecedingComments, removePrecedingWhitespace, onlyIfEmpty);
+            };
+        }
+
         public static Transformation removeModule(boolean removePrecedingComments, boolean removePrecedingWhitespace,
                 String module) {
             return (Document document, TransformationContext context) -> {
@@ -1503,24 +1596,6 @@ public class PomTransformer {
                             }
                         });
                 ;
-            };
-        }
-
-        public static Transformation commentModules(Collection<String> modulesToComment, String commentText) {
-            return (Document document, TransformationContext context) -> {
-                final String condition = modulesToComment.stream()
-                        .map(m -> "text() = '" + m + "'")
-                        .collect(Collectors.joining(" or "));
-                final String xPathExpr = PomTunerUtils.anyNs("project", "modules", "module") + "[" + condition + "]";
-                try {
-                    final NodeList moduleNodes = (NodeList) context.getXPath().evaluate(xPathExpr, document,
-                            XPathConstants.NODESET);
-                    for (int i = 0; i < moduleNodes.getLength(); i++) {
-                        TransformationContext.commentTextNode(moduleNodes.item(i), commentText);
-                    }
-                } catch (XPathExpressionException | DOMException e) {
-                    throw new RuntimeException(e);
-                }
             };
         }
 
@@ -1566,23 +1641,133 @@ public class PomTransformer {
             };
         }
 
+        /**
+         * Remove plugins having the given {@code groupId} and {@code artifactId} from the default profile-less area of
+         * the {@code pom.xml} file.
+         *
+         * @param      removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
+         *                                       otherwise the preceding comments won't be removed
+         * @param      removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
+         *                                       also be removed; otherwise the preceding whitespace nodes won't be removed
+         * @param      predicate                 the predicate to select the nodes to remove, such as
+         *                                       {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
+         * @param      groupId                   the {@code groupId} of the plugins to remove
+         * @param      artifactId                the {@code artifactId} of the plugins to remove
+         * @return                               a new {@link Transformation}
+         *
+         * @deprecated                           use
+         *                                       {@code removePlugins(null, removePrecedingComments, removePrecedingWhitespace, Gavtcs.equalGroupIdAndArtifactId(groupId, artifactId))}
+         */
         public static Transformation removePlugin(boolean removePrecedingComments, boolean removePrecedingWhitespace,
                 String groupId, String artifactId) {
+            return removePlugins(null, removePrecedingComments, removePrecedingWhitespace,
+                    Gavtcs.equalGroupIdAndArtifactId(groupId, artifactId));
+        }
+
+        /**
+         * Remove plugins matching the given {@code predicate} from the given profile.
+         *
+         * @param  profileId                 the {@code id} of the profile under which the changes should happen or {@code null}
+         *                                   if the
+         *                                   changes should happen in the default profile-less area
+         * @param  removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
+         *                                   otherwise the preceding comments won't be removed
+         * @param  removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
+         *                                   also be removed; otherwise the preceding whitespace nodes won't be removed
+         * @param  predicate                 the predicate to select the nodes to remove, such as
+         *                                   {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
+         * @return                           a new {@link Transformation}
+         */
+        public static Transformation removePlugins(String profileId, boolean removePrecedingComments,
+                boolean removePrecedingWhitespace,
+                Predicate<Gavtcs> predicate) {
             return (Document document, TransformationContext context) -> {
-                final String xPath = PomTunerUtils.anyNs("project", "build", "plugins", "plugin")
-                        + "[." + PomTunerUtils.anyNs("groupId") + "/text() = '" + groupId + "' and ."
-                        + PomTunerUtils.anyNs("artifactId") + "/text() = '"
-                        + artifactId + "']";
-                context.removeNode(xPath, removePrecedingComments, removePrecedingWhitespace, false);
+                context.removeGavtcs(profileId, removePrecedingComments, removePrecedingWhitespace, predicate, "build",
+                        "plugins");
             };
         }
 
+        /**
+         * Remove dependencies matching the given {@code predicate} from the default profile-less area of the
+         * {@code pom.xml} file.
+         *
+         * @param      removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
+         *                                       otherwise the preceding comments won't be removed
+         * @param      removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
+         *                                       also be removed; otherwise the preceding whitespace nodes won't be removed
+         * @param      predicate                 the predicate to select the nodes to remove, such as
+         *                                       {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
+         * @return                               a new {@link Transformation}
+         *
+         * @deprecated                           use {@link #removeDependencies(String, boolean, boolean, Predicate)}
+         */
         public static Transformation removeDependency(boolean removePrecedingComments, boolean removePrecedingWhitespace,
                 Predicate<Gavtcs> predicate) {
+            return removeDependencies(null, removePrecedingComments, removePrecedingWhitespace, predicate);
+        }
+
+        /**
+         * Remove dependencies matching the given {@code predicate} from the given profile.
+         *
+         * @param  profileId                 the {@code id} of the profile under which the changes should happen or {@code null}
+         *                                   if the
+         *                                   changes should happen in the default profile-less area
+         * @param  removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
+         *                                   otherwise the preceding comments won't be removed
+         * @param  removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
+         *                                   also be removed; otherwise the preceding whitespace nodes won't be removed
+         * @param  predicate                 the predicate to select the nodes to remove, such as
+         *                                   {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
+         * @return                           a new {@link Transformation}
+         */
+        public static Transformation removeDependencies(String profileId, boolean removePrecedingComments,
+                boolean removePrecedingWhitespace,
+                Predicate<Gavtcs> predicate) {
             return (Document document, TransformationContext context) -> {
-                context.getDependencies().stream()
-                        .filter(predicate)
-                        .forEach(dep -> context.removeDependency(dep, removePrecedingComments, removePrecedingWhitespace));
+                context.removeGavtcs(profileId, removePrecedingComments, removePrecedingWhitespace, predicate, "dependencies");
+            };
+        }
+
+        /**
+         * Remove managed dependencies matching the given {@code predicate} from the default profile-less area of the
+         * {@code pom.xml} file.
+         *
+         * @param      removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
+         *                                       otherwise the preceding comments won't be removed
+         * @param      removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
+         *                                       also be removed; otherwise the preceding whitespace nodes won't be removed
+         * @param      predicate                 the predicate to select the nodes to remove, such as
+         *                                       {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
+         * @return                               a new {@link Transformation}
+         *
+         * @deprecated                           use {@link #removeManagedDependencies(String, boolean, boolean, Predicate)}
+         */
+        public static Transformation removeManagedDependencies(boolean removePrecedingComments,
+                boolean removePrecedingWhitespace,
+                Predicate<Gavtcs> predicate) {
+            return removeManagedDependencies(null, removePrecedingComments, removePrecedingWhitespace, predicate);
+        }
+
+        /**
+         * Remove managed dependencies matching the given {@code predicate} from the given profile.
+         *
+         * @param  profileId                 the {@code id} of the profile under which the changes should happen or {@code null}
+         *                                   if the
+         *                                   changes should happen in the default profile-less area
+         * @param  removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
+         *                                   otherwise the preceding comments won't be removed
+         * @param  removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
+         *                                   also be removed; otherwise the preceding whitespace nodes won't be removed
+         * @param  predicate                 the predicate to select the nodes to remove, such as
+         *                                   {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
+         * @return                           a new {@link Transformation}
+         */
+        public static Transformation removeManagedDependencies(String profileId, boolean removePrecedingComments,
+                boolean removePrecedingWhitespace,
+                Predicate<Gavtcs> predicate) {
+            return (Document document, TransformationContext context) -> {
+                context.removeGavtcs(profileId, removePrecedingComments, removePrecedingWhitespace, predicate,
+                        "dependencyManagement", "dependencies");
             };
         }
 
@@ -1654,7 +1839,8 @@ public class PomTransformer {
         }
 
         /**
-         * Remove the element specified by the given {@code path} if it has no child elements (child whitespace and comments do
+         * Remove the element specified by the given {@code path} if it has no child elements (child whitespace and
+         * comments do
          * not matter).
          * The {@code path} is vararg of element names, e.g. {@code removeIfEmpty(true, true, "project", "properties")}
          * would remove the {@code <properties>} element if there are no properties defined under it.
