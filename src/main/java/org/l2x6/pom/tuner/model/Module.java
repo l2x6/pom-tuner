@@ -60,6 +60,7 @@ public class Module {
         /** Relative to source tree root directory */
         final String pomPath;
         String name;
+        String packaging = "jar";
         List<Profile.Builder> profiles;
 
         public Builder(Path rootDirectory, Path pomXml, Charset encoding, Predicate<Dependency> dependencyExcludes) {
@@ -93,6 +94,8 @@ public class Module {
                             ignoredSubtreesCount++;
                         } else if ("parent".equals(elementName) && r.hasNext()) {
                             gavBuilderStack.push(parentGav);
+                        } else if ("packaging".equals(elementName) && "project".equals(elementStack.peek())) {
+                            this.packaging = r.nextEvent().asCharacters().getData();
                         } else if ("name".equals(elementName) && "project".equals(elementStack.peek())) {
                             this.name = r.nextEvent().asCharacters().getData();
                         } else if ("dependency".equals(elementName)) {
@@ -201,7 +204,7 @@ public class Module {
             final List<Profile> useProfiles = Collections
                     .unmodifiableList(profiles.stream().map(Profile.Builder::build).collect(Collectors.toList()));
             profiles = null;
-            return new Module(pomPath, moduleGav.build(), parentGav.build(), name, useProfiles);
+            return new Module(pomPath, moduleGav.build(), parentGav.build(), packaging, name, useProfiles);
         }
 
         public ModuleGavBuilder getModuleGav() {
@@ -364,15 +367,16 @@ public class Module {
     final GavExpression parentGav;
     /** Relative to source tree root directory */
     final String pomPath;
+    private final String packaging;
     private final String name;
-
     final List<Profile> profiles;
 
-    Module(String pomPath, GavExpression gav, GavExpression parentGa, String name, List<Profile> profiles) {
+    Module(String pomPath, GavExpression gav, GavExpression parentGa, String packaging, String name, List<Profile> profiles) {
         super();
         this.pomPath = pomPath;
         this.gav = gav;
         this.parentGav = parentGa;
+        this.packaging = packaging;
         this.name = name;
         this.profiles = profiles;
     }
@@ -421,6 +425,13 @@ public class Module {
      */
     public String getPomPath() {
         return pomPath;
+    }
+
+    /**
+     * @return this {@link Module}'s packaging, never {@code null}
+     */
+    public String getPackaging() {
+        return packaging;
     }
 
     /**

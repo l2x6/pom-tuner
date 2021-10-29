@@ -233,6 +233,7 @@ public class MavenSourceTreeTest {
                     t.getExpressionEvaluator(ActiveProfiles.of()).evaluateGa(m4.getGav())
                             .getArtifactId())
                     .isEqualTo("tree-module-4");
+            org.assertj.core.api.Assertions.assertThat(m4.getPackaging()).isEqualTo("jar");
         }
         {
             final Module m4 = t.getModuleByPath(t.getRootDirectory().resolve(relPath));
@@ -242,6 +243,8 @@ public class MavenSourceTreeTest {
                             t.getExpressionEvaluator(ActiveProfiles.of()).evaluateGa(m4.getGav()).getArtifactId())
                     .isEqualTo("tree-module-4");
         }
+
+        org.assertj.core.api.Assertions.assertThat(t.getRootModule().getPackaging()).isEqualTo("pom");
     }
 
     @Test
