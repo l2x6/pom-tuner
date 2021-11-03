@@ -223,7 +223,7 @@ public class Gavtcs {
         return exclusions;
     }
 
-    public static Function<Gavtcs, Optional<Gavtcs>> deploymentVitualMapper(Predicate<Gavtcs> isExtension) {
+    public static Function<Gavtcs, Optional<Gavtcs>> deploymentVirtualMapper(Predicate<Gavtcs> isExtension) {
         return gavtcs -> isExtension.test(gavtcs)
                 ? Optional.of(gavtcs.toVirtualDeployment())
                 : Optional.empty();
