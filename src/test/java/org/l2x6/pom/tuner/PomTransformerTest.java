@@ -21,6 +21,8 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
+import java.util.Set;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
@@ -32,6 +34,7 @@ import javax.xml.xpath.XPathFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
+import org.l2x6.pom.tuner.PomTransformer.NodeGavtcs;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
@@ -1588,6 +1591,87 @@ public class PomTransformerTest {
         assertTransformation(source,
                 Collections.singletonList(Transformation.addDependencyIfNeeded(new Gavtcs("org.acme", "a1", "1.2.3"),
                         Gavtcs.scopeAndTypeFirstComparator())),
+                expected);
+    }
+
+    @Test
+    void reIndent() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <dependencies>\n" //
+                + "        <dependency>\n" //
+                + "            <groupId>org.acme</groupId>\n" //
+                + "            <artifactId>a1</artifactId>\n" //
+                + "            <version>1.2.3</version>\n" //
+                + "        </dependency>\n" //
+                + "\n" //
+                + "        <!-- Comment 1 -->\n" //
+                + "        <!-- Comment 2 -->\n" //
+                + "        <dependency>\n" //
+                + "            <groupId>org.acme</groupId>\n" //
+                + "            <artifactId>a2</artifactId>\n" //
+                + "            <version>1.2.3</version>\n" //
+                + "            <exclusions>\n" //
+                + "                <exclusion>\n" //
+                + "                    <groupId>*</groupId>\n" //
+                + "                    <artifactId>*</artifactId>\n" //
+                + "                </exclusion>\n" //
+                + "            </exclusions>\n" //
+                + "        </dependency>\n" //
+                + "    </dependencies>\n" //
+                + "\n" //
+                + "    <build/>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <dependencies>\n" //
+                + "        <dependency>\n" //
+                + "            <groupId>org.acme</groupId>\n" //
+                + "            <artifactId>a1</artifactId>\n" //
+                + "            <version>1.2.3</version>\n" //
+                + "        </dependency>\n" //
+                + "\n" //
+                + "                <!-- Comment 1 -->\n" //
+                + "                <!-- Comment 2 -->\n" //
+                + "                <dependency>\n" //
+                + "                    <groupId>org.acme</groupId>\n" //
+                + "                    <artifactId>a2</artifactId>\n" //
+                + "                    <version>1.2.3</version>\n" //
+                + "                    <exclusions>\n" //
+                + "                        <exclusion>\n" //
+                + "                            <groupId>*</groupId>\n" //
+                + "                            <artifactId>*</artifactId>\n" //
+                + "                        </exclusion>\n" //
+                + "                    </exclusions>\n" //
+                + "                </dependency>\n" //
+                + "    </dependencies>\n" //
+                + "\n" //
+                + "    <build/>\n" //
+                + "</project>\n";
+        assertTransformation(source,
+                Collections.singletonList(
+                        (Document document, TransformationContext context) -> {
+                            Set<NodeGavtcs> deps = context.getDependencies();
+                            Iterator<NodeGavtcs> it = deps.iterator();
+                            it.next();
+                            NodeGavtcs dep2 = it.next();
+                            context.reIndent(dep2.getNode().getNodes(TransformationContext.ALL_WHITESPACE_AND_COMMENTS),
+                                    "                ");
+                        }),
                 expected);
     }
 

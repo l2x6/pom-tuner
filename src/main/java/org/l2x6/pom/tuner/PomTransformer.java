@@ -89,6 +89,7 @@ public class PomTransformer {
     };
     static final Pattern EOL_PATTERN = Pattern.compile("\r?\n");
     static final Pattern WS_PATTERN = Pattern.compile("[ \t\n\r]+");
+    static final Pattern INDENT_PATTERN = Pattern.compile("(\r?\n)([ \t]+)");
     static final Pattern EMPTY_LINE_PATTERN = Pattern.compile("[ \t]*\r?\n\r?\n[ \t\r\n]*");
     static final Pattern SIMPLE_ELEM_WS_PATTERN = Pattern.compile("<([^ \t\n\r]+)([ \t\n\r]*)/>");
     private static final String MODULE_COMMENT_PREFIX = " <module>";
@@ -373,7 +374,6 @@ public class PomTransformer {
         public Comment prependComment(String comment) {
             final Node refNode = previousSiblingInsertionRefNode();
             Comment result = node.getOwnerDocument().createComment(comment);
-            node.getParentNode().insertBefore(context.newLine(), refNode);
             node.getParentNode().insertBefore(context.indent(indentLevel), refNode);
             node.getParentNode().insertBefore(result, refNode);
             return result;
@@ -426,6 +426,42 @@ public class PomTransformer {
          */
         public Element getNode() {
             return node;
+        }
+
+        /**
+         * @return the associated DOM {@link Node} together with the preceding whitespace and comments selected by the
+         *         given
+         *         {@link Predicate}
+         */
+        public List<Node> getNodes(Predicate<Node> precedingInclude) {
+            final List<Node> result = new ArrayList<>();
+            Node prevSibling = node;
+            while ((prevSibling = prevSibling.getPreviousSibling()) != null
+                    && precedingInclude.test(prevSibling)) {
+                result.add(prevSibling);
+            }
+            result.add(node);
+            return result;
+        }
+
+        /**
+         * @return the associated DOM {@link Node} together with the preceding whitespace and comments selected by the
+         *         given
+         *         {@link Predicate}
+         */
+        public DocumentFragment getFragment(Predicate<Node> precedingInclude) {
+            final DocumentFragment result = node.getOwnerDocument().createDocumentFragment();
+            for (Node node : getNodes(precedingInclude)) {
+                result.appendChild(node);
+            }
+            return result;
+        }
+
+        /**
+         * @return the associated DOM {@link Node} together with all preceding whitespace and comments
+         */
+        public DocumentFragment getFragment() {
+            return getFragment(TransformationContext.ALL_WHITESPACE_AND_COMMENTS);
         }
 
         /**
@@ -702,6 +738,26 @@ public class PomTransformer {
             }
         }
 
+        public void addGavtcsIfNeeded(Gavtcs gavtcs, Comparator<Gavtcs> comparator) {
+            Node refNode = null;
+            for (ContainerElement dep : childElements()) {
+                final Gavtcs depGavtcs = dep.asGavtcs();
+                int comparison = comparator.compare(gavtcs, depGavtcs);
+                if (comparison == 0) {
+                    /* the given gavtcs is available, no need to add it */
+                    return;
+                }
+                if (refNode == null && comparison < 0) {
+                    refNode = dep.previousSiblingInsertionRefNode();
+                }
+            }
+
+            if (refNode == null) {
+                refNode = getOrAddLastIndent();
+            }
+            addGavtcs(gavtcs, refNode);
+        }
+
         /**
          * Transform this {@link ContainerElement} to a {@link NodeGavtcs} assuming that it has {@code <groupId>},
          * {@code <artifactId>}, etc. children
@@ -861,6 +917,10 @@ public class PomTransformer {
      * A context of a set of {@link Transformation} operations.
      */
     public static class TransformationContext {
+        public static final Predicate<Node> ALL_WHITESPACE_AND_COMMENTS = prevSibling -> TransformationContext
+                .isWhiteSpaceNode(prevSibling)
+                || prevSibling.getNodeType() == Node.COMMENT_NODE;
+
         private final Path pomXmlPath;
         private final Document document;
         private final ContainerElement project;
@@ -1169,24 +1229,7 @@ public class PomTransformer {
         }
 
         public void addDependencyIfNeeded(Gavtcs gavtcs, Comparator<Gavtcs> comparator) {
-            final ContainerElement deps = getOrAddContainerElement("dependencies");
-            Node refNode = null;
-            for (ContainerElement dep : deps.childElements()) {
-                final Gavtcs depGavtcs = dep.asGavtcs();
-                int comparison = comparator.compare(gavtcs, depGavtcs);
-                if (comparison == 0) {
-                    /* the given gavtcs is available, no need to add it */
-                    return;
-                }
-                if (refNode == null && comparison < 0) {
-                    refNode = dep.previousSiblingInsertionRefNode();
-                }
-            }
-
-            if (refNode == null) {
-                refNode = deps.getOrAddLastIndent();
-            }
-            deps.addGavtcs(gavtcs, refNode);
+            getOrAddContainerElement("dependencies").addGavtcsIfNeeded(gavtcs, comparator);
         }
 
         public void addTextChildIfNeeded(ContainerElement parent, String nodeName, String nodeValue,
@@ -1250,6 +1293,67 @@ public class PomTransformer {
                 }
             } catch (XPathExpressionException | DOMException e) {
                 throw new RuntimeException(e);
+            }
+        }
+
+        /**
+         * Resets the indentation of the given {@link Node} to the given {@code newIndent}.
+         * If the given {@code node} has children, then the indentation of the children gets reset as well to an
+         * appropriately expanded indentation string.
+         *
+         * @param node      the node whose indentation should be reset
+         * @param newIndent the new indentation string
+         */
+        public void reIndent(Node node, String newIndent) {
+            switch (node.getNodeType()) {
+            case Node.TEXT_NODE:
+                final String oldValue = node.getNodeValue();
+                final String newValue = INDENT_PATTERN.matcher(oldValue).replaceAll("$1" + newIndent);
+                if (!oldValue.equals(newValue)) {
+                    node.setNodeValue(newValue);
+                }
+                break;
+            case Node.ELEMENT_NODE:
+                NodeList children = node.getChildNodes();
+                String passIndent = newIndent + indentationString;
+                final int nodeCount = children.getLength();
+                for (int i = 0; i < nodeCount; i++) {
+                    final Node child = children.item(i);
+                    if (i + 1 == nodeCount && child.getNodeType() == Node.TEXT_NODE) {
+                        /* the last indent before the closing element */
+                        reIndent(child, newIndent);
+                    } else {
+                        reIndent(child, passIndent);
+                    }
+                }
+                break;
+            default:
+                break;
+            }
+        }
+
+        /**
+         * Calls {@link #reIndent(Node, String)} for each of the given {@code nodes}.
+         *
+         * @param nodes     the nodes whose indentation should be reset
+         * @param newIndent the new indentation string
+         */
+        public void reIndent(List<Node> nodes, String newIndent) {
+            for (Node node : nodes) {
+                reIndent(node, newIndent);
+            }
+        }
+
+        /**
+         * Calls {@link #reIndent(Node, String)} for each child of the given {@code fragment}.
+         *
+         * @param fragment  the nodes whose indentation should be reset
+         * @param newIndent the new indentation string
+         */
+        public void reIndent(DocumentFragment fragment, String newIndent) {
+            final NodeList children = fragment.getChildNodes();
+            for (int i = 0; i < children.getLength(); i++) {
+                reIndent(children.item(i), newIndent);
             }
         }
 
