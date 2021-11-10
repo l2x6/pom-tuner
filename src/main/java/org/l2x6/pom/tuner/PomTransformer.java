@@ -878,6 +878,28 @@ public class PomTransformer {
             }
 
         }
+
+        /**
+         * Assuming the current {@link ContainerElement} is a {@code <dependency>}, {@code <plugin>} or similar, set its
+         * {@code <version>} child to the given {@code newVersion} value, adding the {@code <version>} node if necessary
+         * or removing it of {@code newVersion} is {@code null}.
+         *
+         * @param newVersion the version to set or {@code null} if the {@code <version>} node should be removed
+         */
+        public void setVersion(String newVersion) {
+            Optional<ContainerElement> versionNode = childElementsStream()
+                    .filter(ch -> "version".equals(ch.getNode().getLocalName()))
+                    .findFirst();
+            if (!versionNode.isPresent() && newVersion == null) {
+                /* nothing to do */
+            } else if (!versionNode.isPresent()) {
+                addChildTextElement("version", newVersion);
+            } else if (newVersion == null) {
+                versionNode.get().remove(true, true);
+            } else {
+                versionNode.get().getNode().setTextContent(newVersion);
+            }
+        }
     }
 
     /**
@@ -1543,12 +1565,7 @@ public class PomTransformer {
                 for (ContainerElement dep : dependencyManagementDeps.childElements()) {
                     final Ga ga = dep.asGavtcs().toGa();
                     if (gas.contains(ga)) {
-                        ContainerElement versionNode = dep.childElementsStream()
-                                .filter(ch -> "version".equals(ch.getNode().getLocalName()))
-                                .findFirst()
-                                .orElseThrow(() -> new IllegalStateException(
-                                        "No <version> found for " + ga + " in " + context.getPomXmlPath()));
-                        versionNode.getNode().setTextContent(newVersion);
+                        dep.setVersion(newVersion);
                     }
                 }
             };
@@ -1572,12 +1589,7 @@ public class PomTransformer {
                 for (ContainerElement dep : deps.childElements()) {
                     final Ga ga = dep.asGavtcs().toGa();
                     if (gas.contains(ga)) {
-                        ContainerElement versionNode = dep.childElementsStream()
-                                .filter(ch -> "version".equals(ch.getNode().getLocalName()))
-                                .findFirst()
-                                .orElseThrow(() -> new IllegalStateException(
-                                        "No <version> found for " + ga + " in " + context.getPomXmlPath()));
-                        versionNode.getNode().setTextContent(newVersion);
+                        dep.setVersion(newVersion);
                     }
                 }
             };
