@@ -84,8 +84,7 @@ public class PomTransformer {
 
     static final Pattern[] POSTPROCESS_PATTERNS = new Pattern[] {
             Pattern.compile("(<\\?xml[^>]*\\?>)?(\\s*)<"),
-            Pattern.compile("(\\s*)<project([^>]*)>"),
-            Pattern.compile(">\\s*(<!--.*?-->\\s*)*$", Pattern.DOTALL)
+            Pattern.compile("(\\s*)<project([^>]*)>")
     };
     static final Pattern EOL_PATTERN = Pattern.compile("\r?\n");
     static final Pattern WS_PATTERN = Pattern.compile("[ \t\n\r]+");
@@ -175,6 +174,7 @@ public class PomTransformer {
                 result = p.matcher(result).replaceFirst(replacement);
             }
         }
+        result = fixTrailingContent(src, result);
         final String ws;
         if (simpleElementWhitespace.autodetect) {
             final Matcher srcMatcher = SIMPLE_ELEM_WS_PATTERN.matcher(src);
@@ -225,6 +225,44 @@ public class PomTransformer {
 
     static String detectEol(String src) {
         return src.indexOf('\r') >= 0 ? "\r\n" : "\n";
+    }
+
+    static String fixTrailingContent(String src, String result) {
+        final int traillingStart = endOfRootElement(src);
+        if (traillingStart >= 0) {
+            final String trailingContent = src.substring(traillingStart);
+            final int traillingStartResult = endOfRootElement(result);
+            if (traillingStartResult >= 0) {
+                return result.substring(0, traillingStartResult) + trailingContent;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * @param  src the input document
+     * @return     the index after the &gt; character of the closing root element tag or -1 if there is no closing tag
+     */
+    static int endOfRootElement(String src) {
+        if (src == null || src.isEmpty()) {
+            return -1;
+        }
+        int lastGtPos = src.length() - 1;
+        while (lastGtPos >= 0) {
+            lastGtPos = src.lastIndexOf('>', lastGtPos);
+            if (lastGtPos < 0) {
+                return -1;
+            } else if (lastGtPos >= 2
+                    && src.charAt(lastGtPos - 1) == '-'
+                    && src.charAt(lastGtPos - 2) == '-') {
+                /* a trailing comment */
+                lastGtPos -= 3;
+                continue;
+            } else {
+                return lastGtPos + 1;
+            }
+        }
+        return -1;
     }
 
     /**
