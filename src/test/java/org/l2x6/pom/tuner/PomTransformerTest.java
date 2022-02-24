@@ -2238,6 +2238,61 @@ public class PomTransformerTest {
     }
 
     @Test
+    void trailingMultilineCommentWithOtherComments() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo />\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module1</module>\n" //
+                + "        <!-- <module>module2</module> disabled by cq-prod-maven-plugin:prod-excludes -->\n" //
+                + "        <module>module3</module>\n" //
+                + "    </modules>\n" //
+                + "\n" //
+                + "</project>\n"
+                + "<!--\n"
+                + "Modified by POM Manipulation Extension for Maven 4.5 ( SHA: 698c5e7b )\n"
+                + "-->\n";
+
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo />\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module1</module>\n" //
+                + "        <module>module2</module>\n" //
+                + "        <module>module3</module>\n" //
+                + "    </modules>\n" //
+                + "\n" //
+                + "</project>\n"
+                + "<!--\n"
+                + "Modified by POM Manipulation Extension for Maven 4.5 ( SHA: 698c5e7b )\n"
+                + "-->\n";
+        assertTransformation(source,
+                Collections.singleton(Transformation.uncommentModules("disabled by cq-prod-maven-plugin:prod-excludes")),
+                SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
+                expected);
+    }
+
+    @Test
     void trailingMultilineComments() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
@@ -2531,5 +2586,32 @@ public class PomTransformerTest {
         final Node document = result.getNode();
         Assertions.assertEquals(expectedIndent, PomTransformer.detectIndentation(document, xPath));
         Assertions.assertEquals(expectedEol, PomTransformer.detectEol(xml));
+    }
+
+    @Test
+    void endOfRootElement() {
+        final String src = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo />\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>\n"
+                + "<!--\n"
+                + "Modified by POM Manipulation Extension for Maven 4.5 ( SHA: 698c5e7b )\n"
+                + "-->\n";
+        final int actual = PomTransformer.endOfRootElement(src);
+
+        Assertions.assertEquals("\n"
+                + "<!--\n"
+                + "Modified by POM Manipulation Extension for Maven 4.5 ( SHA: 698c5e7b )\n"
+                + "-->\n", src.substring(actual));
     }
 }
