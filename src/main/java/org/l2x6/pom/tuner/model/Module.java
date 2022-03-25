@@ -236,8 +236,9 @@ public class Module {
 
     public static class DependencyBuilder extends PlainGavBuilder {
 
-        private String scope = "compile";
-        private String type = "jar";
+        private String scope = Dependency.COMPILE;
+        private String type = Dependency.JAR;
+        private String classifier;
 
         public DependencyBuilder(ModuleGavBuilder module) {
             super(module);
@@ -245,8 +246,13 @@ public class Module {
 
         public Dependency build() {
             final Ga ga = module.getGa();
-            return new Dependency(Expression.of(groupId, ga), Expression.of(artifactId, ga),
-                    version != null ? Expression.of(version, ga) : null, type, scope);
+            return new Dependency(
+                    Expression.of(groupId, ga),
+                    Expression.of(artifactId, ga),
+                    version != null ? Expression.of(version, ga) : null,
+                    type,
+                    classifier != null ? Expression.of(classifier, ga) : null,
+                    scope);
         }
 
         public void scope(String scope) {

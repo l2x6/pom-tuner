@@ -216,7 +216,10 @@ public class MavenSourceTreeTest {
                         new Dependency(
                                 new Expression("org.srcdeps.tree-1", m4Ga),
                                 new Expression("tree-module-1", m4Ga),
-                                new Expression("0.0.1", m4Ga), "jar", "compile"))),
+                                new Expression("0.0.1", m4Ga),
+                                "jar",
+                                null,
+                                "compile"))),
                 m4.getProfiles().get(0).getDependencies());
     }
 
@@ -324,7 +327,7 @@ public class MavenSourceTreeTest {
             Assertions.assertEquals("module-1/pom.xml", m1.getPomPath());
             Assertions.assertEquals(moduleGae("org.srcdeps.tree-1:tree-module-1:0.0.1"), m1.getModuleGav().build());
             Assertions.assertEquals(treeParentGav, m1.getParentGav().build());
-            Assertions.assertEquals(Arrays.asList("org.srcdeps.external:artifact-3:1.2.3"),
+            Assertions.assertEquals(Arrays.asList("org.srcdeps.external:artifact-3:jar:null:1.2.3:compile"),
                     m1.getProfiles().get(0).getDependencies()
                             .stream().map(bu -> bu.build().toString()).collect(Collectors.toList()));
             Assertions.assertEquals(Collections.emptySet(), m1.getProfiles().get(0).getChildren());
@@ -337,8 +340,11 @@ public class MavenSourceTreeTest {
             Assertions.assertEquals(moduleGae("org.srcdeps.tree-1:tree-module-2:0.0.1"), m2.getModuleGav().build());
             Assertions.assertEquals(treeParentGav, m2.getParentGav().build());
             Assertions.assertEquals(
-                    Arrays.asList("org.srcdeps.tree-1:tree-module-4:0.0.1", "org.srcdeps.tree-1:tree-module-7:0.0.1",
-                            "org.srcdeps.tree-1:tree-module-8:0.0.1", "org.srcdeps.external:artifact-4:1.2.3"),
+                    Arrays.asList(
+                            "org.srcdeps.tree-1:tree-module-4:jar:null:0.0.1:compile",
+                            "org.srcdeps.tree-1:tree-module-7:jar:null:0.0.1:compile",
+                            "org.srcdeps.tree-1:tree-module-8:jar:null:0.0.1:compile",
+                            "org.srcdeps.external:artifact-4:jar:null:1.2.3:compile"),
                     m2.getProfiles().get(0).getDependencies().stream().map(bu -> bu.build().toString())
                             .collect(Collectors.toList()));
             Assertions.assertEquals(Collections.emptySet(), m2.getProfiles().get(0).getChildren());
@@ -350,7 +356,7 @@ public class MavenSourceTreeTest {
             Assertions.assertEquals("module-3/pom.xml", m3.getPomPath());
             Assertions.assertEquals(moduleGae("org.srcdeps.tree-1:tree-module-3:0.0.1"), m3.getModuleGav().build());
             Assertions.assertEquals(treeParentGav, m3.getParentGav().build());
-            Assertions.assertEquals(Arrays.asList("org.srcdeps.external:artifact-1:1.2.3"),
+            Assertions.assertEquals(Arrays.asList("org.srcdeps.external:artifact-1:jar:null:1.2.3:compile"),
                     m3.getProfiles().get(0).getDependencies()
                             .stream().map(bu -> bu.build().toString()).collect(Collectors.toList()));
             Assertions.assertEquals(Collections.emptySet(), m3.getProfiles().get(0).getChildren());
@@ -363,7 +369,8 @@ public class MavenSourceTreeTest {
             Assertions.assertEquals(moduleGae("org.srcdeps.tree-1:tree-module-4:0.0.1"), m4.getModuleGav().build());
             Assertions.assertEquals(treeParentGav, m4.getParentGav().build());
             Assertions.assertEquals(
-                    Arrays.asList("org.srcdeps.tree-1:tree-module-1:0.0.1", "org.srcdeps.tree-1:tree-module-5:0.0.1"),
+                    Arrays.asList("org.srcdeps.tree-1:tree-module-1:jar:null:0.0.1:compile",
+                            "org.srcdeps.tree-1:tree-module-5:jar:null:0.0.1:compile"),
                     m4.getProfiles().get(0).getDependencies().stream().map(bu -> bu.build().toString())
                             .collect(Collectors.toList()));
             Assertions.assertEquals(Collections.emptySet(), m4.getProfiles().get(0).getChildren());

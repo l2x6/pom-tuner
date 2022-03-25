@@ -19,22 +19,74 @@ package org.l2x6.pom.tuner.model;
 public class Dependency extends GavExpression {
     private final String scope;
     private final String type;
+    private final Expression classifier;
+    static final String JAR = "jar";
+    static final String COMPILE = "compile";
 
-    public Dependency(Expression groupId, Expression artifactId, Expression version, String type, String scope) {
+    public Dependency(Expression groupId, Expression artifactId, Expression version, String type, Expression classifier,
+            String scope) {
         super(groupId, artifactId, version);
-        this.type = type;
-        this.scope = scope;
-    }
-
-    public String getScope() {
-        return scope;
+        this.classifier = classifier;
+        this.type = type == null || type.isEmpty() ? JAR : type;
+        this.scope = scope == null || scope.isEmpty() ? COMPILE : scope;
     }
 
     public String getType() {
         return type;
     }
 
+    public Expression getClassifier() {
+        return classifier;
+    }
+
+    public String getScope() {
+        return scope;
+    }
+
     public boolean isVirtual() {
         return "pom".equals(type) && "test".equals(scope);
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = super.hashCode();
+        result = prime * result + ((classifier == null) ? 0 : classifier.hashCode());
+        result = prime * result + ((scope == null) ? 0 : scope.hashCode());
+        result = prime * result + ((type == null) ? 0 : type.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (!super.equals(obj))
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Dependency other = (Dependency) obj;
+        if (classifier == null) {
+            if (other.classifier != null)
+                return false;
+        } else if (!classifier.equals(other.classifier))
+            return false;
+        if (scope == null) {
+            if (other.scope != null)
+                return false;
+        } else if (!scope.equals(other.scope))
+            return false;
+        if (type == null) {
+            if (other.type != null)
+                return false;
+        } else if (!type.equals(other.type))
+            return false;
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return getGroupId() + ":" + getArtifactId() + ":" + type + ":" + classifier + ":" + getVersion() + ":" + scope;
+    }
+
 }
