@@ -162,9 +162,9 @@ public class Gavtcs {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
-        this.type = type;
-        this.classifier = classifier;
-        this.scope = scope;
+        this.type = type == null || type.isEmpty() ? null : type;
+        this.classifier = classifier == null || classifier.isEmpty() ? null : classifier;
+        this.scope = scope == null || scope.isEmpty() ? null : scope;
         this.exclusions = Collections.emptySortedSet();
     }
 
@@ -174,9 +174,9 @@ public class Gavtcs {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
-        this.type = type;
-        this.classifier = classifier;
-        this.scope = scope;
+        this.type = type == null || type.isEmpty() ? null : type;
+        this.classifier = classifier == null || classifier.isEmpty() ? null : classifier;
+        this.scope = scope == null || scope.isEmpty() ? null : scope;
         final TreeSet<Ga> set = new TreeSet<>();
         set.add(exclusion);
         this.exclusions = Collections.unmodifiableSortedSet(set);
@@ -188,9 +188,9 @@ public class Gavtcs {
         this.groupId = groupId;
         this.artifactId = artifactId;
         this.version = version;
-        this.type = type;
-        this.classifier = classifier;
-        this.scope = scope;
+        this.type = type == null || type.isEmpty() ? null : type;
+        this.classifier = classifier == null || classifier.isEmpty() ? null : classifier;
+        this.scope = scope == null || scope.isEmpty() ? null : scope;
         this.exclusions = exclusions == null ? Collections.emptySortedSet()
                 : Collections.unmodifiableSortedSet(new TreeSet<>(exclusions));
     }
