@@ -46,7 +46,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import javax.xml.XMLConstants;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
@@ -59,7 +58,6 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
-import javax.xml.xpath.XPathFactoryConfigurationException;
 import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.w3c.dom.Comment;
@@ -146,15 +144,7 @@ public class PomTransformer {
             throw new RuntimeException(String.format("Could not read DOM from [%s]", path), e);
         }
 
-        final XPathFactory xPathFactory = XPathFactory.newInstance();
-        try {
-            xPathFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, false);
-        } catch (XPathFactoryConfigurationException e1) {
-            throw new RuntimeException("Could not set XMLConstants.FEATURE_SECURE_PROCESSING = false on an XPathFactory "
-                    + xPathFactory.getClass().getName());
-        }
-
-        final XPath xPath = xPathFactory.newXPath();
+        final XPath xPath = XPathFactory.newInstance().newXPath();
         final TransformationContext context = new TransformationContext(path, document,
                 detectIndentation(document, xPath), xPath);
         for (Transformation edit : edits) {
