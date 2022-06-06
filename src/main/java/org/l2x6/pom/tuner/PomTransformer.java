@@ -1561,18 +1561,19 @@ public class PomTransformer {
 
         public static Transformation commentModules(Collection<String> modulesToComment, String commentText) {
             return (Document document, TransformationContext context) -> {
-                final String condition = modulesToComment.stream()
-                        .map(m -> "text() = '" + m + "'")
-                        .collect(Collectors.joining(" or "));
-                final String xPathExpr = PomTunerUtils.anyNs("project", "modules", "module") + "[" + condition + "]";
-                try {
-                    final NodeList moduleNodes = (NodeList) context.getXPath().evaluate(xPathExpr, document,
-                            XPathConstants.NODESET);
-                    for (int i = 0; i < moduleNodes.getLength(); i++) {
-                        TransformationContext.commentTextNode(moduleNodes.item(i), commentText);
+
+                for (String m : modulesToComment) {
+                    final String xPathExpr = PomTunerUtils.anyNs("project", "modules", "module") + "[text() = '" + m + "'"
+                            + "]";
+                    try {
+                        final NodeList moduleNodes = (NodeList) context.getXPath().evaluate(xPathExpr, document,
+                                XPathConstants.NODESET);
+                        for (int i = 0; i < moduleNodes.getLength(); i++) {
+                            TransformationContext.commentTextNode(moduleNodes.item(i), commentText);
+                        }
+                    } catch (XPathExpressionException | DOMException e) {
+                        throw new RuntimeException(e);
                     }
-                } catch (XPathExpressionException | DOMException e) {
-                    throw new RuntimeException(e);
                 }
             };
         }

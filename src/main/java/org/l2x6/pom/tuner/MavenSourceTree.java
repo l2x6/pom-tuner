@@ -899,7 +899,7 @@ public class MavenSourceTree {
         }
     }
 
-    void unlinkModules(
+    static void unlinkModules(
             Path pomXml,
             Set<Path> removeChildPaths,
             Charset encoding,
