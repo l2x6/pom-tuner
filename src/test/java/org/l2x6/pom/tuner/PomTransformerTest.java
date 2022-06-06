@@ -22,7 +22,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
@@ -33,6 +36,8 @@ import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.NodeGavtcs;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
@@ -2613,5 +2618,48 @@ public class PomTransformerTest {
                 + "<!--\n"
                 + "Modified by POM Manipulation Extension for Maven 4.5 ( SHA: 698c5e7b )\n"
                 + "-->\n", src.substring(actual));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {
+            5, // a small number
+            44, // max for AXP0801002: the compiler encountered an XPath expression containing '101' operators that exceeds the '100' limit set by 'FEATURE_SECURE_PROCESSING' without any additional fix
+            45, // 44+1
+            2000 // a large number
+    })
+    void unlinkModules(int count) {
+        final String sourceTemplate = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "%s" //
+                + "    </modules>\n" //
+                + "</project>\n";
+        final String sourceReplacement = intStream(count)
+                .mapToObj(i -> String.format("        <module>module-%02d</module>\n", i))
+                .collect(Collectors.joining(""));
+        final String expectedReplacement = intStream(count)
+                .mapToObj(i -> String.format("        <!-- <module>module-%02d</module> test remove -->\n", i))
+                .collect(Collectors.joining(""));
+        final Set<String> commentModules = intStream(count)
+                .mapToObj(i -> String.format("module-%02d", i))
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        final String source = String.format(sourceTemplate, sourceReplacement);
+        final String expected = String.format(sourceTemplate, expectedReplacement);
+        assertTransformation(source,
+                Collections.singletonList(
+                        Transformation.commentModules(commentModules, "test remove")),
+                expected);
+    }
+
+    public IntStream intStream(int count) {
+        return IntStream.range(1, count + 1);
     }
 }
