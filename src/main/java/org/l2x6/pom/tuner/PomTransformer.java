@@ -756,7 +756,12 @@ public class PomTransformer {
          * @param refNode a {@link Node} before which the new {@link Element} should be added
          */
         public void addGavtcs(Gavtcs gavtcs, Node refNode) {
-            final ContainerElement dep = addChildContainerElement("dependency", refNode, false, false);
+
+            final String parentName = getNode().getNodeName();
+            final String childName = parentName.equals("dependencies") ? "dependency"
+                    : parentName.substring(0, parentName.length() - 1);
+
+            final ContainerElement dep = addChildContainerElement(childName, refNode, false, false);
             dep.addChildTextElement("groupId", gavtcs.getGroupId());
             dep.addChildTextElement("artifactId", gavtcs.getArtifactId());
             dep.addChildTextElement("version", gavtcs.getVersion());
