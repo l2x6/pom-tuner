@@ -1145,6 +1145,199 @@ public class PomTransformerTest {
     }
 
     @Test
+    void addPluginOrderedFirst() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <build>\n" //
+                + "        <plugins>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p1</artifactId>\n" //
+                + "                <version>1.2.3</version>\n" //
+                + "            </plugin>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.foo</groupId>\n" //
+                + "                <artifactId>p3</artifactId>\n" //
+                + "                <version>2.3.4</version>\n" //
+                + "            </plugin>\n" //
+                + "        </plugins>\n" //
+                + "    </build>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <build>\n" //
+                + "        <plugins>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p0</artifactId>\n" //
+                + "                <version>1.0.0</version>\n" //
+                + "            </plugin>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p1</artifactId>\n" //
+                + "                <version>1.2.3</version>\n" //
+                + "            </plugin>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.foo</groupId>\n" //
+                + "                <artifactId>p3</artifactId>\n" //
+                + "                <version>2.3.4</version>\n" //
+                + "            </plugin>\n" //
+                + "        </plugins>\n" //
+                + "    </build>\n" //
+                + "</project>\n";
+        assertTransformation(source,
+                Collections.singletonList(
+                        (Document document, TransformationContext context) -> {
+                            final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
+                            plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p0", "1.0.0"), Gavtcs.groupFirstComparator());
+                        }),
+                expected);
+    }
+
+    @Test
+    void addPluginOrderedComments() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <build>\n" //
+                + "        <plugins>\n" //
+                + "            <!-- comment -->\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p1</artifactId>\n" //
+                + "                <version>1.2.3</version>\n" //
+                + "            </plugin>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.foo</groupId>\n" //
+                + "                <artifactId>p3</artifactId>\n" //
+                + "                <version>2.3.4</version>\n" //
+                + "            </plugin>\n" //
+                + "        </plugins>\n" //
+                + "    </build>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <build>\n" //
+                + "        <plugins>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p0</artifactId>\n" //
+                + "                <version>1.0.0</version>\n" //
+                + "            </plugin>\n" //
+                + "            <!-- comment -->\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p1</artifactId>\n" //
+                + "                <version>1.2.3</version>\n" //
+                + "            </plugin>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.foo</groupId>\n" //
+                + "                <artifactId>p3</artifactId>\n" //
+                + "                <version>2.3.4</version>\n" //
+                + "            </plugin>\n" //
+                + "        </plugins>\n" //
+                + "    </build>\n" //
+                + "</project>\n";
+        assertTransformation(source,
+                Collections.singletonList(
+                        (Document document, TransformationContext context) -> {
+                            final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
+                            plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p0", "1.0.0"), Gavtcs.groupFirstComparator());
+                        }),
+                expected);
+    }
+
+    @Test
+    void addPluginOrderedBadOrder() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <build>\n" //
+                + "        <plugins>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p1</artifactId>\n" //
+                + "                <version>1.2.3</version>\n" //
+                + "            </plugin>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.foo</groupId>\n" //
+                + "                <artifactId>p3</artifactId>\n" //
+                + "                <version>2.3.4</version>\n" //
+                + "            </plugin>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p0</artifactId>\n" //
+                + "                <version>1.0.0</version>\n" //
+                + "            </plugin>\n" //
+                + "        </plugins>\n" //
+                + "    </build>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <build>\n" //
+                + "        <plugins>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p1</artifactId>\n" //
+                + "                <version>1.2.3</version>\n" //
+                + "            </plugin>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.foo</groupId>\n" //
+                + "                <artifactId>p3</artifactId>\n" //
+                + "                <version>2.3.4</version>\n" //
+                + "            </plugin>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p0</artifactId>\n" //
+                + "                <version>1.0.0</version>\n" //
+                + "            </plugin>\n" //
+                + "        </plugins>\n" //
+                + "    </build>\n" //
+                + "</project>\n";
+        assertTransformation(source,
+                Collections.singletonList(
+                        (Document document, TransformationContext context) -> {
+                            final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
+                            plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p0", "1.0.0"), Gavtcs.groupFirstComparator());
+                        }),
+                expected);
+    }
+
+    @Test
     void addManagedDependencyIfNeeded() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
