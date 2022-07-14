@@ -742,20 +742,22 @@ public class PomTransformer {
         /**
          * A equivalent of {@code addGavtcs(gavtcs, getOrAddLastIndent())}
          *
-         * @param gavtcs the {@link Gavtcs} to add
+         * @param  gavtcs the {@link Gavtcs} to add
+         * @return        the newly created child node
          */
-        public void addGavtcs(Gavtcs gavtcs) {
-            addGavtcs(gavtcs, getOrAddLastIndent());
+        public ContainerElement addGavtcs(Gavtcs gavtcs) {
+            return addGavtcs(gavtcs, getOrAddLastIndent());
         }
 
         /**
          * Add a new {@code <dependency>} node under {@link #node} with {@code <groupId>}, {@code <artifactId>}, etc.
          * set to value taken from the specified {@link Gavtcs}
          *
-         * @param gavtcs  the GAV coordinates to use when creating the new {@code <dependency>}
-         * @param refNode a {@link Node} before which the new {@link Element} should be added
+         * @param  gavtcs  the GAV coordinates to use when creating the new {@code <dependency>}
+         * @param  refNode a {@link Node} before which the new {@link Element} should be added
+         * @return         the newly created child node
          */
-        public void addGavtcs(Gavtcs gavtcs, Node refNode) {
+        public ContainerElement addGavtcs(Gavtcs gavtcs, Node refNode) {
 
             final String parentName = getNode().getNodeName();
             final String childName = parentName.equals("dependencies") ? "dependency"
@@ -779,26 +781,47 @@ public class PomTransformer {
                     exclusionNode.addChildTextElement("artifactId", ga.getArtifactId());
                 }
             }
+            return dep;
         }
 
-        public void addGavtcsIfNeeded(Gavtcs gavtcs, Comparator<Gavtcs> comparator) {
+        /**
+         * If not available already, add a new {@code <dependency>} node under {@link #node} with {@code <groupId>},
+         * {@code <artifactId>}, etc. set to value taken from the specified {@link Gavtcs}.
+         * The availability an dinsertion point is determined using the given {@link Comparator}.
+         *
+         * @param  gavtcs     the GAV coordinates to use when creating the new {@code <dependency>}
+         * @param  comparator for figuring out whether the given {@code gavtcs} is already available under this
+         *                    {@link ContainerElement} or for determining the insert position for a newly added child node
+         * @return            the newly created child node
+         */
+        public ContainerElement addGavtcsIfNeeded(Gavtcs gavtcs, Comparator<Gavtcs> comparator) {
+            /* Try to find the gavtcs first iterating over all nodes
+             * This is important in case the children ordering does not suit the comparator */
+            Optional<NodeGavtcs> availableChild = childElementsStream()
+                    .map(ContainerElement::asGavtcs)
+                    .filter(gavtcs::equals)
+                    .findFirst();
+            if (availableChild.isPresent()) {
+                return availableChild.get().getNode();
+            }
+
+            /* The gavtcs is not available yet, so find the insertion position and add it */
             Node refNode = null;
             for (ContainerElement dep : childElements()) {
                 final Gavtcs depGavtcs = dep.asGavtcs();
                 int comparison = comparator.compare(gavtcs, depGavtcs);
                 if (comparison == 0) {
-                    /* the given gavtcs is available, no need to add it */
-                    return;
+                    /* We have found the insertion point */
+                    break;
                 }
                 if (refNode == null && comparison < 0) {
                     refNode = dep.previousSiblingInsertionRefNode();
                 }
             }
-
             if (refNode == null) {
                 refNode = getOrAddLastIndent();
             }
-            addGavtcs(gavtcs, refNode);
+            return addGavtcs(gavtcs, refNode);
         }
 
         /**
