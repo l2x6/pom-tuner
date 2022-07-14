@@ -22,6 +22,7 @@ import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,6 +32,8 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
@@ -306,25 +309,15 @@ public class PomTransformer {
         }
     }
 
-    /**
-     * An XML element in a {@code pom.xml} file that possibly has child {@link ContainerElement}s.
-     */
-    public static class ContainerElement {
-        private final Predicate<Node> ELEMENT_FILTER = n -> n.getNodeType() == Node.ELEMENT_NODE;
-        protected Text lastIndent;
+    public static class TextElement {
         protected final TransformationContext context;
         protected final Element node;
         protected final int indentLevel;
 
-        public ContainerElement(TransformationContext context, Element node, int indentLevel) {
+        public TextElement(TransformationContext context, Element node, int indentLevel) {
             this.context = context;
             this.node = node;
             this.indentLevel = indentLevel;
-        }
-
-        public ContainerElement(TransformationContext context, Element containerElement, Text lastIndent, int indentLevel) {
-            this(context, containerElement, indentLevel);
-            this.lastIndent = lastIndent;
         }
 
         /**
@@ -364,6 +357,11 @@ public class PomTransformer {
                 }
                 switch (next.getNodeType()) {
                 case Node.COMMENT_NODE:
+                    final Node previousNode = next.getPreviousSibling();
+                    if (previousNode != null && previousNode.getNodeType() == Node.ELEMENT_NODE) {
+                        /* A comment following an element with no whitespace in between: such comment belongs to the previous element */
+                        return currentNode;
+                    }
                     break;
                 case Node.TEXT_NODE:
                     if (EMPTY_LINE_PATTERN.matcher(next.getTextContent()).matches()) {
@@ -502,6 +500,24 @@ public class PomTransformer {
             return getFragment(TransformationContext.ALL_WHITESPACE_AND_COMMENTS);
         }
 
+    }
+
+    /**
+     * An XML element in a {@code pom.xml} file that possibly has child {@link ContainerElement}s.
+     */
+    public static class ContainerElement extends TextElement {
+        private final Predicate<Node> ELEMENT_FILTER = n -> n.getNodeType() == Node.ELEMENT_NODE;
+        protected Text lastIndent;
+
+        public ContainerElement(TransformationContext context, Element node, int indentLevel) {
+            super(context, node, indentLevel);
+        }
+
+        public ContainerElement(TransformationContext context, Element containerElement, Text lastIndent, int indentLevel) {
+            this(context, containerElement, indentLevel);
+            this.lastIndent = lastIndent;
+        }
+
         /**
          * @return an {@link Iterable} containing child elements of this {@link ContainerElement}
          */
@@ -517,6 +533,23 @@ public class PomTransformer {
          */
         public Stream<ContainerElement> childElementsStream() {
             return StreamSupport.stream(childElements().spliterator(), false);
+        }
+
+        /**
+         * @return an {@link Iterable} containing text child elements of this {@link ContainerElement}
+         */
+        public Iterable<TextElement> childTextElements() {
+            return () -> new NodeIterator<TextElement>(
+                    node.getChildNodes(),
+                    ELEMENT_FILTER,
+                    n -> new TextElement(context, (Element) n, indentLevel + 1));
+        }
+
+        /**
+         * @return a {@link Stream} containing child text elements of this {@link ContainerElement}
+         */
+        public Stream<TextElement> childTextElementsStream() {
+            return StreamSupport.stream(childTextElements().spliterator(), false);
         }
 
         /**
@@ -667,8 +700,8 @@ public class PomTransformer {
          * @param elementName the name of the {@link Element} to add
          * @param text        the text content of the newly added {@link Element}
          */
-        public void addChildTextElement(String elementName, final String text) {
-            addChildTextElement(elementName, text, getOrAddLastIndent());
+        public TextElement addChildTextElement(String elementName, final String text) {
+            return addChildTextElement(elementName, text, getOrAddLastIndent());
         }
 
         /**
@@ -679,14 +712,42 @@ public class PomTransformer {
          * @param text        the text content of the newly added {@link Element}
          * @param refNode     a {@link Node} before which the new {@link Element} should be added
          */
-        public void addChildTextElement(String elementName, final String text, Node refNode) {
+        public TextElement addChildTextElement(String elementName, final String text, Node refNode) {
             if (text != null) {
                 node.insertBefore(context.indent(indentLevel + 1), refNode);
                 final Element result1 = context.document.createElement(elementName);
                 result1.appendChild(context.document.createTextNode(text));
                 final Node result = result1;
                 node.insertBefore(result, refNode);
+                return new TextElement(context, node, indentLevel + 1);
             }
+            return null;
+        }
+
+        public TextElement addChildTextElementIfNeeded(String nodeName, String nodeValue,
+                Comparator<Entry<String, String>> comparator) {
+            Entry<String, String> newEntry = new AbstractMap.SimpleImmutableEntry<>(nodeName, nodeValue);
+            Node refNode = null;
+            for (TextElement child : childTextElements()) {
+                final Element node = child.getNode();
+                int comparison = comparator.compare(newEntry, new AbstractMap.SimpleImmutableEntry<>(
+                        node.getNodeName(), node.getTextContent()));
+                if (comparison == 0) {
+                    /* the given child is available, no need to add it */
+                    if (!Objects.equals(node.getTextContent(), nodeValue)) {
+                        node.setTextContent(nodeValue);
+                    }
+                    return child;
+                }
+                if (refNode == null && comparison < 0) {
+                    refNode = child.previousSiblingInsertionRefNode();
+                }
+            }
+
+            if (refNode == null) {
+                refNode = getOrAddLastIndent();
+            }
+            return addChildTextElement(nodeName, nodeValue, refNode);
         }
 
         /**
@@ -795,24 +856,14 @@ public class PomTransformer {
          * @return            the newly created child node
          */
         public ContainerElement addGavtcsIfNeeded(Gavtcs gavtcs, Comparator<Gavtcs> comparator) {
-            /* Try to find the gavtcs first iterating over all nodes
-             * This is important in case the children ordering does not suit the comparator */
-            Optional<NodeGavtcs> availableChild = childElementsStream()
-                    .map(ContainerElement::asGavtcs)
-                    .filter(gavtcs::equals)
-                    .findFirst();
-            if (availableChild.isPresent()) {
-                return availableChild.get().getNode();
-            }
-
-            /* The gavtcs is not available yet, so find the insertion position and add it */
+            /* Find the insertion position if the gavtcs is not available yet and possibly add it */
             Node refNode = null;
             for (ContainerElement dep : childElements()) {
                 final Gavtcs depGavtcs = dep.asGavtcs();
                 int comparison = comparator.compare(gavtcs, depGavtcs);
                 if (comparison == 0) {
-                    /* We have found the insertion point */
-                    break;
+                    /* We have found the item, no need to add it */
+                    return dep;
                 }
                 if (refNode == null && comparison < 0) {
                     refNode = dep.previousSiblingInsertionRefNode();
@@ -883,6 +934,28 @@ public class PomTransformer {
             return new NodeGavtcs(groupId, artifactId, version, type, classifier, scope, exclusions, this);
         }
 
+        /**
+         * Assuming the current {@link ContainerElement} is a {@code <dependency>}, {@code <plugin>} or similar, set its
+         * {@code <version>} child to the given {@code newVersion} value, adding the {@code <version>} node if necessary
+         * or removing it of {@code newVersion} is {@code null}.
+         *
+         * @param newVersion the version to set or {@code null} if the {@code <version>} node should be removed
+         */
+        public void setVersion(String newVersion) {
+            Optional<ContainerElement> versionNode = childElementsStream()
+                    .filter(ch -> "version".equals(ch.getNode().getLocalName()))
+                    .findFirst();
+            if (!versionNode.isPresent() && newVersion == null) {
+                /* nothing to do */
+            } else if (!versionNode.isPresent()) {
+                addChildTextElement("version", newVersion);
+            } else if (newVersion == null) {
+                versionNode.get().remove(true, true);
+            } else {
+                versionNode.get().getNode().setTextContent(newVersion);
+            }
+        }
+
         static class NodeIterator<T> implements Iterator<T> {
 
             private final NodeList nodes;
@@ -943,28 +1016,6 @@ public class PomTransformer {
                 currentIndex--;
             }
 
-        }
-
-        /**
-         * Assuming the current {@link ContainerElement} is a {@code <dependency>}, {@code <plugin>} or similar, set its
-         * {@code <version>} child to the given {@code newVersion} value, adding the {@code <version>} node if necessary
-         * or removing it of {@code newVersion} is {@code null}.
-         *
-         * @param newVersion the version to set or {@code null} if the {@code <version>} node should be removed
-         */
-        public void setVersion(String newVersion) {
-            Optional<ContainerElement> versionNode = childElementsStream()
-                    .filter(ch -> "version".equals(ch.getNode().getLocalName()))
-                    .findFirst();
-            if (!versionNode.isPresent() && newVersion == null) {
-                /* nothing to do */
-            } else if (!versionNode.isPresent()) {
-                addChildTextElement("version", newVersion);
-            } else if (newVersion == null) {
-                versionNode.get().remove(true, true);
-            } else {
-                versionNode.get().getNode().setTextContent(newVersion);
-            }
         }
     }
 
@@ -1322,22 +1373,8 @@ public class PomTransformer {
 
         public void addTextChildIfNeeded(ContainerElement parent, String nodeName, String nodeValue,
                 Comparator<String> comparator) {
-            Node refNode = null;
-            for (ContainerElement child : parent.childElements()) {
-                int comparison = comparator.compare(nodeValue, child.getNode().getTextContent());
-                if (comparison == 0) {
-                    /* the given gavtcs is available, no need to add it */
-                    return;
-                }
-                if (refNode == null && comparison < 0) {
-                    refNode = child.previousSiblingInsertionRefNode();
-                }
-            }
-
-            if (refNode == null) {
-                refNode = parent.getOrAddLastIndent();
-            }
-            parent.addChildTextElement(nodeName, nodeValue, refNode);
+            parent.addChildTextElementIfNeeded(nodeName, nodeValue,
+                    (en1, en2) -> comparator.compare(en1.getValue(), en2.getValue()));
         }
 
         public void removeNode(String xPathExpression, boolean removePrecedingComments, boolean removePrecedingWhitespace,

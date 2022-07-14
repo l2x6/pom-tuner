@@ -21,8 +21,10 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -472,6 +474,553 @@ public class PomTransformerTest {
                 + "    </properties>\n" //
                 + "</project>\n";
         assertTransformation(source, Collections.singletonList(Transformation.addOrSetProperty("baz", "new")), expected);
+    }
+
+    @Test
+    void addPropertyOrdered() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p2>new</p2>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement props = context.getOrAddContainerElement("properties");
+                    props.addChildTextElementIfNeeded("p2", "new", Comparators.entryKeyOnly());
+                }), expected);
+    }
+
+    @Test
+    void addPropertyOrderedSecond() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p0>foo</p0>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p0>foo</p0>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p2>new</p2>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement props = context.getOrAddContainerElement("properties");
+                    props.addChildTextElementIfNeeded("p2", "new", Comparators.entryKeyOnly());
+                }), expected);
+    }
+
+    @Test
+    void addPropertyOrderedFirst() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p2>foo</p2>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p0>new</p0>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p2>foo</p2>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement props = context.getOrAddContainerElement("properties");
+                    props.addChildTextElementIfNeeded("p0", "new", Comparators.entryKeyOnly());
+                }), expected);
+    }
+
+    @Test
+    void addPropertyOrderedBadOrder() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "        <p1>new</p1>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement props = context.getOrAddContainerElement("properties");
+                    props.addChildTextElementIfNeeded("p1", "new", Comparators.entryKeyOnly());
+                }), expected);
+    }
+
+    @Test
+    void addPropertyOrderedExistingKey() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "        <p1>new</p1>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement props = context.getOrAddContainerElement("properties");
+                    props.addChildTextElementIfNeeded("p1", "new", Comparators.entryKeyOnly());
+                }), expected);
+    }
+
+    @Test
+    void addPropertyOrderedLast() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p5>new</p5>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement props = context.getOrAddContainerElement("properties");
+                    props.addChildTextElementIfNeeded("p5", "new", Comparators.entryKeyOnly());
+                }), expected);
+    }
+
+    @Test
+    void addPropertyOrderedBeforeKey() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p0>foo</p0>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p0>foo</p0>\n" //
+                + "        <p2>new</p2>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement props = context.getOrAddContainerElement("properties");
+                    props.addChildTextElementIfNeeded("p2", "new",
+                            Comparator.comparing(Map.Entry::getKey, Comparators.before("p1")));
+                }), expected);
+    }
+
+    @Test
+    void addPropertyOrderedBeforeFirstKey() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p0>new</p0>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement props = context.getOrAddContainerElement("properties");
+                    props.addChildTextElementIfNeeded("p0", "new",
+                            Comparator.comparing(Map.Entry::getKey, Comparators.before("p1")));
+                }), expected);
+    }
+
+    @Test
+    void addPropertyOrderedBeforeNonExistentKey() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "        <p0>new</p0>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement props = context.getOrAddContainerElement("properties");
+                    props.addChildTextElementIfNeeded("p0", "new",
+                            Comparator.comparing(Map.Entry::getKey, Comparators.before("p2")));
+                }), expected);
+    }
+
+    @Test
+    void addPropertyOrderedAfterKey() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p0>foo</p0>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p0>foo</p0>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p2>new</p2>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement props = context.getOrAddContainerElement("properties");
+                    props.addChildTextElementIfNeeded("p2", "new",
+                            Comparator.comparing(Map.Entry::getKey, Comparators.after("p1")));
+                }), expected);
+    }
+
+    @Test
+    void addPropertyOrderedAfterFirstKey() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p0>new</p0>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement props = context.getOrAddContainerElement("properties");
+                    props.addChildTextElementIfNeeded("p0", "new",
+                            Comparator.comparing(Map.Entry::getKey, Comparators.after("p1")));
+                }), expected);
+    }
+
+    @Test
+    void addPropertyOrderedAfterNonExistentKey() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "        <p0>new</p0>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement props = context.getOrAddContainerElement("properties");
+                    props.addChildTextElementIfNeeded("p0", "new",
+                            Comparator.comparing(Map.Entry::getKey, Comparators.after("p2")));
+                }), expected);
+    }
+
+    @Test
+    void addPropertyOrderedComments() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <!-- comment -->\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p1>bar</p1>\n" //
+                + "        <p2>new</p2>\n" //
+                + "        <!-- comment -->\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement props = context.getOrAddContainerElement("properties");
+                    props.addChildTextElementIfNeeded("p2", "new", Comparators.entryKeyOnly());
+                }), expected);
+    }
+
+    @Test
+    void addPropertyOrderedBeforeAdjacentComments() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p1>bar</p1><!-- comment -->\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <p1>bar</p1><!-- comment -->\n" //
+                + "        <p>new</p>\n" //
+                + "        <p3>boo</p3>\n" //
+                + "    </properties>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement props = context.getOrAddContainerElement("properties");
+                    props.addChildTextElementIfNeeded("p", "new",
+                            Comparator.comparing(Map.Entry::getKey, Comparators.before("p3")));
+                }), expected);
     }
 
     @Test
@@ -1140,6 +1689,78 @@ public class PomTransformerTest {
                         (Document document, TransformationContext context) -> {
                             final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
                             plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p2", "1.0.0"), Gavtcs.groupFirstComparator());
+                        }),
+                expected);
+    }
+
+    @Test
+    void addPluginOrderedSecond() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <build>\n" //
+                + "        <plugins>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p1</artifactId>\n" //
+                + "                <version>1.0.0</version>\n" //
+                + "            </plugin>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p2</artifactId>\n" //
+                + "                <version>1.0.0</version>\n" //
+                + "            </plugin>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p4</artifactId>\n" //
+                + "                <version>1.0.0</version>\n" //
+                + "            </plugin>\n" //
+                + "        </plugins>\n" //
+                + "    </build>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "    <build>\n" //
+                + "        <plugins>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p1</artifactId>\n" //
+                + "                <version>1.0.0</version>\n" //
+                + "            </plugin>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p2</artifactId>\n" //
+                + "                <version>1.0.0</version>\n" //
+                + "            </plugin>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p3</artifactId>\n" //
+                + "                <version>1.0.0</version>\n" //
+                + "            </plugin>\n" //
+                + "            <plugin>\n" //
+                + "                <groupId>org.acme</groupId>\n" //
+                + "                <artifactId>p4</artifactId>\n" //
+                + "                <version>1.0.0</version>\n" //
+                + "            </plugin>\n" //
+                + "        </plugins>\n" //
+                + "    </build>\n" //
+                + "</project>\n";
+        assertTransformation(source,
+                Collections.singletonList(
+                        (Document document, TransformationContext context) -> {
+                            final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
+                            plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p3", "1.0.0"), Gavtcs.groupFirstComparator());
                         }),
                 expected);
     }
@@ -2878,7 +3499,8 @@ public class PomTransformerTest {
     @ParameterizedTest
     @ValueSource(ints = {
             5, // a small number
-            44, // max for AXP0801002: the compiler encountered an XPath expression containing '101' operators that exceeds the '100' limit set by 'FEATURE_SECURE_PROCESSING' without any additional fix
+            44, // max for AXP0801002: the compiler encountered an XPath expression containing '101' operators that
+            // exceeds the '100' limit set by 'FEATURE_SECURE_PROCESSING' without any additional fix
             45, // 44+1
             2000 // a large number
     })
