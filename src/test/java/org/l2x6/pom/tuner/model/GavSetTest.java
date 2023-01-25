@@ -140,4 +140,24 @@ public class GavSetTest {
 
     }
 
+    @Test
+    public void whitespaceSeparated() {
+        GavSet set = GavSet.builder() //
+                .includes("org.group1,org.group2\n     com.group3") //
+                .excludes("org.group1:artifact2\t\torg.group1:artifact3 org.group2:artifact2\torg.group2:artifact3") //
+                .build();
+        Assertions.assertTrue(set.contains("org.group1", "artifact1", "1.2.3"));
+        Assertions.assertFalse(set.contains("org.group1", "artifact2", "2.3.4"));
+        Assertions.assertFalse(set.contains("org.group1", "artifact3", "2.3.4"));
+
+        Assertions.assertTrue(set.contains("org.group2", "artifact1", "1.2.3"));
+        Assertions.assertFalse(set.contains("org.group2", "artifact2", "2.3.4"));
+        Assertions.assertFalse(set.contains("org.group2", "artifact3", "2.3.4"));
+
+        Assertions.assertTrue(set.contains("com.group3", "artifact1", "5.6.7"));
+        Assertions.assertTrue(set.contains("com.group3", "artifact2", "5.6.7"));
+        Assertions.assertTrue(set.contains("com.group3", "artifact3", "5.6.7"));
+        Assertions.assertTrue(set.contains("com.group3", "artifact4", "5.6.7"));
+
+    }
 }

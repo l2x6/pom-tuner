@@ -93,14 +93,14 @@ public class GavSet implements Serializable {
         }
 
         /**
-         * Parses the given comma separated list of {@code rawPatterns} and excludes those.
+         * Parses the given comma or whitespace separated list of {@code rawPatterns} and excludes those.
          *
          * @param  rawPatterns a comma separated list of GAV patterns
          * @return             this {@link Builder}
          */
         public Builder excludes(String rawPatterns) {
             if (rawPatterns != null) {
-                StringTokenizer st = new StringTokenizer(rawPatterns, ",");
+                StringTokenizer st = new StringTokenizer(rawPatterns, ", \t\n\r");
                 while (st.hasMoreTokens()) {
                     this.excludes.add(GavPattern.of(st.nextToken()));
                 }
@@ -145,14 +145,14 @@ public class GavSet implements Serializable {
         }
 
         /**
-         * Parses the given comma separated list of {@code rawPatterns} and includes those.
+         * Parses the given comma or whitespace separated list of {@code rawPatterns} and includes those.
          *
          * @param  rawPatterns a comma separated list of GAV patterns
          * @return             this {@link Builder}
          */
         public Builder includes(String rawPatterns) {
             if (rawPatterns != null) {
-                StringTokenizer st = new StringTokenizer(rawPatterns, ",");
+                StringTokenizer st = new StringTokenizer(rawPatterns, ", \t\n\r");
                 while (st.hasMoreTokens()) {
                     this.includes.add(GavPattern.of(st.nextToken()));
                 }
