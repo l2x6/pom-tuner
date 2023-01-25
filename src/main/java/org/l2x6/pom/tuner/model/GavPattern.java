@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
-public class GavPattern implements Serializable {
+public class GavPattern implements Serializable, Comparable<GavPattern> {
 
     /**
      * A {@link GavPattern} builder.
@@ -315,6 +315,11 @@ public class GavPattern implements Serializable {
     @Override
     public String toString() {
         return source;
+    }
+
+    @Override
+    public int compareTo(GavPattern other) {
+        return this.source.compareTo(other.source);
     }
 
 }
