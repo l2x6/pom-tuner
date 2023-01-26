@@ -31,7 +31,15 @@ public class GavPatternTest {
         gavPatterns.add(GavPattern.of("org.group1:artifact1"));
         gavPatterns.add(GavPattern.of("org.group1:artifact2"));
         gavPatterns.add(GavPattern.of("org.group1"));
-        Assertions.assertEquals("org.group1,org.group1:artifact1,org.group1:artifact2,org.group2:artifact1",
+        gavPatterns.add(GavPattern.of("*"));
+        Assertions.assertEquals("*,org.group1,org.group1:artifact1,org.group1:artifact2,org.group2:artifact1",
                 gavPatterns.stream().map(GavPattern::toString).collect(Collectors.joining(",")));
+    }
+
+    @Test
+    void asWildcardGa() {
+        Assertions.assertEquals(Ga.of("org.group2:artifact1"), GavPattern.of("org.group2:artifact1").asWildcardGa());
+        Assertions.assertEquals(Ga.of("org.group2:*"), GavPattern.of("org.group2").asWildcardGa());
+        Assertions.assertEquals(Ga.of("*:*"), GavPattern.matchAll().asWildcardGa());
     }
 }
