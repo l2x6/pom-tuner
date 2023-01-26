@@ -159,7 +159,7 @@ public class GavPattern implements Serializable, Comparable<GavPattern> {
     private static final GavPattern MATCH_ALL;
     private static final GavPattern MATCH_SNAPSHOTS;
     static final String MULTI_WILDCARD;
-    static final String MULTI_WILDCARD_CHAR = "*";
+    static final char MULTI_WILDCARD_CHAR = '*';
     private static final long serialVersionUID = 5570763687443531797L;
     private static final String SNAPSHOT_SUFFIX = "-SNAPSHOT";
 
@@ -320,6 +320,13 @@ public class GavPattern implements Serializable, Comparable<GavPattern> {
     @Override
     public int compareTo(GavPattern other) {
         return this.source.compareTo(other.source);
+    }
+
+    /**
+     * @return the {@link #groupIdPattern} and {@link #artifactIdPattern} as a new {@link Ga}
+     */
+    public Ga asWildcardGa() {
+        return new Ga(groupIdPattern.toString(), artifactIdPattern.toString());
     }
 
 }
