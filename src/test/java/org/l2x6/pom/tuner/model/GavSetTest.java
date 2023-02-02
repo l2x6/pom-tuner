@@ -160,4 +160,17 @@ public class GavSetTest {
         Assertions.assertTrue(set.contains("com.group3", "artifact4", "5.6.7"));
 
     }
+
+    @Test
+    public void union() {
+        GavSet set = GavSet.builder() //
+                .include("org.group1") //
+                .exclude("org.group1:artifact2") //
+                .build()
+                .union(GavSet.builder().include("org.group1:artifact2").build());
+
+        Assertions.assertTrue(set.contains("org.group1", "artifact1", "1.2.3"));
+        Assertions.assertTrue(set.contains("org.group1", "artifact2", "2.3.4"));
+
+    }
 }
