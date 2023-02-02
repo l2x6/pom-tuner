@@ -299,6 +299,21 @@ public class GavPattern implements Serializable, Comparable<GavPattern> {
     }
 
     /**
+     * Matches the given {@code groupId}, {@code artifactId}, {@code version} triple against this {@link GavPattern}.
+     *
+     * @param  gav
+     * @return     {@code true} if this {@link GavPattern} matches the given {@code groupId}, {@code artifactId},
+     *             {@code version} triple and {@code false otherwise}
+     *
+     * @since      4.0.0
+     */
+    public boolean matches(Gav gav) {
+        return groupIdPattern.matches(gav.getGroupId()) && //
+                artifactIdPattern.matches(gav.getArtifactId()) && //
+                versionPattern.matches(gav.getVersion());
+    }
+
+    /**
      * Matches the given {@code groupId}, {@code artifactId} pair against this {@link GavPattern} disregarding the
      * version part of the pattern.
      *
@@ -310,6 +325,21 @@ public class GavPattern implements Serializable, Comparable<GavPattern> {
     public boolean matches(String groupId, String artifactId) {
         return groupIdPattern.matches(groupId) && //
                 artifactIdPattern.matches(artifactId);
+    }
+
+    /**
+     * Matches the given {@code groupId}, {@code artifactId} pair against this {@link GavPattern} disregarding the
+     * version part of the pattern.
+     *
+     * @param  ga
+     * @return    {@code true} if this {@link GavPattern} matches the given {@code groupId} and {@code artifactId}
+     *            (disregarding the version part of this {@link GavPattern}), and {@code false otherwise}
+     *
+     * @since     4.0.0
+     */
+    public boolean matches(Ga ga) {
+        return groupIdPattern.matches(ga.getGroupId()) && //
+                artifactIdPattern.matches(ga.getArtifactId());
     }
 
     @Override
