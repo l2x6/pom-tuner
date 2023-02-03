@@ -359,7 +359,10 @@ public class PomTransformer {
                 case Node.COMMENT_NODE:
                     final Node previousNode = next.getPreviousSibling();
                     if (previousNode != null && previousNode.getNodeType() == Node.ELEMENT_NODE) {
-                        /* A comment following an element with no whitespace in between: such comment belongs to the previous element */
+                        /*
+                         * A comment following an element with no whitespace in between: such comment belongs to the
+                         * previous element
+                         */
                         return currentNode;
                     }
                     break;
@@ -1377,48 +1380,61 @@ public class PomTransformer {
                     (en1, en2) -> comparator.compare(en1.getValue(), en2.getValue()));
         }
 
+        /**
+         * Removes the first {@link Node} selected by the given {@code xPathExpression}
+         *
+         * @param xPathExpression           an XPath expression to select {@link Node}s to remove
+         * @param removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
+         *                                  otherwise the preceding comments won't be removed
+         * @param removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
+         *                                  also be removed; otherwise the preceding whitespace nodes won't be removed
+         * @param onlyIfEmpty               the node is removed only if it has no child nodes or if it has only comment and
+         *                                  whitespace child nodes
+         */
         public void removeNode(String xPathExpression, boolean removePrecedingComments, boolean removePrecedingWhitespace,
                 boolean onlyIfEmpty) {
             BiConsumer<Node, Node> precedingNodesConsumer = null;
             if (removePrecedingComments || removePrecedingWhitespace) {
-                precedingNodesConsumer = (Node deletedNode, Node whitespaceOrComment) -> {
-                    if ((removePrecedingWhitespace && TransformationContext.isWhiteSpaceNode(whitespaceOrComment))
-                            || (removePrecedingComments && whitespaceOrComment.getNodeType() == Node.COMMENT_NODE)) {
-                        /* remove any preceding whitespace or comments */
-                        whitespaceOrComment.getParentNode().removeChild(whitespaceOrComment);
-                    }
-                };
+                precedingNodesConsumer = removePrecedingCommentsAndWhiteSpace(removePrecedingComments,
+                        removePrecedingWhitespace);
             }
             removeNode(xPathExpression, precedingNodesConsumer, onlyIfEmpty);
         }
 
+        /**
+         * Removes the first {@link Node} selected by the given {@code xPathExpression}
+         *
+         * @param xPathExpression        an XPath expression to select {@link Node}s to remove
+         * @param precedingNodesConsumer a custom handler for e.g. removing the preceding whitespace and commets - see
+         *                               {@link #removePrecedingCommentsAndWhiteSpace(boolean, boolean)}
+         * @param onlyIfEmpty            the node is removed only if it has no child nodes or if it has only comment and
+         *                               whitespace child nodes
+         */
         public void removeNode(String xPathExpression, BiConsumer<Node, Node> precedingNodesConsumer,
                 boolean onlyIfEmpty) {
-            try {
-                Node deletedNode = (Node) getXPath().evaluate(xPathExpression, document, XPathConstants.NODE);
-                if (deletedNode != null) {
-                    if (onlyIfEmpty && hasElementChildren(deletedNode)) {
-                        return;
-                    }
-                    if (precedingNodesConsumer != null) {
-                        Node prevSibling = deletedNode.getPreviousSibling();
-                        while (prevSibling != null
-                                && (TransformationContext.isWhiteSpaceNode(prevSibling)
-                                        || prevSibling.getNodeType() == Node.COMMENT_NODE)) {
-                            /* remove any preceding whitespace or comments */
-                            precedingNodesConsumer.accept(deletedNode, prevSibling);
-                            final Node newPrevSibling = deletedNode.getPreviousSibling();
-                            if (prevSibling == newPrevSibling) {
-                                break;
-                            }
-                            prevSibling = newPrevSibling;
-                        }
-                    }
-                    deletedNode.getParentNode().removeChild(deletedNode);
-                }
-            } catch (XPathExpressionException | DOMException e) {
-                throw new RuntimeException(e);
-            }
+
+            Consumer<Node> nodeRemover = removeNode(precedingNodesConsumer);
+            selectNodes(xPathExpression)
+                    .limit(1)
+                    .filter(deletedNode -> !onlyIfEmpty || !hasElementChildren(deletedNode))
+                    .forEach(nodeRemover);
+
+        }
+
+        /**
+         * Removes all {@link Node}s selected by the given {@code xPathExpression}
+         *
+         * @param xPathExpression        an XPath expression to select {@link Node}s to remove
+         * @param precedingNodesConsumer a custom handler for e.g. removing the preceding whitespace and commets - see
+         *                               {@link #removePrecedingCommentsAndWhiteSpace(boolean, boolean)}
+         *
+         * @since                        4.1.0
+         */
+        public void removeNodes(String xPathExpression, BiConsumer<Node, Node> precedingNodesConsumer) {
+
+            Consumer<Node> nodeRemover = removeNode(precedingNodesConsumer);
+            selectNodes(xPathExpression).forEach(nodeRemover);
+
         }
 
         /**
@@ -1482,6 +1498,32 @@ public class PomTransformer {
             }
         }
 
+        /**
+         * @param  xPathExpression the XPath expression to use for selecting nodes to return
+         * @return                 a {@link Stream} backed by an {@link ArrayList} rather than {@link NodeList} - thus safe to
+         *                         call e.g.
+         *                         {@code node.getParentNode().removeChild(node)} on the elements
+         *
+         * @since                  4.1.0
+         */
+        public Stream<Node> selectNodes(String xPathExpression) {
+            try {
+                final NodeList deletedNodes = (NodeList) getXPath().evaluate(xPathExpression, document, XPathConstants.NODESET);
+                final List<Node> deletedNodeList;
+                if (deletedNodes.getLength() > 0) {
+                    deletedNodeList = new ArrayList<>();
+                    for (int i = 0; i < deletedNodes.getLength(); i++) {
+                        deletedNodeList.add(deletedNodes.item(i));
+                    }
+                } else {
+                    deletedNodeList = Collections.emptyList();
+                }
+                return deletedNodeList.stream();
+            } catch (XPathExpressionException | DOMException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         public static boolean hasElementChildren(Node node) {
             final NodeList children = node.getChildNodes();
             if (children.getLength() == 0) {
@@ -1503,6 +1545,57 @@ public class PomTransformer {
                     .createComment(MODULE_COMMENT_PREFIX + moduleText + MODULE_COMMENT_INFIX + commentText + " ");
             parent.replaceChild(moduleComment, node);
             return moduleComment;
+        }
+
+        /**
+         * @param  precedingNodesConsumer a {@link Consumer} to which the preceding comment and whitespace nodes are passed; can
+         *                                be {@code null}
+         * @return                        a {@link Node} {@link Consumer} that deletes the given node, optionally passing the
+         *                                preceding comment and whitespace nodes to the given {@code precedingNodesConsumer}
+         *
+         * @since                         4.1.0
+         */
+        public static Consumer<Node> removeNode(BiConsumer<Node, Node> precedingNodesConsumer) {
+            return (Node deletedNode) -> {
+                if (precedingNodesConsumer != null) {
+                    Node prevSibling = deletedNode.getPreviousSibling();
+                    while (prevSibling != null
+                            && (TransformationContext.isWhiteSpaceNode(prevSibling)
+                                    || prevSibling.getNodeType() == Node.COMMENT_NODE)) {
+                        /* remove any preceding whitespace or comments */
+                        precedingNodesConsumer.accept(deletedNode, prevSibling);
+                        final Node newPrevSibling = deletedNode.getPreviousSibling();
+                        if (prevSibling == newPrevSibling) {
+                            break;
+                        }
+                        prevSibling = newPrevSibling;
+                    }
+                }
+                deletedNode.getParentNode().removeChild(deletedNode);
+            };
+        }
+
+        /**
+         * @param  removePrecedingComments   if {@code true} the comments preceding the removed nodes will be removed;
+         *                                   otherwise the preceding comments won't be removed
+         * @param  removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
+         *                                   be removed; otherwise the preceding whitespace nodes won't be removed
+         * @return                           a new {@link BiConsumer} that removes the preceding comments and/or white space
+         *                                   depending on the
+         *                                   given {@code removePrecedingComments} and {@code removePrecedingWhitespace} values
+         *
+         * @since                            4.1.0
+         */
+        public static BiConsumer<Node, Node> removePrecedingCommentsAndWhiteSpace(
+                boolean removePrecedingComments,
+                boolean removePrecedingWhitespace) {
+            return (Node deletedNode, Node whitespaceOrComment) -> {
+                if ((removePrecedingWhitespace && TransformationContext.isWhiteSpaceNode(whitespaceOrComment))
+                        || (removePrecedingComments && whitespaceOrComment.getNodeType() == Node.COMMENT_NODE)) {
+                    /* remove any preceding whitespace or comments */
+                    whitespaceOrComment.getParentNode().removeChild(whitespaceOrComment);
+                }
+            };
         }
 
         /**
