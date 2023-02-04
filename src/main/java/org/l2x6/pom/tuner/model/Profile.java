@@ -84,16 +84,18 @@ public class Profile {
 
             final Map<String, Expression> useProps = Collections.unmodifiableMap(properties.stream() //
                     .map(PropertyBuilder::build) //
-                    .collect( //
-                            Collectors.toMap( //
-                                    e -> e.getKey(), //
-                                    e -> e.getValue(), //
-                                    (u, v) -> {
-                                        throw new IllegalStateException(String.format("Duplicate key %s", u));
-                                    }, //
-                                    LinkedHashMap::new //
-                            ) //
+                    .collect(( //
+                    Collectors.toMap( //
+                            e -> e.getKey(), //
+                            e -> e.getValue(), //
+                            (u, v) -> {
+                                throw new IllegalStateException(
+                                        String.format("Duplicate key %s in profile %s", u, id));
+                            }, //
+
+                            LinkedHashMap::new //
                     ) //
+                    )) //
             );
             this.properties = null;
             return new Profile(id, useChildren, useDependencies, useManagedDependencies, usePlugins,
