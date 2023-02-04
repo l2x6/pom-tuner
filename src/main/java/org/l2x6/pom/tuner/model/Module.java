@@ -196,13 +196,18 @@ public class Module {
                     }
                 }
             } catch (IOException | XMLStreamException e1) {
-                throw new RuntimeException("Couldnot parse " + pomXml, e1);
+                throw new RuntimeException("Could not parse " + pomXml, e1);
             }
         }
 
-        public Module build() {
-            final List<Profile> useProfiles = Collections
-                    .unmodifiableList(profiles.stream().map(Profile.Builder::build).collect(Collectors.toList()));
+        public Module build() throws IllegalStateException {
+            List<Profile> useProfiles = null;
+            try {
+                useProfiles = Collections
+                        .unmodifiableList(profiles.stream().map(Profile.Builder::build).collect(Collectors.toList()));
+            } catch (IllegalStateException ise) {
+                throw new IllegalStateException("Exception on " + pomPath, ise);
+            }
             profiles = null;
             return new Module(pomPath, moduleGav.build(), parentGav.build(), packaging, name, useProfiles);
         }
