@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2015 Maven Utilities Project
  * project contributors as indicated by the @author tags.
  *
