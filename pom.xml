@@ -22,7 +22,7 @@
 
     <groupId>org.l2x6.pom-tuner</groupId>
     <artifactId>pom-tuner</artifactId>
-    <version>4.2.0</version>
+    <version>4.2.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>Maven POM Tuner</name>
@@ -49,7 +49,7 @@
         <connection>scm:git:git@github.com:l2x6/pom-tuner.git</connection>
         <developerConnection>scm:git:git@github.com:l2x6/pom-tuner.git</developerConnection>
         <url>https://github.com/l2x6/pom-tuner</url>
-        <tag>4.2.0</tag>
+        <tag>head</tag>
     </scm>
     <issueManagement>
         <system>GitHub Issues</system>
