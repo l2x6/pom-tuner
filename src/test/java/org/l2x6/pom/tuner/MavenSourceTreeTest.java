@@ -261,19 +261,19 @@ public class MavenSourceTreeTest {
         assertThat(
                 t.collectOwnDependencies(m1, profiles).stream()
                         .map(dep -> evaluator.evaluateGa(dep).toString()))
-                                .containsExactly("org.srcdeps.external:artifact-3");
+                .containsExactly("org.srcdeps.external:artifact-3");
 
         final Ga m8 = new Ga("org.srcdeps.tree-1", "tree-module-8");
         assertThat(
                 t.collectOwnDependencies(m8, profiles).stream()
                         .map(dep -> evaluator.evaluateGa(dep).toString()))
-                                .containsExactly("org.srcdeps.tree-1:tree-module-1", "org.srcdeps.external:artifact-5");
+                .containsExactly("org.srcdeps.tree-1:tree-module-1", "org.srcdeps.external:artifact-5");
 
         assertThat(
                 t.collectTransitiveDependencies(m8, profiles).stream()
                         .map(dep -> evaluator.evaluateGa(dep).toString()))
-                                .containsExactly("org.srcdeps.tree-1:tree-module-1", "org.srcdeps.external:artifact-3",
-                                        "org.srcdeps.external:artifact-5");
+                .containsExactly("org.srcdeps.tree-1:tree-module-1", "org.srcdeps.external:artifact-3",
+                        "org.srcdeps.external:artifact-5");
 
     }
 

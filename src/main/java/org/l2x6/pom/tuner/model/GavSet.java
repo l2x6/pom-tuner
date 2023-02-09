@@ -47,6 +47,10 @@ public interface GavSet {
         return IncludeExcludeGavSet.INCLUDE_ALL;
     }
 
+    public static GavSet excludeAll() {
+        return IncludeExcludeGavSet.EXCLUDE_ALL;
+    }
+
     /**
      * @param  gavSets the {@link GavSet}s to union
      * @return         a {@link GavSet} that is a union of the given {@code gavSets}
@@ -189,17 +193,28 @@ public interface GavSet {
         }
 
         public static class Builder {
-            List<GavSet> gavSets = new ArrayList<>();
+            private List<GavSet> gavSets = new ArrayList<>();
+            private GavSet defaultResult = IncludeExcludeGavSet.INCLUDE_ALL;
 
             public Builder union(GavSet gavSet) {
                 gavSets.add(gavSet);
                 return this;
             }
 
+            /**
+             * @param  gavSet a {@link GavSet} to return from {@link #build()} method in case no {@link GavSet}s were added via
+             *                {@link #union(GavSet)}
+             * @return        {@code this}
+             */
+            public Builder defaultResult(GavSet gavSet) {
+                this.defaultResult = gavSet;
+                return this;
+            }
+
             public GavSet build() {
                 final List<GavSet> gs = gavSets;
                 if (gs.isEmpty()) {
-                    return IncludeExcludeGavSet.INCLUDE_ALL;
+                    return defaultResult;
                 }
                 gavSets = null;
                 return new UnionGavSet(Collections.unmodifiableList(gs));
@@ -212,11 +227,15 @@ public interface GavSet {
         public static class Builder {
             private List<GavPattern> excludes = new ArrayList<>();
             private List<GavPattern> includes = new ArrayList<>();
+            private GavSet defaultResult = IncludeExcludeGavSet.INCLUDE_ALL;
 
             private Builder() {
             }
 
             public GavSet build() {
+                if (includes.isEmpty() && excludes.isEmpty()) {
+                    return defaultResult;
+                }
                 if (includes.isEmpty()) {
                     includes.add(GavPattern.matchAll());
                 }
@@ -228,6 +247,15 @@ public interface GavSet {
                 this.excludes = null;
 
                 return new IncludeExcludeGavSet(useIncludes, useExcludes);
+            }
+
+            /**
+             * @param  gavSet a {@link GavSet} to return from {@link #build()} method in case no includes or excludes were added
+             * @return        {@code this}
+             */
+            public Builder defaultResult(GavSet gavSet) {
+                this.defaultResult = gavSet;
+                return this;
             }
 
             /**
@@ -360,6 +388,8 @@ public interface GavSet {
 
         private static final GavSet INCLUDE_ALL = new IncludeExcludeGavSet(Collections.singletonList(GavPattern.matchAll()),
                 EMPTY_LIST);
+        private static final GavSet EXCLUDE_ALL = new IncludeExcludeGavSet(EMPTY_LIST,
+                Collections.singletonList(GavPattern.matchAll()));
         /**  */
         private static final long serialVersionUID = 4495169649760950618L;
 

@@ -173,4 +173,46 @@ public class GavSetTest {
         Assertions.assertTrue(set.contains("org.group1", "artifact2", "2.3.4"));
 
     }
+
+    @Test
+    public void unionExplicitDefault() {
+        GavSet set = GavSet.unionBuilder() //
+                .defaultResult(GavSet.excludeAll())
+                .build();
+
+        Assertions.assertFalse(set.contains("org.group1", "artifact1", "1.2.3"));
+        Assertions.assertFalse(set.contains("org.group1", "artifact2", "2.3.4"));
+
+    }
+
+    @Test
+    public void unionImplicitDefault() {
+        GavSet set = GavSet.unionBuilder() //
+                .build();
+
+        Assertions.assertTrue(set.contains("org.group1", "artifact1", "1.2.3"));
+        Assertions.assertTrue(set.contains("org.group1", "artifact2", "2.3.4"));
+
+    }
+
+    @Test
+    public void includeExcludeExplicitDefault() {
+        GavSet set = GavSet.builder() //
+                .defaultResult(GavSet.excludeAll())
+                .build();
+
+        Assertions.assertFalse(set.contains("org.group1", "artifact1", "1.2.3"));
+        Assertions.assertFalse(set.contains("org.group1", "artifact2", "2.3.4"));
+
+    }
+
+    @Test
+    public void includeExcludeImplicitDefault() {
+        GavSet set = GavSet.builder() //
+                .build();
+
+        Assertions.assertTrue(set.contains("org.group1", "artifact1", "1.2.3"));
+        Assertions.assertTrue(set.contains("org.group1", "artifact2", "2.3.4"));
+
+    }
 }
