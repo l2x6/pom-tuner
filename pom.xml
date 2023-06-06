@@ -74,7 +74,7 @@
         <assertj.version>3.24.2</assertj.version>
 
         <!-- Plugins and their dependencies -->
-        <buildnumber-maven-plugin.version>3.0.0</buildnumber-maven-plugin.version>
+        <buildnumber-maven-plugin.version>3.2.0</buildnumber-maven-plugin.version>
         <editorconfig-maven-plugin.version>0.1.3</editorconfig-maven-plugin.version>
         <formatter-maven-plugin.version>2.23.0</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.9.0</impsort-maven-plugin.version>
