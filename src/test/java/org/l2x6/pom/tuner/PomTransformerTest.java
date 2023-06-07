@@ -3609,6 +3609,47 @@ public class PomTransformerTest {
                 expected);
     }
 
+    @Test
+    void addScmUrlIfNeeded() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <scm>\n"
+                + "        <connection>scm:git:git@github.com:l2x6/pom-tuner.git</connection>\n"
+                + "        <developerConnection>scm:git:git@github.com:l2x6/pom-tuner.git</developerConnection>\n"
+                + "        <url>https://github.com/l2x6/pom-tuner</url>\n"
+                + "        <tag>HEAD</tag>\n"
+                + "    </scm>\n"
+                + "</project>\n";
+        String fullName = "l2x6/pom-tuner";
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement scm = context.getOrAddContainerElement("scm");
+                    scm.addOrSetChildTextElement("connection", String.format("scm:git:git@github.com:%s.git", fullName));
+                    scm.addOrSetChildTextElement("developerConnection",
+                            String.format("scm:git:git@github.com:%s.git", fullName));
+                    scm.addOrSetChildTextElement("url", String.format("https://github.com/%s", fullName));
+                    scm.addOrSetChildTextElement("tag", "HEAD");
+                }),
+                expected);
+
+    }
+
     public IntStream intStream(int count) {
         return IntStream.range(1, count + 1);
     }
