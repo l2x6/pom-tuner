@@ -1124,6 +1124,22 @@ public class PomTransformer {
             return document.createTextNode("\n");
         }
 
+        /**
+         * First attempts to find an element at the given path under the {@code <project>} element
+         * of the current {@code pom.xml} file. If it exists, it is returned as a {@link ContainerElement}. Otherwise
+         * a new element at the given path is added under {@code <project>} node of the current
+         * {@code pom.xml} file. The insert position of {@code elementName} is given by the
+         * <a href="http://maven.apache.org/developers/conventions/code.html#POM_Code_Convention">POM Code Convention</a>.
+         * <p>
+         * Note that unlike this method, {@link #getContainerElement(String...)} operates on the document level. Hence
+         * while you'd normally call {@code getOrAddContainerElements("dependencyManagement", "dependencies")}
+         * for {@code getContainerElement()} the arguments would have to start with {@code "project"}:
+         * {@code getContainerElements("project", "dependencyManagement", "dependencies")}.
+         *
+         * @param  elementName  the name of the searched or newly added element
+         * @param  furtherNames
+         * @return              a {@link ContainerElement} representing the existing or newly added node; never {@code null}
+         */
         public ContainerElement getOrAddContainerElements(String elementName, String... furtherNames) {
             ContainerElement parent = getOrAddContainerElement(elementName);
             for (int i = 0; i < furtherNames.length; i++) {
@@ -1132,6 +1148,16 @@ public class PomTransformer {
             return parent;
         }
 
+        /**
+         * First attempts to find an element with the given {@code elementName} under the {@code <project>} element
+         * of the current {@code pom.xml} file. If it exists, it is returned as a {@link ContainerElement}. Otherwise
+         * a new element with the given {@code elementName} is added under {@code <project>} node of the current
+         * {@code pom.xml} file. The insert position is given by the
+         * <a href="http://maven.apache.org/developers/conventions/code.html#POM_Code_Convention">POM Code Convention</a>.
+         *
+         * @param  elementName the name of the searched or newly added element
+         * @return             a {@link ContainerElement} representing the existing or newly added node; never {@code null}
+         */
         public ContainerElement getOrAddContainerElement(String elementName) {
             final Map<String, ElementOrderEntry> elementOrdering = getElementOrdering();
             final ElementOrderEntry newEntry = elementOrdering.get(elementName);
@@ -1314,6 +1340,18 @@ public class PomTransformer {
             }
         }
 
+        /**
+         * Attempts to find an element at the given path in the current {@code pom.xml} file. If it exists, it is
+         * returned as an {@link ContainerElement} {@link Optional}. Otherwise an empty {@link Optional} is returned.
+         * <p>
+         * Note that unlike this method, {@link #getOrAddContainerElements(String...)} operates on the {@code <project>}
+         * node. Hence while you'd normally call {@code getOrAddContainerElements("dependencyManagement", "dependencies")}
+         * for {@code getContainerElement()} the arguments would have to start with {@code "project"}:
+         * {@code getContainerElements("project", "dependencyManagement", "dependencies")}.
+         *
+         * @param  path a document level path starting with {@code "project"}
+         * @return      An optional possibly refering to a node under the given {@code path}.
+         */
         public Optional<ContainerElement> getContainerElement(String... path) {
             try {
                 final Node node = (Node) xPath.evaluate(PomTunerUtils.anyNs(path), document, XPathConstants.NODE);
