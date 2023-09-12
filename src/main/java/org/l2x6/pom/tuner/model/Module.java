@@ -362,7 +362,6 @@ public class Module {
             final Set<GavExpression> deps = dependencies.stream()
                     .map(PlainGavBuilder::build).collect(Collectors.toCollection(LinkedHashSet::new));
             final Set<GavExpression> useDependencies = Collections.unmodifiableSet(deps);
-            dependencies = null;
             final Ga ga = module.getGa();
             return new Plugin(Expression.of(groupId, ga), Expression.of(artifactId, ga),
                     version != null ? Expression.of(version, ga) : null, useDependencies);

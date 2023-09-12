@@ -18,8 +18,10 @@ package org.l2x6.pom.tuner;
 
 import java.nio.charset.Charset;
 import java.nio.file.Path;
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -89,6 +91,13 @@ public class MavenSourceTree {
             return EMPTY;
         }
 
+        /**
+         * @return a {@link Predicate} returning always {@code true}
+         */
+        public static Predicate<Profile> all() {
+            return profile -> true;
+        }
+
         final Set<String> profileIds;
 
         ActiveProfiles(String... profileIds) {
@@ -147,10 +156,17 @@ public class MavenSourceTree {
         private final Path rootDirectory;
         private Predicate<Dependency> dependencyExcludes = dep -> false;
 
+        private final Predicate<Profile> activeProfiles;
+
         Builder(Path rootDirectory, Charset encoding) {
+            this(rootDirectory, encoding, ActiveProfiles.all());
+        }
+
+        Builder(Path rootDirectory, Charset encoding, Predicate<Profile> activeProfiles) {
             super();
             this.rootDirectory = rootDirectory;
             this.encoding = encoding;
+            this.activeProfiles = activeProfiles;
         }
 
         public MavenSourceTree build() {
@@ -174,17 +190,44 @@ public class MavenSourceTree {
         }
 
         Builder pomXml(final Path pomXml) {
+            return pomXml(pomXml, null);
+        }
+
+        Builder pomXml(final Path pomXml, ModuleCallback callback) {
             final Module.Builder module = new Module.Builder(rootDirectory, pomXml, encoding, dependencyExcludes);
-            modulesByPath.put(module.getPomPath(), module);
+            final String pomPath = module.getPomPath();
+            if (callback != null) {
+                callback.enter(pomPath);
+            }
+            modulesByPath.put(pomPath, module);
             modulesByGa.put(module.getModuleGav().getGa(), module);
             for (Profile.Builder profile : module.getProfiles()) {
-                for (String path : profile.getChildren()) {
-                    if (!modulesByPath.containsKey(path)) {
-                        pomXml(rootDirectory.resolve(path));
+                if (activeProfiles.test(profile.build()))
+                    for (String path : profile.getChildren()) {
+                        if (!modulesByPath.containsKey(path)) {
+                            pomXml(rootDirectory.resolve(path), callback);
+                        }
                     }
-                }
+            }
+            if (callback != null) {
+                callback.exit(pomPath);
             }
             return this;
+        }
+    }
+
+    /**
+     * A utility for inspecting the process of {@link MavenSourceTree} building.
+     */
+    static class ModuleCallback {
+        private final Deque<String> moduleStack = new ArrayDeque<>();
+
+        public void enter(String path) {
+            moduleStack.push(path);
+        }
+
+        public void exit(String path) {
+            moduleStack.pop();
         }
     }
 
@@ -368,7 +411,24 @@ public class MavenSourceTree {
      * @return                    a new {@link MavenSourceTree}
      */
     public static MavenSourceTree of(Path rootPomXml, Charset encoding, Predicate<Dependency> dependencyExcludes) {
-        return new Builder(rootPomXml.getParent(), encoding).dependencyExcludes(dependencyExcludes).pomXml(rootPomXml).build();
+        return new Builder(rootPomXml.getParent(), encoding).dependencyExcludes(dependencyExcludes)
+                .pomXml(rootPomXml, new ModuleCallback()).build();
+    }
+
+    /**
+     * @param  rootPomXml         the path to the {@code pom.xml} file of the root Maven module
+     * @param  encoding           the encoding to use when reading {@code pom.xml} files in the given file tree
+     * @param  dependencyExcludes a {@link Predicate} deciding whether a given {@link Dependency} should be ignored when
+     *                            building the resulting {@link MavenSourceTree}
+     * @param  profiles           a predicate deciding whether some profile is active for the purposes of building the
+     *                            resulting {@link MavenSourceTree}
+     * @return                    a new {@link MavenSourceTree}
+     * @return
+     */
+    public static MavenSourceTree of(Path rootPomXml, Charset encoding, Predicate<Dependency> dependencyExcludes,
+            Predicate<Profile> profiles) {
+        return new Builder(rootPomXml.getParent(), encoding, profiles).dependencyExcludes(dependencyExcludes)
+                .pomXml(rootPomXml).build();
     }
 
     static String xPathDependency(String dependencyKind, GavExpression gav) {
