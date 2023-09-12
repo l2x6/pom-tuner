@@ -56,31 +56,25 @@ public class Profile {
         }
 
         public Profile build() {
-            final Set<String> useChildren = Collections.unmodifiableSet(children);
-            children = null;
+            final Set<String> useChildren = Collections.unmodifiableSet(new LinkedHashSet<>(children));
             final Set<Dependency> useDependencies = Collections
                     .<Dependency> unmodifiableSet((Set<Dependency>) dependencies.stream()
                             .map(DependencyBuilder::build)
                             .filter(dep -> !dependencyExcludes.test(dep))
                             .collect(Collectors.toCollection(LinkedHashSet::new)));
-            dependencies = null;
             final Set<Dependency> useManagedDependencies = Collections
                     .<Dependency> unmodifiableSet(
                             (Set<Dependency>) dependencyManagement.stream().map(DependencyBuilder::build)
                                     .collect(Collectors.toCollection(LinkedHashSet::new)));
-            dependencyManagement = null;
             final Set<Plugin> usePlugins = Collections.<Plugin> unmodifiableSet((Set<Plugin>) plugins.stream()
                     .map(PluginGavBuilder::build).collect(Collectors.toCollection(LinkedHashSet::new)));
-            plugins = null;
             final Set<Plugin> usePluginManagement = Collections
                     .<Plugin> unmodifiableSet((Set<Plugin>) pluginManagement.stream().map(PluginGavBuilder::build)
                             .collect(Collectors.toCollection(LinkedHashSet::new)));
-            pluginManagement = null;
 
             final Set<GavExpression> useExtensions = Collections
                     .<GavExpression> unmodifiableSet((Set<GavExpression>) extensions
                             .stream().map(PlainGavBuilder::build).collect(Collectors.toCollection(LinkedHashSet::new)));
-            extensions = null;
 
             final Map<String, Expression> useProps = Collections.unmodifiableMap(properties.stream() //
                     .map(PropertyBuilder::build) //
@@ -97,7 +91,6 @@ public class Profile {
                     ) //
                     )) //
             );
-            this.properties = null;
             return new Profile(id, useChildren, useDependencies, useManagedDependencies, usePlugins,
                     usePluginManagement, useExtensions, useProps);
         }
