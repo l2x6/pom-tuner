@@ -69,7 +69,7 @@
     <properties>
 
         <!-- Dependency versions in alphabectic order -->
-        <slf4j-version>2.0.14</slf4j-version>
+        <slf4j-version>2.0.15</slf4j-version>
         <junit.version>5.10.3</junit.version>
         <assertj.version>3.26.3</assertj.version>
 
