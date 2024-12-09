@@ -1170,6 +1170,50 @@ public class PomTransformerTest {
     }
 
     @Test
+    void commentModuleInProfile() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <profiles>\n" //
+                + "       <profile>\n"
+                + "         <id>profile-1</id>\n"
+                + "         <modules>\n"
+                + "           <module>module-1</module>\n"
+                + "           <module>module-2</module>\n"
+                + "           <module>module-3</module>\n"
+                + "         </modules>\n"
+                + "       </profile>" //
+                + "     </profiles>\n"
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <profiles>\n" //
+                + "       <profile>\n"
+                + "         <id>profile-1</id>\n"
+                + "         <modules>\n"
+                + "           <!-- <module>module-1</module> test comment -->\n"
+                + "           <!-- <module>module-2</module> test comment -->\n"
+                + "           <module>module-3</module>\n"
+                + "         </modules>\n"
+                + "       </profile>" //
+                + "     </profiles>\n"
+                + "</project>\n";
+
+        assertTransformation(source, Arrays.asList(
+                Transformation.commentModulesInProfile("profile-1", Arrays.asList("module-1", "module-2"), "test comment")),
+                expected);
+    }
+
+    @Test
     void removeLastModule() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
                 + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //

@@ -1775,6 +1775,38 @@ public class PomTransformer {
         }
 
         /**
+         * Comments modules which are present in a profile definition (with the specified profile id).
+         *
+         * @param  profile          Name of the profile, whose modules are commented
+         * @param  modulesToComment Collection of modules to be commented.
+         * @param  commentText      Explanation for the comment
+         * @return                  Transformation.
+         */
+        public static Transformation commentModulesInProfile(String profile, Collection<String> modulesToComment,
+                String commentText) {
+            return (Document document, TransformationContext context) -> {
+
+                for (String m : modulesToComment) {
+                    final String xPathExpr = PomTunerUtils.anyNs("project", "profiles", "profile", "id") + "[text() = '"
+                            + profile
+                            + "'"
+                            + "]"
+                            + "/following-sibling::"
+                            + PomTunerUtils.anyNs("modules", "module").substring(1) + "[text() = '" + m + "'" + "]";
+                    try {
+                        final NodeList moduleNodes = (NodeList) context.getXPath().evaluate(xPathExpr, document,
+                                XPathConstants.NODESET);
+                        for (int i = 0; i < moduleNodes.getLength(); i++) {
+                            TransformationContext.commentTextNode(moduleNodes.item(i), commentText);
+                        }
+                    } catch (XPathExpressionException | DOMException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            };
+        }
+
+        /**
          * @param  newVersion the new version to set on the given {@code gas}
          * @param  gas        the list of {@link Ga} on which the {@code newVersion} should be set
          * @return            a new {@link Transformation}
