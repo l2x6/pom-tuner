@@ -223,6 +223,7 @@ limitations under the License.</inlineHeader>
                                     <exclude>LICENSE</exclude>
                                     <exclude>mvnw</exclude>
                                     <exclude>mvnw.cmd</exclude>
+                                    <exclude>.sdkmanrc</exclude>
                                     <exclude>src/test/resources/expected/**</exclude>
                                     <exclude>src/test/resources/projects/**</exclude>
                                 </excludes>
