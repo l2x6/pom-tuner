@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+
+    Copyright (c) 2015 Maven Utilities Project
+    project contributors as indicated by the @author tags.
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.l2x6.pom-tuner</groupId>
+        <artifactId>pom-tuner-parent</artifactId>
+        <version>4.4.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>pom-tuner-tests</artifactId>
+    <name>${project.groupId}:${project.artifactId}</name>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.l2x6.pom-tuner</groupId>
+            <artifactId>pom-tuner</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-params</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- To speed up the tests, we use the mrm-maven-plugin to proxy the local Maven repo of the main build so that
+                 the test child build does not have to download all the dependencies from the Central. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>mrm-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>mrm-start</id>
+                        <phase>process-test-classes</phase>
+                        <goals>
+                            <goal>start</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>mrm-stop</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>stop</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>filter-settings-mrm</id>
+                        <phase>process-test-classes</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <skip>false</skip>
+                            <resources>
+                                <resource>
+                                    <directory>src/test/resources</directory>
+                                    <include>settings-mrm.xml</include>
+                                    <filtering>true</filtering> <!-- to eval ${mrm.repository.url} set by mrm-maven-plugin -->
+                                </resource>
+                            </resources>
+                            <outputDirectory>${project.build.directory}</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <systemPropertyVariables>
+                        <project.basedir>${project.basedir}</project.basedir>
+                        <project.build.directory>${project.build.directory}</project.build.directory>
+                        <mrm.settings.xml>${project.build.directory}/settings-mrm.xml</mrm.settings.xml>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
