@@ -15,36 +15,60 @@
 # limitations under the License.
 #
 
-name: Linux & Windows CI
+name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  linux:
-    runs-on: ubuntu-22.04
-    strategy:
-      matrix:
-        java: [ 11, 17 ]
+  install:
+    name: Install
+    runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: ${{ matrix.java }}
-    - name: Build with Maven
-      run: './mvnw clean verify -B -ntp'
-  windows:
-    runs-on: windows-2019
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: 21
+          distribution: 'temurin'
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: pom-tuner-${{ hashFiles('**/pom.xml') }}-${{ github.sha }}
+          restore-keys: |
+            pom-tuner-${{ hashFiles('**/pom.xml') }}-
+            pom-tuner-
+      - name: Install
+        shell: bash
+        run: ./mvnw install -e -B -V -ntp
+
+  test:
+    name: Test
+    needs: install
+    runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        java: [ 11, 17 ]
+        os: [ "ubuntu-latest", "windows-latest", "macOS-latest" ]
+        jdk: [ "8", "21" ]
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: ${{ matrix.java }}
-    - name: Build with Maven
-      run: './mvnw clean verify -B -ntp'
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          java-version: ${{ matrix.jdk }}
+          distribution: 'temurin'
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: pom-tuner-${{ hashFiles('**/pom.xml') }}-${{ github.sha }}
+      - run: ./mvnw verify -e -B -V -ntp -rf :pom-tuner-tests
+

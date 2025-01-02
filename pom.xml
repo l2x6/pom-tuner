@@ -21,11 +21,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.l2x6.pom-tuner</groupId>
-    <artifactId>pom-tuner</artifactId>
+    <artifactId>pom-tuner-parent</artifactId>
     <version>4.4.1-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
 
-    <name>Maven POM Tuner</name>
+    <name>${project.groupId}:${project.artifactId}</name>
     <description>A library to analyze and edit Maven pom.xml files programmatically</description>
     <url>https://github.com/l2x6/pom-tuner</url>
     <inceptionYear>2015</inceptionYear>
@@ -76,8 +76,8 @@
         <!-- Plugins and their dependencies -->
         <buildnumber-maven-plugin.version>3.2.1</buildnumber-maven-plugin.version>
         <editorconfig-maven-plugin.version>0.1.3</editorconfig-maven-plugin.version>
-        <formatter-maven-plugin.version>2.23.0</formatter-maven-plugin.version>
-        <impsort-maven-plugin.version>1.9.0</impsort-maven-plugin.version>
+        <formatter-maven-plugin.version>2.24.1</formatter-maven-plugin.version>
+        <impsort-maven-plugin.version>1.12.0</impsort-maven-plugin.version>
         <license-maven-plugin.version>4.6</license-maven-plugin.version>
         <maven-clean-plugin.version>3.4.0</maven-clean-plugin.version>
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
@@ -123,8 +123,12 @@
 
         <!-- com.github.github:site-maven-plugin -->
         <github.global.server>github</github.global.server>
-
     </properties>
+
+    <modules>
+        <module>pom-tuner</module>
+        <module>pom-tuner-tests</module>
+    </modules>
 
     <dependencyManagement>
         <dependencies>
@@ -156,35 +160,6 @@
 
         </dependencies>
     </dependencyManagement>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-api</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-params</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
 
     <build>
         <pluginManagement>
@@ -399,6 +374,11 @@ limitations under the License.</inlineHeader>
                         <autoDropAfterRelease>false</autoDropAfterRelease>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>mrm-maven-plugin</artifactId>
+                    <version>1.6.0</version>
+                </plugin>
 
             </plugins>
         </pluginManagement>
@@ -408,94 +388,6 @@ limitations under the License.</inlineHeader>
             <plugin>
                 <groupId>com.mycila</groupId>
                 <artifactId>license-maven-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <groupId>net.revelc.code.formatter</groupId>
-                <artifactId>formatter-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>format</id>
-                        <goals>
-                            <goal>format</goal>
-                        </goals>
-                        <phase>process-sources</phase>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>net.revelc.code</groupId>
-                <artifactId>impsort-maven-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>sort-imports</id>
-                        <goals>
-                            <goal>sort</goal>
-                        </goals>
-                        <phase>process-sources</phase>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <!-- To speed up the tests, we use the mrm-maven-plugin to proxy the local Maven repo of the main build so that
-                 the test child build does not have to download all the dependencies from the Central. -->
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>mrm-maven-plugin</artifactId>
-                <version>1.6.0</version>
-                <executions>
-                    <execution>
-                        <id>mrm-start</id>
-                        <phase>process-test-classes</phase>
-                        <goals>
-                            <goal>start</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>mrm-stop</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>stop</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>filter-settings-mrm</id>
-                        <phase>process-test-classes</phase>
-                        <goals>
-                            <goal>copy-resources</goal>
-                        </goals>
-                        <configuration>
-                            <skip>false</skip>
-                            <resources>
-                                <resource>
-                                    <directory>src/test/resources</directory>
-                                    <include>settings-mrm.xml</include>
-                                    <filtering>true</filtering> <!-- to eval ${mrm.repository.url} set by mrm-maven-plugin -->
-                                </resource>
-                            </resources>
-                            <outputDirectory>${project.build.directory}</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <systemPropertyVariables>
-                        <project.basedir>${project.basedir}</project.basedir>
-                        <project.build.directory>${project.build.directory}</project.build.directory>
-                        <mrm.settings.xml>${project.build.directory}/settings-mrm.xml</mrm.settings.xml>
-                    </systemPropertyVariables>
-                </configuration>
             </plugin>
 
             <plugin>
@@ -522,23 +414,54 @@ limitations under the License.</inlineHeader>
                     </execution>
                 </executions>
             </plugin>
-
         </plugins>
     </build>
 
     <profiles>
-
+        <profile>
+            <id>java21</id>
+            <activation>
+                <jdk>[21,)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>net.revelc.code.formatter</groupId>
+                        <artifactId>formatter-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>format</id>
+                                <goals>
+                                    <goal>format</goal>
+                                </goals>
+                                <phase>process-sources</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>net.revelc.code</groupId>
+                        <artifactId>impsort-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>sort-imports</id>
+                                <goals>
+                                    <goal>sort</goal>
+                                </goals>
+                                <phase>process-sources</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
         <profile>
             <id>release</id>
-
             <properties>
                 <!-- This makes the buildnumber-maven-plugin fail in case of uncommitted local changes -->
                 <maven.buildNumber.doCheck>true</maven.buildNumber.doCheck>
             </properties>
-
             <build>
                 <plugins>
-
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-gpg-plugin</artifactId>
@@ -583,11 +506,8 @@ limitations under the License.</inlineHeader>
                             <detectOfflineLinks>false</detectOfflineLinks>
                         </configuration>
                     </plugin>
-
                 </plugins>
             </build>
-
         </profile>
     </profiles>
-
 </project>
