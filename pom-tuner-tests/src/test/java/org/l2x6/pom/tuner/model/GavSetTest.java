@@ -16,203 +16,67 @@
  */
 package org.l2x6.pom.tuner.model;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Stream;
+import org.l2x6.pom.tuner.model.GavSet.IncludeExcludeGavSet.Builder;
 
-public class GavSetTest {
+import static org.assertj.core.api.Assertions.assertThat;
 
-    @Test
-    public void defaults() {
-        GavSet set = GavSet.builder().build();
-        Assertions.assertTrue(set.contains("org.group1", "artifact1", "1.2.3"));
+public class GavSetTest extends AbstractSetTest<GavSet> {
+
+    @Override
+    List<GavSet> set(String[] includes, String[] excludes) {
+        List<GavSet> result = new ArrayList<>();
+        result.add(GavSet.builder().includes(includes).excludes(excludes).build());
+        result.add(GavSet.builder().includes(Arrays.asList(includes)).excludes(Arrays.asList(excludes)).build());
+
+        final Builder b = GavSet.builder();
+        Stream.of(includes).forEach(b::include);
+        Stream.of(excludes).forEach(b::exclude);
+        result.add(b.build());
+        return result;
     }
 
-    @Test
-    public void excludeArtifact() {
-        GavSet set = GavSet.builder() //
-                .exclude("org.group1:artifact1") //
+    @Override
+    List<GavSet> set(String includes, String excludes) {
+        List<GavSet> result = new ArrayList<>();
+        result.add(GavSet.builder().includes(includes).excludes(excludes).build());
+        return result;
+    }
+
+    @Override
+    void containsGav(boolean expected, GavSet set, String g, String a, String v) {
+        assertThat(set.contains(g, a, v)).isEqualTo(expected);
+    }
+
+    @Override
+    List<GavSet> union(String[] includes, String[] excludes, String[] unionIncludes) {
+        GavSet r = GavSet.builder() //
+                .includes(includes) //
+                .excludes(excludes) //
                 .build();
-        Assertions.assertFalse(set.contains("org.group1", "artifact1", "1.2.3"));
-        Assertions.assertTrue(set.contains("org.group1", "artifact2", "2.3.4"));
-
-        Assertions.assertTrue(set.contains("org.group2", "artifact2", "5.6.7"));
-        Assertions.assertTrue(set.contains("org.group2", "artifact3", "6.7.8"));
-
-        Assertions.assertTrue(set.contains("com.group3", "artifact4", "5.6.7"));
+        if (unionIncludes.length > 0) {
+            return Arrays.asList(r
+                    .union(GavSet.builder().includes(unionIncludes).build()));
+        } else {
+            return Arrays.asList(r);
+        }
     }
 
-    @Test
-    public void excludeGroups() {
-        GavSet set = GavSet.builder() //
-                .exclude("org.group1") //
-                .exclude("org.group2") //
-                .build();
-        Assertions.assertFalse(set.contains("org.group1", "artifact1", "1.2.3"));
-        Assertions.assertFalse(set.contains("org.group1", "artifact2", "2.3.4"));
-
-        Assertions.assertFalse(set.contains("org.group2", "artifact2", "5.6.7"));
-        Assertions.assertFalse(set.contains("org.group2", "artifact3", "6.7.8"));
-
-        Assertions.assertTrue(set.contains("com.group3", "artifact4", "5.6.7"));
-
-    }
-
-    @Test
-    public void includeArtifact() {
-        GavSet set = GavSet.builder() //
-                .include("org.group1:artifact1") //
-                .build();
-        Assertions.assertTrue(set.contains("org.group1", "artifact1", "1.2.3"));
-        Assertions.assertFalse(set.contains("org.group1", "artifact2", "2.3.4"));
-
-        Assertions.assertFalse(set.contains("org.group2", "artifact2", "5.6.7"));
-        Assertions.assertFalse(set.contains("org.group2", "artifact3", "6.7.8"));
-
-        Assertions.assertFalse(set.contains("com.group3", "artifact4", "5.6.7"));
-    }
-
-    @Test
-    public void includeExcludeGroups() {
-        GavSet set = GavSet.builder() //
-                .include("org.group1") //
-                .exclude("org.group2") //
-                .build();
-        Assertions.assertTrue(set.contains("org.group1", "artifact1", "1.2.3"));
-        Assertions.assertTrue(set.contains("org.group1", "artifact2", "2.3.4"));
-
-        Assertions.assertFalse(set.contains("org.group2", "artifact2", "5.6.7"));
-        Assertions.assertFalse(set.contains("org.group2", "artifact3", "6.7.8"));
-
-        Assertions.assertFalse(set.contains("com.group3", "artifact4", "5.6.7"));
-
-    }
-
-    @Test
-    public void includeGroup() {
-        GavSet set = GavSet.builder() //
-                .include("org.group1") //
-                .build();
-        Assertions.assertTrue(set.contains("org.group1", "artifact1", "1.2.3"));
-        Assertions.assertTrue(set.contains("org.group1", "artifact2", "2.3.4"));
-
-        Assertions.assertFalse(set.contains("org.group2", "artifact2", "5.6.7"));
-    }
-
-    @Test
-    public void includeGroups() {
-        GavSet set = GavSet.builder() //
-                .include("org.group1") //
-                .include("org.group2") //
-                .build();
-        Assertions.assertTrue(set.contains("org.group1", "artifact1", "1.2.3"));
-        Assertions.assertTrue(set.contains("org.group1", "artifact2", "2.3.4"));
-
-        Assertions.assertTrue(set.contains("org.group2", "artifact2", "5.6.7"));
-        Assertions.assertTrue(set.contains("org.group2", "artifact3", "6.7.8"));
-
-        Assertions.assertFalse(set.contains("com.group3", "artifact4", "5.6.7"));
-
-    }
-
-    @Test
-    public void includeGroupsExcludeArtifact() {
-        GavSet set = GavSet.builder() //
-                .include("org.group1") //
-                .include("org.group2") //
-                .include("com.group3") //
-                .exclude("org.group1:artifact2") //
-                .exclude("org.group1:artifact3") //
-                .exclude("org.group2:artifact2") //
-                .exclude("org.group2:artifact3") //
-                .build();
-        Assertions.assertTrue(set.contains("org.group1", "artifact1", "1.2.3"));
-        Assertions.assertFalse(set.contains("org.group1", "artifact2", "2.3.4"));
-        Assertions.assertFalse(set.contains("org.group1", "artifact3", "2.3.4"));
-
-        Assertions.assertTrue(set.contains("org.group2", "artifact1", "1.2.3"));
-        Assertions.assertFalse(set.contains("org.group2", "artifact2", "2.3.4"));
-        Assertions.assertFalse(set.contains("org.group2", "artifact3", "2.3.4"));
-
-        Assertions.assertTrue(set.contains("com.group3", "artifact1", "5.6.7"));
-        Assertions.assertTrue(set.contains("com.group3", "artifact2", "5.6.7"));
-        Assertions.assertTrue(set.contains("com.group3", "artifact3", "5.6.7"));
-        Assertions.assertTrue(set.contains("com.group3", "artifact4", "5.6.7"));
-
-    }
-
-    @Test
-    public void whitespaceSeparated() {
-        GavSet set = GavSet.builder() //
-                .includes("org.group1,org.group2\n     com.group3") //
-                .excludes("org.group1:artifact2\t\torg.group1:artifact3 org.group2:artifact2\torg.group2:artifact3") //
-                .build();
-        Assertions.assertTrue(set.contains("org.group1", "artifact1", "1.2.3"));
-        Assertions.assertFalse(set.contains("org.group1", "artifact2", "2.3.4"));
-        Assertions.assertFalse(set.contains("org.group1", "artifact3", "2.3.4"));
-
-        Assertions.assertTrue(set.contains("org.group2", "artifact1", "1.2.3"));
-        Assertions.assertFalse(set.contains("org.group2", "artifact2", "2.3.4"));
-        Assertions.assertFalse(set.contains("org.group2", "artifact3", "2.3.4"));
-
-        Assertions.assertTrue(set.contains("com.group3", "artifact1", "5.6.7"));
-        Assertions.assertTrue(set.contains("com.group3", "artifact2", "5.6.7"));
-        Assertions.assertTrue(set.contains("com.group3", "artifact3", "5.6.7"));
-        Assertions.assertTrue(set.contains("com.group3", "artifact4", "5.6.7"));
-
-    }
-
-    @Test
-    public void union() {
-        GavSet set = GavSet.builder() //
-                .include("org.group1") //
-                .exclude("org.group1:artifact2") //
-                .build()
-                .union(GavSet.builder().include("org.group1:artifact2").build());
-
-        Assertions.assertTrue(set.contains("org.group1", "artifact1", "1.2.3"));
-        Assertions.assertTrue(set.contains("org.group1", "artifact2", "2.3.4"));
-
-    }
-
-    @Test
-    public void unionExplicitDefault() {
-        GavSet set = GavSet.unionBuilder() //
+    @Override
+    List<GavSet> unionDefaultResultExcludeAll() {
+        return Arrays.asList(GavSet.unionBuilder() //
                 .defaultResult(GavSet.excludeAll())
-                .build();
-
-        Assertions.assertFalse(set.contains("org.group1", "artifact1", "1.2.3"));
-        Assertions.assertFalse(set.contains("org.group1", "artifact2", "2.3.4"));
-
+                .build());
     }
 
-    @Test
-    public void unionImplicitDefault() {
-        GavSet set = GavSet.unionBuilder() //
-                .build();
-
-        Assertions.assertTrue(set.contains("org.group1", "artifact1", "1.2.3"));
-        Assertions.assertTrue(set.contains("org.group1", "artifact2", "2.3.4"));
-
-    }
-
-    @Test
-    public void includeExcludeExplicitDefault() {
-        GavSet set = GavSet.builder() //
+    @Override
+    List<GavSet> setDefaultResultExcludeAll() {
+        return Arrays.asList(GavSet.builder() //
                 .defaultResult(GavSet.excludeAll())
-                .build();
-
-        Assertions.assertFalse(set.contains("org.group1", "artifact1", "1.2.3"));
-        Assertions.assertFalse(set.contains("org.group1", "artifact2", "2.3.4"));
-
+                .build());
     }
 
-    @Test
-    public void includeExcludeImplicitDefault() {
-        GavSet set = GavSet.builder() //
-                .build();
-
-        Assertions.assertTrue(set.contains("org.group1", "artifact1", "1.2.3"));
-        Assertions.assertTrue(set.contains("org.group1", "artifact2", "2.3.4"));
-
-    }
 }

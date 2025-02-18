@@ -142,6 +142,14 @@ public class Gavtcs {
         return gavtcs -> groupId.equals(gavtcs.getGroupId()) && artifactId.equals(gavtcs.getArtifactId());
     }
 
+    static String toEffectiveType(String type) {
+        return type == null || type.isEmpty() ? DEFAULT_TYPE : type;
+    }
+
+    static String toEffectiveScope(String scope) {
+        return scope == null || scope.isEmpty() ? DEFAULT_SCOPE : scope;
+    }
+
     private static String emptyToNull(String string) {
         return string != null && !string.isEmpty() ? string : null;
     }

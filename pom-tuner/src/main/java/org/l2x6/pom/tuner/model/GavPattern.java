@@ -91,8 +91,8 @@ public class GavPattern implements Serializable, Comparable<GavPattern> {
      * A pair of a {@link Pattern} and its wildcard source.
      */
     static class GavSegmentPattern implements Serializable {
-        private static final GavSegmentPattern MATCH_ALL = new GavSegmentPattern(GavPattern.MULTI_WILDCARD);
-        private static final String MATCH_ALL_PATTERN_SOURCE = ".*";
+        static final GavSegmentPattern MATCH_ALL = new GavSegmentPattern(GavPattern.MULTI_WILDCARD);
+        static final String MATCH_ALL_PATTERN_SOURCE = ".*";
         /**  */
         private static final long serialVersionUID = 1063634992004995585L;
         private final transient Pattern pattern;
@@ -154,18 +154,16 @@ public class GavPattern implements Serializable, Comparable<GavPattern> {
         }
     }
 
-    private static final char DELIMITER = ':';
-    private static final String DELIMITER_STRING;
+    static final char DELIMITER = ':';
+    static final String DELIMITER_STRING = ":";
     private static final GavPattern MATCH_ALL;
     private static final GavPattern MATCH_SNAPSHOTS;
-    static final String MULTI_WILDCARD;
+    static final String MULTI_WILDCARD = "*";
     static final char MULTI_WILDCARD_CHAR = '*';
     private static final long serialVersionUID = 5570763687443531797L;
-    private static final String SNAPSHOT_SUFFIX = "-SNAPSHOT";
+    static final String SNAPSHOT_SUFFIX = "-SNAPSHOT";
 
     static {
-        MULTI_WILDCARD = String.valueOf(MULTI_WILDCARD_CHAR);
-        DELIMITER_STRING = String.valueOf(DELIMITER);
         MATCH_ALL = new GavPattern(GavSegmentPattern.MATCH_ALL, GavSegmentPattern.MATCH_ALL,
                 GavSegmentPattern.MATCH_ALL);
         MATCH_SNAPSHOTS = new GavPattern(GavSegmentPattern.MATCH_ALL, GavSegmentPattern.MATCH_ALL,
@@ -290,7 +288,7 @@ public class GavPattern implements Serializable, Comparable<GavPattern> {
      * @param  artifactId
      * @param  version
      * @return            {@code true} if this {@link GavPattern} matches the given {@code groupId}, {@code artifactId},
-     *                    {@code version} triple and {@code false otherwise}
+     *                    {@code version} triple and {@code false} otherwise
      */
     public boolean matches(String groupId, String artifactId, String version) {
         return groupIdPattern.matches(groupId) && //
@@ -303,7 +301,7 @@ public class GavPattern implements Serializable, Comparable<GavPattern> {
      *
      * @param  gav
      * @return     {@code true} if this {@link GavPattern} matches the given {@code groupId}, {@code artifactId},
-     *             {@code version} triple and {@code false otherwise}
+     *             {@code version} triple and {@code false} otherwise
      *
      * @since      4.0.0
      */
@@ -320,7 +318,7 @@ public class GavPattern implements Serializable, Comparable<GavPattern> {
      * @param  groupId
      * @param  artifactId
      * @return            {@code true} if this {@link GavPattern} matches the given {@code groupId} and {@code artifactId}
-     *                    (disregarding the version part of this {@link GavPattern}), and {@code false otherwise}
+     *                    (disregarding the version part of this {@link GavPattern}), and {@code false} otherwise
      */
     public boolean matches(String groupId, String artifactId) {
         return groupIdPattern.matches(groupId) && //
@@ -333,7 +331,7 @@ public class GavPattern implements Serializable, Comparable<GavPattern> {
      *
      * @param  ga
      * @return    {@code true} if this {@link GavPattern} matches the given {@code groupId} and {@code artifactId}
-     *            (disregarding the version part of this {@link GavPattern}), and {@code false otherwise}
+     *            (disregarding the version part of this {@link GavPattern}), and {@code false} otherwise
      *
      * @since     4.0.0
      */
