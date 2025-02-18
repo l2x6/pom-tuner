@@ -24,16 +24,17 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.StringTokenizer;
-import org.l2x6.pom.tuner.model.GavSet.IncludeExcludeGavSet.Builder;
+import org.l2x6.pom.tuner.model.GavtcsSet.IncludeExcludeGavSet.Builder;
 
 /**
- * A set of {@link Gav}s defined by included and excluded {@link GavPattern}s.
+ * A set of {@link Gavtcs}s defined by included and excluded {@link GavtcsPattern}s.
  * <p>
- * Historical note: before version 4.0.0, {@link GavSet} used to be a class that is now {@link IncludeExcludeGavSet}.
+ * Historical note: before version 4.5.0, {@link GavtcsSet} used to be a class that is now {@link IncludeExcludeGavSet}.
  *
+ * @since  4.5 .0
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
-public interface GavSet {
+public interface GavtcsSet {
 
     public static Builder builder() {
         return new Builder();
@@ -43,45 +44,45 @@ public interface GavSet {
         return new UnionGavSet.Builder();
     }
 
-    public static GavSet includeAll() {
+    public static GavtcsSet includeAll() {
         return IncludeExcludeGavSet.INCLUDE_ALL;
     }
 
-    public static GavSet excludeAll() {
+    public static GavtcsSet excludeAll() {
         return IncludeExcludeGavSet.EXCLUDE_ALL;
     }
 
     /**
-     * @param  gavSets the {@link GavSet}s to union
-     * @return         a {@link GavSet} that is a union of the given {@code gavSets}
+     * @param  gavtcsSets the {@link GavtcsSet}s to union
+     * @return            a {@link GavtcsSet} that is a union of the given {@code gavtcsSets}
      *
-     * @since          4.0.0
+     * @since             4.5.0
      */
-    public static GavSet union(Collection<GavSet> gavSets) {
-        if (gavSets == null || gavSets.isEmpty()) {
+    public static GavtcsSet union(Collection<GavtcsSet> gavtcsSets) {
+        if (gavtcsSets == null || gavtcsSets.isEmpty()) {
             return IncludeExcludeGavSet.INCLUDE_ALL;
         }
-        return new UnionGavSet(new ArrayList<>(gavSets));
+        return new UnionGavSet(new ArrayList<>(gavtcsSets));
     }
 
     /**
-     * @param  gavSets the {@link GavSet}s to union
-     * @return         a {@link GavSet} that is a union of the given {@code gavSets}
+     * @param  gavtcsSets the {@link GavtcsSet}s to union
+     * @return            a {@link GavtcsSet} that is a union of the given {@code gavtcsSets}
      *
-     * @since          4.0.0
+     * @since             4.5.0
      */
-    public static GavSet union(GavSet... gavSets) {
-        if (gavSets == null || gavSets.length == 0) {
+    public static GavtcsSet union(GavtcsSet... gavtcsSets) {
+        if (gavtcsSets == null || gavtcsSets.length == 0) {
             return IncludeExcludeGavSet.INCLUDE_ALL;
         }
-        return new UnionGavSet(new ArrayList<>(Arrays.asList(gavSets)));
+        return new UnionGavSet(new ArrayList<>(Arrays.asList(gavtcsSets)));
     }
 
     /**
      *
      * @param  groupId
      * @param  artifactId
-     * @return            {@code true} if the given GA identifier is a member of this {@link GavSet} and {@code false}
+     * @return            {@code true} if the given GA identifier is a member of this {@link GavtcsSet} and {@code false}
      *                    otherwise
      */
     boolean contains(String groupId, String artifactId);
@@ -89,11 +90,11 @@ public interface GavSet {
     /**
      * Shorthand for {@code contains(ga.getGroupId(), ga.getArtifactId())}.
      *
-     * @param  ga the groupId and artiafctId to check for membership in this gavSet
-     * @return    {@code true} if the given {@link Ga} is a member of this {@link GavSet} and {@code false}
+     * @param  ga the groupId and artiafctId to check for membership in this gavtcsSet
+     * @return    {@code true} if the given {@link Ga} is a member of this {@link GavtcsSet} and {@code false}
      *            otherwise
      *
-     * @since     4.0.0
+     * @since     4.5.0
      */
     default boolean contains(Ga ga) {
         return contains(ga.getGroupId(), ga.getArtifactId());
@@ -104,7 +105,7 @@ public interface GavSet {
      * @param  groupId
      * @param  artifactId
      * @param  version
-     * @return            {@code true} if the given GAV triple is a member of this {@link GavSet} and {@code false}
+     * @return            {@code true} if the given GAV triple is a member of this {@link GavtcsSet} and {@code false}
      *                    otherwise
      */
     boolean contains(String groupId, String artifactId, String version);
@@ -112,61 +113,99 @@ public interface GavSet {
     /**
      * Shorthand for {@code contains(gav.getGrooupId(), gav.getArtifactId(), gav.getVersion())}.
      *
-     * @param  gav the groupId, artiafctId and version to check for membership in this gavSet
-     * @return     {@code true} if the given {@link Gav} is a member of this {@link GavSet} and {@code false}
+     * @param  gav the groupId, artiafctId and version to check for membership in this gavtcsSet
+     * @return     {@code true} if the given {@link Gav} is a member of this {@link GavtcsSet} and {@code false}
      *             otherwise
      *
-     * @since      4.0.0
+     * @since      4.5.0
      */
     default boolean contains(Gav gav) {
         return contains(gav.getGroupId(), gav.getArtifactId(), gav.getVersion());
     }
 
     /**
-     * Unions {@code this} {@link GavSet} with the given {@code other} {@link GavSet}
      *
-     * @param  other the {@link GavSet} to union with
-     * @return       if {@code this} is equal to {@code other} returns {@code this}; otherwise returns a new {@link GavSet}
-     *               that is a union of {@code this} {@link GavSet} and the given {@code other}
-     *               {@link GavSet}
-     *
-     * @since        4.0.0
+     * @param  groupId
+     * @param  artifactId
+     * @param  version
+     * @param  type
+     * @param  classifier
+     * @param  scope
+     * @return            {@code true} if the given given {@code groupId}, {@code artifactId}, {@code version},
+     *                    {@code type}, {@code classifier},
+     *                    {@code scope} sextuple is a member of this {@link GavtcsSet} and {@code false}
+     *                    otherwise
+     * @since             4.5.0
      */
-    default GavSet union(GavSet other) {
+    boolean contains(String groupId, String artifactId, String version, String type, String classifier, String scope);
+
+    /**
+     * Shorthand for {@code contains(gav.getGrooupId(), gav.getArtifactId(), gav.getVersion())}.
+     *
+     * @param  gavtcs the groupId, artiafctId and version to check for membership in this gavtcsSet
+     * @return        {@code true} if the given {@link Gavtcs} is a member of this {@link GavtcsSet} and {@code false}
+     *                otherwise
+     *
+     * @since         4.5.0
+     */
+    default boolean contains(Gavtcs gavtcs) {
+        return contains(gavtcs.getGroupId(), gavtcs.getArtifactId(), gavtcs.getVersion(), gavtcs.getType(),
+                gavtcs.getClassifier(), gavtcs.getScope());
+    }
+
+    /**
+     * Unions {@code this} {@link GavtcsSet} with the given {@code other} {@link GavtcsSet}
+     *
+     * @param  other the {@link GavtcsSet} to union with
+     * @return       if {@code this} is equal to {@code other} returns {@code this}; otherwise returns a new
+     *               {@link GavtcsSet}
+     *               that is a union of {@code this} {@link GavtcsSet} and the given {@code other}
+     *               {@link GavtcsSet}
+     *
+     * @since        4.5.0
+     */
+    default GavtcsSet union(GavtcsSet other) {
         if (this.equals(other)) {
             return this;
         }
         return new UnionGavSet(this, other);
     }
 
-    public static class UnionGavSet implements GavSet, Serializable {
+    public static class UnionGavSet implements GavtcsSet, Serializable {
         private static final long serialVersionUID = 6946413843688129003L;
 
-        private final List<GavSet> gavSets;
+        private final List<GavtcsSet> gavtcsSets;
 
-        UnionGavSet(GavSet... gavSets) {
-            this.gavSets = Arrays.asList(gavSets);
+        UnionGavSet(GavtcsSet... gavtcsSets) {
+            this.gavtcsSets = Arrays.asList(gavtcsSets);
         }
 
-        UnionGavSet(List<GavSet> gavSets) {
-            this.gavSets = gavSets;
+        UnionGavSet(List<GavtcsSet> gavtcsSets) {
+            this.gavtcsSets = gavtcsSets;
         }
 
         @Override
         public boolean contains(String groupId, String artifactId) {
-            return gavSets.stream().anyMatch(gavSet -> gavSet.contains(groupId, artifactId));
+            return gavtcsSets.stream().anyMatch(gavtcsSet -> gavtcsSet.contains(groupId, artifactId));
         }
 
         @Override
         public boolean contains(String groupId, String artifactId, String version) {
-            return gavSets.stream().anyMatch(gavSet -> gavSet.contains(groupId, artifactId, version));
+            return gavtcsSets.stream().anyMatch(gavtcsSet -> gavtcsSet.contains(groupId, artifactId, version));
+        }
+
+        @Override
+        public boolean contains(String groupId, String artifactId, String version, String type, String classifier,
+                String scope) {
+            return gavtcsSets.stream().anyMatch(gavtcsSet -> gavtcsSet.contains(groupId, artifactId, version, type, classifier,
+                    scope));
         }
 
         @Override
         public int hashCode() {
             final int prime = 31;
             int result = 1;
-            result = prime * result + ((gavSets == null) ? 0 : gavSets.hashCode());
+            result = prime * result + ((gavtcsSets == null) ? 0 : gavtcsSets.hashCode());
             return result;
         }
 
@@ -179,69 +218,70 @@ public interface GavSet {
             if (getClass() != obj.getClass())
                 return false;
             UnionGavSet other = (UnionGavSet) obj;
-            if (gavSets == null) {
-                if (other.gavSets != null)
+            if (gavtcsSets == null) {
+                if (other.gavtcsSets != null)
                     return false;
-            } else if (!gavSets.equals(other.gavSets))
+            } else if (!gavtcsSets.equals(other.gavtcsSets))
                 return false;
             return true;
         }
 
         @Override
         public String toString() {
-            return "UnionGavSet [" + gavSets + "]";
+            return "UnionGavSet [" + gavtcsSets + "]";
         }
 
         public static class Builder {
-            private List<GavSet> gavSets = new ArrayList<>();
-            private GavSet defaultResult = IncludeExcludeGavSet.INCLUDE_ALL;
+            private List<GavtcsSet> gavtcsSets = new ArrayList<>();
+            private GavtcsSet defaultResult = IncludeExcludeGavSet.INCLUDE_ALL;
 
-            public Builder union(GavSet gavSet) {
-                gavSets.add(gavSet);
+            public Builder union(GavtcsSet gavtcsSet) {
+                gavtcsSets.add(gavtcsSet);
                 return this;
             }
 
             /**
-             * @param  gavSet a {@link GavSet} to return from {@link #build()} method in case no {@link GavSet}s were added via
-             *                {@link #union(GavSet)}
-             * @return        {@code this}
+             * @param  gavtcsSet a {@link GavtcsSet} to return from {@link #build()} method in case no {@link GavtcsSet}s were
+             *                   added via
+             *                   {@link #union(GavtcsSet)}
+             * @return           {@code this}
              */
-            public Builder defaultResult(GavSet gavSet) {
-                this.defaultResult = gavSet;
+            public Builder defaultResult(GavtcsSet gavtcsSet) {
+                this.defaultResult = gavtcsSet;
                 return this;
             }
 
-            public GavSet build() {
-                final List<GavSet> gs = gavSets;
+            public GavtcsSet build() {
+                final List<GavtcsSet> gs = gavtcsSets;
                 if (gs.isEmpty()) {
                     return defaultResult;
                 }
-                gavSets = null;
+                gavtcsSets = null;
                 return new UnionGavSet(Collections.unmodifiableList(gs));
             }
         }
 
     }
 
-    public static class IncludeExcludeGavSet implements GavSet, Serializable {
+    public static class IncludeExcludeGavSet implements GavtcsSet, Serializable {
         public static class Builder {
-            private List<GavPattern> excludes = new ArrayList<>();
-            private List<GavPattern> includes = new ArrayList<>();
-            private GavSet defaultResult = IncludeExcludeGavSet.INCLUDE_ALL;
+            private List<GavtcsPattern> excludes = new ArrayList<>();
+            private List<GavtcsPattern> includes = new ArrayList<>();
+            private GavtcsSet defaultResult = IncludeExcludeGavSet.INCLUDE_ALL;
 
             private Builder() {
             }
 
-            public GavSet build() {
+            public GavtcsSet build() {
                 if (includes.isEmpty() && excludes.isEmpty()) {
                     return defaultResult;
                 }
                 if (includes.isEmpty()) {
-                    includes.add(GavPattern.matchAll());
+                    includes.add(GavtcsPattern.matchAll());
                 }
 
-                List<GavPattern> useIncludes = Collections.unmodifiableList(includes);
-                List<GavPattern> useExcludes = Collections.unmodifiableList(excludes);
+                List<GavtcsPattern> useIncludes = Collections.unmodifiableList(includes);
+                List<GavtcsPattern> useExcludes = Collections.unmodifiableList(excludes);
 
                 this.includes = null;
                 this.excludes = null;
@@ -250,11 +290,12 @@ public interface GavSet {
             }
 
             /**
-             * @param  gavSet a {@link GavSet} to return from {@link #build()} method in case no includes or excludes were added
-             * @return        {@code this}
+             * @param  gavtcsSet a {@link GavtcsSet} to return from {@link #build()} method in case no includes or excludes were
+             *                   added
+             * @return           {@code this}
              */
-            public Builder defaultResult(GavSet gavSet) {
-                this.defaultResult = gavSet;
+            public Builder defaultResult(GavtcsSet gavtcsSet) {
+                this.defaultResult = gavtcsSet;
                 return this;
             }
 
@@ -265,20 +306,20 @@ public interface GavSet {
              * @return            this {@link Builder}
              */
             public Builder exclude(String rawPattern) {
-                this.excludes.add(GavPattern.of(rawPattern));
+                this.excludes.add(GavtcsPattern.of(rawPattern));
                 return this;
             }
 
             /**
              * Parses the entries of the given {@link Collection} of {@code rawPatterns} and excludes those.
              *
-             * @param  rawPatterns {@link Collection} of GAV patterns to parse via {@link GavPattern#of(String)}
+             * @param  rawPatterns {@link Collection} of GAV patterns to parse via {@link GavtcsPattern#of(String)}
              * @return             this {@link Builder}
              */
             public Builder excludes(Collection<String> rawPatterns) {
                 if (rawPatterns != null) {
                     for (String rawPattern : rawPatterns) {
-                        this.excludes.add(GavPattern.of(rawPattern));
+                        this.excludes.add(GavtcsPattern.of(rawPattern));
                     }
                 }
                 return this;
@@ -287,13 +328,13 @@ public interface GavSet {
             /**
              * Parses the entries of the given array of {@code rawPatterns} and excludes those.
              *
-             * @param  rawPatterns a list of GAV patterns to parse via {@link GavPattern#of(String)}
+             * @param  rawPatterns a list of GAV patterns to parse via {@link GavtcsPattern#of(String)}
              * @return             this {@link Builder}
              */
             public Builder excludes(String... rawPatterns) {
                 if (rawPatterns != null) {
                     for (String rawPattern : rawPatterns) {
-                        this.excludes.add(GavPattern.of(rawPattern));
+                        this.excludes.add(GavtcsPattern.of(rawPattern));
                     }
                 }
                 return this;
@@ -309,19 +350,19 @@ public interface GavSet {
                 if (rawPatterns != null) {
                     StringTokenizer st = new StringTokenizer(rawPatterns, ", \t\n\r");
                     while (st.hasMoreTokens()) {
-                        this.excludes.add(GavPattern.of(st.nextToken()));
+                        this.excludes.add(GavtcsPattern.of(st.nextToken()));
                     }
                 }
                 return this;
             }
 
             /**
-             * Adds {@link GavPattern#matchSnapshots()} to {@link #excludes}.
+             * Adds {@link GavtcsPattern#matchSnapshots()} to {@link #excludes}.
              *
              * @return this {@link Builder}
              */
             public Builder excludeSnapshots() {
-                this.excludes.add(GavPattern.matchSnapshots());
+                this.excludes.add(GavtcsPattern.matchSnapshots());
                 return this;
             }
 
@@ -332,20 +373,20 @@ public interface GavSet {
              * @return            this {@link Builder}
              */
             public Builder include(String rawPattern) {
-                this.includes.add(GavPattern.of(rawPattern));
+                this.includes.add(GavtcsPattern.of(rawPattern));
                 return this;
             }
 
             /**
              * Parses the entries of the given {@link Collection} of {@code rawPatterns} and includes those.
              *
-             * @param  rawPatterns {@link Collection} of GAV patterns to parse via {@link GavPattern#of(String)}
+             * @param  rawPatterns {@link Collection} of GAV patterns to parse via {@link GavtcsPattern#of(String)}
              * @return             this {@link Builder}
              */
             public Builder includes(Collection<String> rawPatterns) {
                 if (rawPatterns != null) {
                     for (String rawPattern : rawPatterns) {
-                        this.includes.add(GavPattern.of(rawPattern));
+                        this.includes.add(GavtcsPattern.of(rawPattern));
                     }
                 }
                 return this;
@@ -361,7 +402,7 @@ public interface GavSet {
                 if (rawPatterns != null) {
                     StringTokenizer st = new StringTokenizer(rawPatterns, ", \t\n\r");
                     while (st.hasMoreTokens()) {
-                        this.includes.add(GavPattern.of(st.nextToken()));
+                        this.includes.add(GavtcsPattern.of(st.nextToken()));
                     }
                 }
                 return this;
@@ -370,13 +411,13 @@ public interface GavSet {
             /**
              * Parses the entries of the given array of {@code rawPatterns} and includes those.
              *
-             * @param  rawPatterns a list of GAV patterns to parse via {@link GavPattern#of(String)}
+             * @param  rawPatterns a list of GAV patterns to parse via {@link GavtcsPattern#of(String)}
              * @return             this {@link Builder}
              */
             public Builder includes(String... rawPatterns) {
                 if (rawPatterns != null) {
                     for (String rawPattern : rawPatterns) {
-                        this.includes.add(GavPattern.of(rawPattern));
+                        this.includes.add(GavtcsPattern.of(rawPattern));
                     }
                 }
                 return this;
@@ -384,29 +425,30 @@ public interface GavSet {
 
         }
 
-        private static final List<GavPattern> EMPTY_LIST = Collections.emptyList();
+        private static final List<GavtcsPattern> EMPTY_LIST = Collections.emptyList();
 
-        private static final GavSet INCLUDE_ALL = new IncludeExcludeGavSet(Collections.singletonList(GavPattern.matchAll()),
+        private static final GavtcsSet INCLUDE_ALL = new IncludeExcludeGavSet(
+                Collections.singletonList(GavtcsPattern.matchAll()),
                 EMPTY_LIST);
-        private static final GavSet EXCLUDE_ALL = new IncludeExcludeGavSet(EMPTY_LIST,
-                Collections.singletonList(GavPattern.matchAll()));
+        private static final GavtcsSet EXCLUDE_ALL = new IncludeExcludeGavSet(EMPTY_LIST,
+                Collections.singletonList(GavtcsPattern.matchAll()));
         /**  */
         private static final long serialVersionUID = 4495169649760950618L;
 
-        private static void append(List<GavPattern> cludes, Appendable out) throws IOException {
+        private static void append(List<GavtcsPattern> cludes, Appendable out) throws IOException {
             boolean first = true;
-            for (GavPattern gavPattern : cludes) {
+            for (GavtcsPattern GavtcsPattern : cludes) {
                 if (first) {
                     first = false;
                 } else {
                     out.append(',');
                 }
-                out.append(gavPattern.toString());
+                out.append(GavtcsPattern.toString());
             }
         }
 
-        private static boolean matches(String groupId, String artifactId, List<GavPattern> patterns) {
-            for (GavPattern pattern : patterns) {
+        private static boolean matches(String groupId, String artifactId, List<GavtcsPattern> patterns) {
+            for (GavtcsPattern pattern : patterns) {
                 if (pattern.matches(groupId, artifactId)) {
                     return true;
                 }
@@ -414,8 +456,8 @@ public interface GavSet {
             return false;
         }
 
-        private static boolean matches(String groupId, String artifactId, String version, List<GavPattern> patterns) {
-            for (GavPattern pattern : patterns) {
+        private static boolean matches(String groupId, String artifactId, String version, List<GavtcsPattern> patterns) {
+            for (GavtcsPattern pattern : patterns) {
                 if (pattern.matches(groupId, artifactId, version)) {
                     return true;
                 }
@@ -423,12 +465,22 @@ public interface GavSet {
             return false;
         }
 
-        private final List<GavPattern> excludes;
+        private static boolean matches(String groupId, String artifactId, String version, String type, String classifier,
+                String scope, List<GavtcsPattern> patterns) {
+            for (GavtcsPattern pattern : patterns) {
+                if (pattern.matches(groupId, artifactId, version, type, classifier, scope)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private final List<GavtcsPattern> excludes;
         private final transient int hashcode;;
 
-        private final List<GavPattern> includes;
+        private final List<GavtcsPattern> includes;
 
-        IncludeExcludeGavSet(List<GavPattern> includes, List<GavPattern> excludes) {
+        IncludeExcludeGavSet(List<GavtcsPattern> includes, List<GavtcsPattern> excludes) {
             super();
             this.includes = includes;
             this.excludes = excludes;
@@ -459,7 +511,7 @@ public interface GavSet {
          *
          * @param  groupId
          * @param  artifactId
-         * @return            {@code true} if the given GA identifier is a member of this {@link GavSet} and {@code false}
+         * @return            {@code true} if the given GA identifier is a member of this {@link GavtcsSet} and {@code false}
          *                    otherwise
          */
         public boolean contains(String groupId, String artifactId) {
@@ -471,11 +523,18 @@ public interface GavSet {
          * @param  groupId
          * @param  artifactId
          * @param  version
-         * @return            {@code true} if the given GAV triple is a member of this {@link GavSet} and {@code false}
+         * @return            {@code true} if the given GAV triple is a member of this {@link GavtcsSet} and {@code false}
          *                    otherwise
          */
         public boolean contains(String groupId, String artifactId, String version) {
             return matches(groupId, artifactId, version, includes) && !matches(groupId, artifactId, version, excludes);
+        }
+
+        @Override
+        public boolean contains(String groupId, String artifactId, String version, String type, String classifier,
+                String scope) {
+            return matches(groupId, artifactId, version, type, classifier, scope, includes)
+                    && !matches(groupId, artifactId, version, type, classifier, scope, excludes);
         }
 
         @Override
@@ -503,14 +562,14 @@ public interface GavSet {
         /**
          * @return the list of excludes
          */
-        public List<GavPattern> getExcludes() {
+        public List<GavtcsPattern> getExcludes() {
             return excludes;
         }
 
         /**
          * @return the list of includes
          */
-        public List<GavPattern> getIncludes() {
+        public List<GavtcsPattern> getIncludes() {
             return includes;
         }
 
