@@ -201,13 +201,17 @@ public class MavenSourceTree {
             }
             modulesByPath.put(pomPath, module);
             modulesByGa.put(module.getModuleGav().getGa(), module);
-            for (Profile.Builder profile : module.getProfiles()) {
-                if (activeProfiles.test(profile.build()))
-                    for (String path : profile.getChildren()) {
-                        if (!modulesByPath.containsKey(path)) {
-                            pomXml(rootDirectory.resolve(path), callback);
+            try {
+                for (Profile.Builder profile : module.getProfiles()) {
+                    if (activeProfiles.test(profile.build()))
+                        for (String path : profile.getChildren()) {
+                            if (!modulesByPath.containsKey(path)) {
+                                pomXml(rootDirectory.resolve(path), callback);
+                            }
                         }
-                    }
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("Exception occurred when reading " + pomPath, e);
             }
             if (callback != null) {
                 callback.exit(pomPath);

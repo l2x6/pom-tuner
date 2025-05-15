@@ -82,11 +82,7 @@ public class Profile {
                     Collectors.toMap( //
                             e -> e.getKey(), //
                             e -> e.getValue(), //
-                            (u, v) -> {
-                                throw new IllegalStateException(
-                                        String.format("Duplicate key %s in profile %s", u, id));
-                            }, //
-
+                            (u, v) -> v, //
                             LinkedHashMap::new //
                     ) //
                     )) //

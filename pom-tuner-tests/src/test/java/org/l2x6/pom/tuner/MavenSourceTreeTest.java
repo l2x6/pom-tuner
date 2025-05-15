@@ -176,6 +176,10 @@ public class MavenSourceTreeTest {
 
         Assertions.assertEquals(3, t.getRootModule().getProfiles().get(0).getProperties().size());
 
+        final Ga m2 = Ga.of("org.srcdeps.properties:module-2");
+        assertProperty(t, "duplicateKey", m2, "val4");
+        Assertions.assertEquals(1, t.getModulesByGa().get(m2).getProfiles().get(0).getProperties().size());
+
         try {
             t.getExpressionEvaluator(ActiveProfiles.of())
                     .evaluate(Expression.of("${non-existent}", Ga.of("org.srcdeps.properties:module-1")));
