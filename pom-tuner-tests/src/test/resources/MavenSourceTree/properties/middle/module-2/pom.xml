@@ -22,15 +22,16 @@
 
     <parent>
         <groupId>org.srcdeps.properties</groupId>
-        <artifactId>tree-parent</artifactId>
+        <artifactId>middle-parent</artifactId>
         <version>0.0.1</version>
     </parent>
 
-    <artifactId>middle-parent</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>module-2</artifactId>
 
-    <modules>
-        <module>module-1</module>
-        <module>module-2</module>
-    </modules>
+    <properties>
+        <duplicateKey>val1</duplicateKey>
+        <duplicateKey>val2</duplicateKey>
+        <duplicateKey>val3</duplicateKey>
+        <duplicateKey>val4</duplicateKey>
+    </properties>
 </project>
