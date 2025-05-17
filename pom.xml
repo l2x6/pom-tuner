@@ -75,6 +75,7 @@
 
         <!-- Plugins and their dependencies -->
         <buildnumber-maven-plugin.version>3.2.1</buildnumber-maven-plugin.version>
+        <central-publishing-maven-plugin.version>0.7.0</central-publishing-maven-plugin.version>
         <editorconfig-maven-plugin.version>0.1.3</editorconfig-maven-plugin.version>
         <formatter-maven-plugin.version>2.26.0</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.12.0</impsort-maven-plugin.version>
@@ -94,7 +95,6 @@
         <maven-site-plugin.version>3.6</maven-site-plugin.version>
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
         <maven-surefire-plugin.version>3.5.3</maven-surefire-plugin.version>
-        <nexus-staging-maven-plugin.version>1.7.0</nexus-staging-maven-plugin.version>
         <site-maven-plugin.version>0.12</site-maven-plugin.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -108,14 +108,6 @@
         <!-- license-maven-plugin -->
         <license.failIfMissing>true</license.failIfMissing>
         <license.failIfUnknown>true</license.failIfUnknown>
-
-        <!-- nexus-staging-maven-plugin -->
-        <autoReleaseAfterClose>true</autoReleaseAfterClose>
-
-        <!-- Repository Deployment URLs -->
-        <oss.nexus.base.url>https://s01.oss.sonatype.org</oss.nexus.base.url>
-        <releases.repo.url>${oss.nexus.base.url}/service/local/staging/deploy/maven2/</releases.repo.url>
-        <snapshots.repo.url>${oss.nexus.base.url}/content/repositories/snapshots/</snapshots.repo.url>
 
         <!-- maven-surefire-plugin -->
         <surefire.useFile>false</surefire.useFile>
@@ -292,6 +284,18 @@
                 </plugin>
 
                 <plugin>
+                    <groupId>org.sonatype.central</groupId>
+                    <artifactId>central-publishing-maven-plugin</artifactId>
+                    <version>${central-publishing-maven-plugin.version}</version>
+                    <configuration>
+                        <publishingServerId>central</publishingServerId>
+                        <autoPublish>true</autoPublish>
+                        <waitUntil>published</waitUntil>
+                        <waitMaxTime>7200</waitMaxTime>
+                    </configuration>
+                </plugin>
+
+                <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
                     <version>${formatter-maven-plugin.version}</version>
@@ -316,17 +320,6 @@
                 </plugin>
 
                 <plugin>
-                    <groupId>org.sonatype.plugins</groupId>
-                    <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>${nexus-staging-maven-plugin.version}</version>
-                    <configuration>
-                        <nexusUrl>${oss.nexus.base.url}</nexusUrl>
-                        <!-- The server "id" element from settings.xml to use authentication from -->
-                        <serverId>ossrh</serverId>
-                        <autoDropAfterRelease>false</autoDropAfterRelease>
-                    </configuration>
-                </plugin>
-                <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>mrm-maven-plugin</artifactId>
                     <version>1.6.0</version>
@@ -348,12 +341,6 @@
             </plugin>
 
             <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <extensions>true</extensions>
-            </plugin>
-
-            <plugin>
                 <groupId>org.ec4j.maven</groupId>
                 <artifactId>editorconfig-maven-plugin</artifactId>
                 <executions>
@@ -366,6 +353,13 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <extensions>true</extensions>
+            </plugin>
+
         </plugins>
     </build>
 
