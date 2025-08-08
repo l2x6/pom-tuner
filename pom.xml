@@ -71,7 +71,7 @@
         <!-- Dependency versions in alphabectic order -->
         <slf4j-version>2.0.17</slf4j-version>
         <junit.version>5.13.4</junit.version>
-        <assertj.version>3.27.3</assertj.version>
+        <assertj.version>3.27.4</assertj.version>
 
         <!-- Plugins and their dependencies -->
         <buildnumber-maven-plugin.version>3.2.1</buildnumber-maven-plugin.version>
