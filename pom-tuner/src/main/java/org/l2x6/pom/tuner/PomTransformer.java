@@ -1987,12 +1987,29 @@ public class PomTransformer {
         }
 
         public static Transformation uncommentModules(String commentText, Predicate<String> modulePathFilter) {
+            return uncommentModules(commentText, modulePathFilter, null);
+        }
+
+        public static Transformation uncommentModules(String commentText, Predicate<String> modulePathFilter,
+                String profileId) {
             return (Document document, TransformationContext context) -> {
-                final String xPathExpr = PomTunerUtils.anyNs("project", "modules") + "/comment()[starts-with(., '"
-                        + MODULE_COMMENT_PREFIX
-                        + "') and substring(., string-length(.) - "
-                        + (MODULE_COMMENT_INFIX.length() + commentText.length()) + ")  = '" + MODULE_COMMENT_INFIX
-                        + commentText + " ']";
+                final String xPathExpr;
+
+                if (profileId == null) {
+                    xPathExpr = PomTunerUtils.anyNs("project", "modules") + "/comment()[starts-with(., '"
+                            + MODULE_COMMENT_PREFIX
+                            + "') and substring(., string-length(.) - "
+                            + (MODULE_COMMENT_INFIX.length() + commentText.length()) + ")  = '" + MODULE_COMMENT_INFIX
+                            + commentText + " ']";
+                } else {
+                    xPathExpr = PomTunerUtils.anyNs("project", "profiles", "profile")
+                            + "[." + PomTunerUtils.anyNs("id") + "/text() = '" + profileId + "']"
+                            + PomTunerUtils.anyNs("modules") + "/comment()[starts-with(., '"
+                            + MODULE_COMMENT_PREFIX
+                            + "') and substring(., string-length(.) - "
+                            + (MODULE_COMMENT_INFIX.length() + commentText.length()) + ")  = '" + MODULE_COMMENT_INFIX
+                            + commentText + " ']";
+                }
                 try {
                     final NodeList commentNodes = (NodeList) context.getXPath().evaluate(xPathExpr, document,
                             XPathConstants.NODESET);

@@ -1221,6 +1221,11 @@ public class PomTransformerTest {
         assertTransformation(source, Arrays.asList(
                 Transformation.commentModulesInProfile("profile-1", Arrays.asList("module-1", "module-2"), "test comment")),
                 expected);
+
+        assertTransformation(expected, Arrays.asList(
+                Transformation.uncommentModules("test comment", m -> true, "profile-1")),
+                source);
+
     }
 
     @Test
