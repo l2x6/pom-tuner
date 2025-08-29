@@ -19,6 +19,7 @@ package org.l2x6.pom.tuner.model;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.function.Predicate;
 import org.l2x6.pom.tuner.model.GavPattern.GavSegmentPattern;
 
 /**
@@ -35,7 +36,7 @@ import org.l2x6.pom.tuner.model.GavPattern.GavSegmentPattern;
  * @since  4.5.0
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
-public class GavtcsPattern implements Serializable, Comparable<GavtcsPattern> {
+public class GavtcsPattern implements Serializable, Comparable<GavtcsPattern>, Predicate<Gavtcs> {
 
     /**
      * A {@link GavtcsPattern} builder.
@@ -453,6 +454,17 @@ public class GavtcsPattern implements Serializable, Comparable<GavtcsPattern> {
      */
     public GavPattern toGavPattern() {
         return new GavPattern(groupIdPattern, artifactIdPattern, versionPattern);
+    }
+
+    /**
+     * Returns {@code true} if the given {@link Gavtcs} matches this {@link GavtcsPattern} or {@code false} otherwise.
+     *
+     * @param  gavtcs the {@link Gavtcs} to match against this {@link GavtcsPattern}
+     * @return        {@code true} if the given {@link Gavtcs} matches this {@link GavtcsPattern} or {@code false} otherwise
+     */
+    @Override
+    public boolean test(Gavtcs gavtcs) {
+        return matches(gavtcs);
     }
 
 }

@@ -19,6 +19,7 @@ package org.l2x6.pom.tuner.model;
 import java.io.Serializable;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 /**
@@ -34,7 +35,7 @@ import java.util.regex.Pattern;
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
-public class GavPattern implements Serializable, Comparable<GavPattern> {
+public class GavPattern implements Serializable, Comparable<GavPattern>, Predicate<Gav> {
 
     /**
      * A {@link GavPattern} builder.
@@ -137,7 +138,7 @@ public class GavPattern implements Serializable, Comparable<GavPattern> {
         }
 
         public boolean matches(String input) {
-            return pattern.matcher(input).matches();
+            return matchesAll() || pattern.matcher(input == null ? "" : input).matches();
         }
 
         /**
@@ -357,4 +358,14 @@ public class GavPattern implements Serializable, Comparable<GavPattern> {
         return new Ga(groupIdPattern.toString(), artifactIdPattern.toString());
     }
 
+    /**
+     * Returns {@code true} if the given {@link Gav} matches this {@link GavPattern} or {@code false} otherwise.
+     *
+     * @param  gav the {@link Gav} to match against this {@link GavPattern}
+     * @return     {@code true} if the given {@link Gav} matches this {@link GavPattern} or {@code false} otherwise
+     */
+    @Override
+    public boolean test(Gav gav) {
+        return matches(gav);
+    }
 }
