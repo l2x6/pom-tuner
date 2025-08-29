@@ -48,8 +48,26 @@ public class Comparators {
         return new BeforeItemComparator<T>(item);
     }
 
+    public static <T> Comparator<T> beforeFirst() {
+        return (T o1, T o2) -> {
+            if (Objects.equals(o1, o2)) {
+                return 0;
+            }
+            return -1;
+        };
+    }
+
     public static <T> Comparator<T> after(T item) {
         return new AfterItemComparator<T>(item);
+    }
+
+    public static <T> Comparator<T> afterLast() {
+        return (T o1, T o2) -> {
+            if (Objects.equals(o1, o2)) {
+                return 0;
+            }
+            return 1;
+        };
     }
 
     public static Comparator<String> safeStringComparator() {
