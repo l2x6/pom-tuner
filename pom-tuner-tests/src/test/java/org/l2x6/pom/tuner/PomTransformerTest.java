@@ -592,6 +592,11 @@ public class PomTransformerTest {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new", Comparators.entryKeyOnly());
                 }), expected);
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement props = context.getOrAddContainerElement("properties");
+                    props.addChildTextElementIfNeeded("p0", "new", Comparators.beforeFirst());
+                }), expected);
     }
 
     @Test
@@ -703,6 +708,11 @@ public class PomTransformerTest {
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p5", "new", Comparators.entryKeyOnly());
+                }), expected);
+        assertTransformation(source, Collections.singletonList(
+                (Document document, TransformationContext context) -> {
+                    final ContainerElement props = context.getOrAddContainerElement("properties");
+                    props.addChildTextElementIfNeeded("p5", "new", Comparators.afterLast());
                 }), expected);
     }
 
