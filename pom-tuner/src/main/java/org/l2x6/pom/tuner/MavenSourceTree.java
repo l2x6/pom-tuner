@@ -19,6 +19,7 @@ package org.l2x6.pom.tuner;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
@@ -984,6 +985,8 @@ public class MavenSourceTree {
     /**
      * Link back any modules anywhere in the source tree previously removed by
      * {@link #unlinkModules(Set, Predicate, Charset, SimpleElementWhitespace, Function)}.
+     * This variant handles only module elements that are not under any profile - see
+     * {@link #relinkModules(Charset, SimpleElementWhitespace, String, Predicate)} for a profile-aware alternative.
      *
      * @param  encoding                the encoding for reading and writing pom.xml files
      * @param  simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
@@ -995,10 +998,36 @@ public class MavenSourceTree {
      */
     public MavenSourceTree relinkModules(Charset encoding, SimpleElementWhitespace simpleElementWhitespace,
             String commentText) {
-        for (String relPath : modulesByPath.keySet()) {
-            Path pomXmlPath = rootDirectory.resolve(relPath);
+        return relinkModules(encoding, simpleElementWhitespace, commentText, ActiveProfiles.of());
+    }
+
+    /**
+     * Link back any modules anywhere in the source tree previously removed by
+     * {@link #unlinkModules(Set, Predicate, Charset, SimpleElementWhitespace, Function)}.
+     *
+     * @param  encoding                the encoding for reading and writing pom.xml files
+     * @param  simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
+     * @param  commentText             has to be the same as used in the previous
+     *                                 {@link #unlinkModules(Set, Predicate, Charset, SimpleElementWhitespace, Function)}
+     *                                 invocation
+     * @param  profiles                a predicate selecting profiles whose modules should be transformed; the default
+     *                                 profile-less scope is always included
+     * @return                         either this {@link MavenSourceTree} if no relinking edits could be performed or a new
+     *                                 {@link MavenSourceTree} with all modules relinked
+     *
+     * @since                          4.6.0
+     */
+    public MavenSourceTree relinkModules(Charset encoding, SimpleElementWhitespace simpleElementWhitespace,
+            String commentText, Predicate<Profile> profiles) {
+        for (Entry<String, Module> en : modulesByPath.entrySet()) {
+            final String relPath = en.getKey();
+            final List<Transformation> transformations = new ArrayList<>();
+            for (Profile p : en.getValue().getProfiles()) {
+                transformations.add(Transformation.uncommentModules(commentText, m -> true, p.getId()));
+            }
+            final Path pomXmlPath = rootDirectory.resolve(relPath);
             new PomTransformer(pomXmlPath, encoding, simpleElementWhitespace)
-                    .transform(Transformation.uncommentModules(commentText));
+                    .transform();
         }
         MavenSourceTree newTree = reload();
         if (modulesByPath.keySet().equals(newTree.modulesByPath.keySet())) {
