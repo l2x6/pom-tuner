@@ -1027,7 +1027,7 @@ public class MavenSourceTree {
             }
             final Path pomXmlPath = rootDirectory.resolve(relPath);
             new PomTransformer(pomXmlPath, encoding, simpleElementWhitespace)
-                    .transform();
+                    .transform(transformations);
         }
         MavenSourceTree newTree = reload();
         if (modulesByPath.keySet().equals(newTree.modulesByPath.keySet())) {
