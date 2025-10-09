@@ -26,6 +26,8 @@ import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.l2x6.pom.tuner.Comparators;
+
 /**
  * A Maven dependency defined by {@code groupId}, {@code artifactId}, {@code version}, etc.
  */
@@ -33,9 +35,7 @@ public class Gavtcs {
     private static final Comparator<String> SCOPE_COMPARATOR = (a, b) -> scopeOrdinal(a) - scopeOrdinal(b);
     private static final Comparator<String> TYPE_COMPARATOR = (a, b) -> (a == null ? "jar" : a)
             .compareTo(b == null ? "jar" : b);
-    private static final Comparator<String> SAFE_STRING_COMPARATOR = (a, b) -> a == b
-            ? 0
-            : (a != null ? a.compareTo(b) : -1);
+    private static final Comparator<String> SAFE_STRING_COMPARATOR = Comparators.safeStringComparator();
 
     private static final Comparator<Gavtcs> GROUP_FIRST_COMPARATOR = Comparator
             .comparing(Gavtcs::getGroupId, SAFE_STRING_COMPARATOR)
