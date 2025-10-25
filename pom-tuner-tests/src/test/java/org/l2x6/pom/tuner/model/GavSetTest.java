@@ -49,6 +49,9 @@ public class GavSetTest extends AbstractSetTest<GavSet> {
     @Override
     void containsGav(boolean expected, GavSet set, String g, String a, String v) {
         assertThat(set.contains(g, a, v)).isEqualTo(expected);
+        Gav gav = new Gav(g, a, v);
+        assertThat(set.contains(gav)).isEqualTo(expected);
+        assertThat(set.test(gav)).isEqualTo(expected);
     }
 
     @Override

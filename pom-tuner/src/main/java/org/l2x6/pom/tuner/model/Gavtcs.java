@@ -25,7 +25,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
-
 import org.l2x6.pom.tuner.Comparators;
 
 /**

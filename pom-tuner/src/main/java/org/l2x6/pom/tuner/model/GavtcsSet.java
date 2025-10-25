@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.StringTokenizer;
+import java.util.function.Predicate;
 import org.l2x6.pom.tuner.model.GavtcsSet.IncludeExcludeGavSet.Builder;
 
 /**
@@ -31,10 +32,10 @@ import org.l2x6.pom.tuner.model.GavtcsSet.IncludeExcludeGavSet.Builder;
  * <p>
  * Historical note: before version 4.5.0, {@link GavtcsSet} used to be a class that is now {@link IncludeExcludeGavSet}.
  *
- * @since  4.5 .0
+ * @since  4.5.0
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
-public interface GavtcsSet {
+public interface GavtcsSet extends Predicate<Gavtcs> {
 
     public static Builder builder() {
         return new Builder();
@@ -121,6 +122,20 @@ public interface GavtcsSet {
      */
     default boolean contains(Gav gav) {
         return contains(gav.getGroupId(), gav.getArtifactId(), gav.getVersion());
+    }
+
+    /**
+     * An implementation of {@link Predicate#test(Object)} Delegates to {@link #contains(Gav)}.
+     *
+     * @param  gav the groupId, artiafctId and version to check for membership in this {@link GavSet}
+     * @return     {@code true} if the given {@link Gav} is a member of this {@link GavSet} and {@code false}
+     *             otherwise
+     *
+     * @since      4.7.0
+     */
+    @Override
+    default boolean test(Gavtcs gav) {
+        return contains(gav);
     }
 
     /**

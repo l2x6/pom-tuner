@@ -54,7 +54,9 @@ public class GavtcsSetTest extends AbstractSetTest<GavtcsSet> {
     void containsGav(boolean expected, GavtcsSet set, String g, String a, String v, String type, String classifier,
             String scope) {
         assertThat(set.contains(g, a, v, type, classifier, scope)).isEqualTo(expected);
-        assertThat(set.contains(new Gavtcs(g, a, v, type, classifier, scope))).isEqualTo(expected);
+        final Gavtcs gavtcs = new Gavtcs(g, a, v, type, classifier, scope);
+        assertThat(set.contains(gavtcs)).isEqualTo(expected);
+        assertThat(set.test(gavtcs)).isEqualTo(expected);
     }
 
     @Override

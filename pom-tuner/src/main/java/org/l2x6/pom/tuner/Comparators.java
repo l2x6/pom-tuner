@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public class Comparators {
-    private static final Comparator<String> SAFE_STRING_COMPARATOR =  (a, b) -> a == b
+    private static final Comparator<String> SAFE_STRING_COMPARATOR = (a, b) -> a == b
             ? 0
             : (a != null ? (b != null ? a.compareTo(b) : 1) : -1);
 
