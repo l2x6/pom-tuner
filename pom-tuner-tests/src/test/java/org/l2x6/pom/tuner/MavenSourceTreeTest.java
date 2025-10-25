@@ -68,7 +68,21 @@ public class MavenSourceTreeTest {
     static void assertProperty(MavenSourceTree t, String propertyName, Ga ga, String expectedValue, String... profiles)
             throws BadExitCodeException, CommandTimeoutException, BuildException {
 
-        final LineConsumer output = LineConsumer.string();
+        final LineConsumer stringLineConsumer = LineConsumer.string();
+        final LineConsumer output = new LineConsumer() {
+            @Override
+            public void close() throws IOException {
+                stringLineConsumer.close();
+                ;
+            }
+
+            @Override
+            public void accept(String t) {
+                if (!t.startsWith("WARNING:")) {
+                    stringLineConsumer.accept(t);
+                }
+            }
+        };
         final ShellCommandBuilder cmd = ShellCommand.builder() //
                 .id("assertProperty") //
                 .workingDirectory(t.getRootDirectory()) //
@@ -95,7 +109,7 @@ public class MavenSourceTreeTest {
             cmd.arguments(profs.toString());
         }
         Shell.execute(cmd.build()).assertSuccess();
-        Assertions.assertEquals(expectedValue, output.toString().trim());
+        Assertions.assertEquals(expectedValue, stringLineConsumer.toString().trim());
         ExpressionEvaluator evaluator = t.getExpressionEvaluator(ActiveProfiles.of(profiles));
         Assertions.assertEquals(expectedValue, evaluator.evaluate(Expression.of("${" + propertyName + "}", ga)));
     }
