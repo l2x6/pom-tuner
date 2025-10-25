@@ -19,6 +19,7 @@ package org.l2x6.pom.tuner.model;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.l2x6.pom.tuner.model.GavSet.IncludeExcludeGavSet.Builder;
 
@@ -31,11 +32,27 @@ public class GavSetTest extends AbstractSetTest<GavSet> {
         List<GavSet> result = new ArrayList<>();
         result.add(GavSet.builder().includes(includes).excludes(excludes).build());
         result.add(GavSet.builder().includes(Arrays.asList(includes)).excludes(Arrays.asList(excludes)).build());
+        result.add(GavSet.builder()
+                .includePatterns(Stream.of(includes).map(GavPattern::of).collect(Collectors.toList()))
+                .excludePatterns(Stream.of(excludes).map(GavPattern::of).collect(Collectors.toList()))
+                .build());
+        result.add(GavSet.builder()
+                .includes(Stream.of(includes).map(GavPattern::of).toArray(GavPattern[]::new))
+                .excludes(Stream.of(excludes).map(GavPattern::of).toArray(GavPattern[]::new))
+                .build());
+        {
+            final Builder b = GavSet.builder();
+            Stream.of(includes).forEach(b::include);
+            Stream.of(excludes).forEach(b::exclude);
+            result.add(b.build());
+        }
+        {
+            final Builder b = GavSet.builder();
+            Stream.of(includes).map(GavPattern::of).forEach(b::include);
+            Stream.of(excludes).map(GavPattern::of).forEach(b::exclude);
+            result.add(b.build());
+        }
 
-        final Builder b = GavSet.builder();
-        Stream.of(includes).forEach(b::include);
-        Stream.of(excludes).forEach(b::exclude);
-        result.add(b.build());
         return result;
     }
 

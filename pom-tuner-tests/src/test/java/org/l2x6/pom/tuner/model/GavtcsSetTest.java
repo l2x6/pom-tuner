@@ -19,6 +19,7 @@ package org.l2x6.pom.tuner.model;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.model.GavtcsSet.IncludeExcludeGavSet.Builder;
@@ -32,10 +33,26 @@ public class GavtcsSetTest extends AbstractSetTest<GavtcsSet> {
         List<GavtcsSet> result = new ArrayList<>();
         result.add(GavtcsSet.builder().includes(includes).excludes(excludes).build());
         result.add(GavtcsSet.builder().includes(Arrays.asList(includes)).excludes(Arrays.asList(excludes)).build());
-        final Builder b = GavtcsSet.builder();
-        Stream.of(includes).forEach(b::include);
-        Stream.of(excludes).forEach(b::exclude);
-        result.add(b.build());
+        result.add(GavtcsSet.builder()
+                .includePatterns(Stream.of(includes).map(GavtcsPattern::of).collect(Collectors.toList()))
+                .excludePatterns(Stream.of(excludes).map(GavtcsPattern::of).collect(Collectors.toList()))
+                .build());
+        result.add(GavtcsSet.builder()
+                .includes(Stream.of(includes).map(GavtcsPattern::of).toArray(GavtcsPattern[]::new))
+                .excludes(Stream.of(excludes).map(GavtcsPattern::of).toArray(GavtcsPattern[]::new))
+                .build());
+        {
+            final Builder b = GavtcsSet.builder();
+            Stream.of(includes).forEach(b::include);
+            Stream.of(excludes).forEach(b::exclude);
+            result.add(b.build());
+        }
+        {
+            final Builder b = GavtcsSet.builder();
+            Stream.of(includes).map(GavtcsPattern::of).forEach(b::include);
+            Stream.of(excludes).map(GavtcsPattern::of).forEach(b::exclude);
+            result.add(b.build());
+        }
         return result;
     }
 

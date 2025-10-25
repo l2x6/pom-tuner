@@ -285,6 +285,19 @@ public interface GavSet extends Predicate<Gav> {
             }
 
             /**
+             * Exclude a single GAV pattern.
+             *
+             * @param  pattern
+             * @return         this {@link Builder}
+             *
+             * @since          4.7.0
+             */
+            public Builder exclude(GavPattern pattern) {
+                this.excludes.add(pattern);
+                return this;
+            }
+
+            /**
              * Parses the entries of the given {@link Collection} of {@code rawPatterns} and excludes those.
              *
              * @param  rawPatterns {@link Collection} of GAV patterns to parse via {@link GavPattern#of(String)}
@@ -294,6 +307,40 @@ public interface GavSet extends Predicate<Gav> {
                 if (rawPatterns != null) {
                     for (String rawPattern : rawPatterns) {
                         this.excludes.add(GavPattern.of(rawPattern));
+                    }
+                }
+                return this;
+            }
+
+            /**
+             * Excludes the given {@code patterns}
+             *
+             * @param  patterns {@link Collection} of {@link GavPattern}s to exclude
+             * @return          this {@link Builder}
+             *
+             * @since           4.7.0
+             */
+            public Builder excludePatterns(Collection<GavPattern> patterns) {
+                if (patterns != null) {
+                    for (GavPattern rawPattern : patterns) {
+                        this.excludes.add(rawPattern);
+                    }
+                }
+                return this;
+            }
+
+            /**
+             * Excludes the given {@code patterns}
+             *
+             * @param  patterns an array of {@link GavPattern}s to exclude
+             * @return          this {@link Builder}
+             *
+             * @since           4.7.0
+             */
+            public Builder excludes(GavPattern... patterns) {
+                if (patterns != null) {
+                    for (GavPattern rawPattern : patterns) {
+                        this.excludes.add(rawPattern);
                     }
                 }
                 return this;
@@ -352,6 +399,19 @@ public interface GavSet extends Predicate<Gav> {
             }
 
             /**
+             * Include a single GAV pattern.
+             *
+             * @param  pattern
+             * @return         this {@link Builder}
+             *
+             * @since          4.7.0
+             */
+            public Builder include(GavPattern pattern) {
+                this.includes.add(pattern);
+                return this;
+            }
+
+            /**
              * Parses the entries of the given {@link Collection} of {@code rawPatterns} and includes those.
              *
              * @param  rawPatterns {@link Collection} of GAV patterns to parse via {@link GavPattern#of(String)}
@@ -361,6 +421,40 @@ public interface GavSet extends Predicate<Gav> {
                 if (rawPatterns != null) {
                     for (String rawPattern : rawPatterns) {
                         this.includes.add(GavPattern.of(rawPattern));
+                    }
+                }
+                return this;
+            }
+
+            /**
+             * Includes the given {@code patterns}.
+             *
+             * @param  patterns {@link Collection} of GAV patterns to parse via {@link GavPattern#of(String)}
+             * @return          this {@link Builder}
+             *
+             * @since           4.7.0
+             */
+            public Builder includePatterns(Collection<GavPattern> patterns) {
+                if (patterns != null) {
+                    for (GavPattern rawPattern : patterns) {
+                        this.includes.add(rawPattern);
+                    }
+                }
+                return this;
+            }
+
+            /**
+             * Includes the given {@code patterns}.
+             *
+             * @param  patterns {@link Collection} of GAV patterns to parse via {@link GavPattern#of(String)}
+             * @return          this {@link Builder}
+             *
+             * @since           4.7.0
+             */
+            public Builder includes(GavPattern... patterns) {
+                if (patterns != null) {
+                    for (GavPattern rawPattern : patterns) {
+                        this.includes.add(rawPattern);
                     }
                 }
                 return this;

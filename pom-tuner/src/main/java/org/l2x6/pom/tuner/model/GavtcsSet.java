@@ -326,6 +326,19 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
             }
 
             /**
+             * Exclude a single GAV pattern.
+             *
+             * @param  pattern
+             * @return         this {@link Builder}
+             *
+             * @since          4.7.0
+             */
+            public Builder exclude(GavtcsPattern pattern) {
+                this.excludes.add(pattern);
+                return this;
+            }
+
+            /**
              * Parses the entries of the given {@link Collection} of {@code rawPatterns} and excludes those.
              *
              * @param  rawPatterns {@link Collection} of GAV patterns to parse via {@link GavtcsPattern#of(String)}
@@ -335,6 +348,40 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
                 if (rawPatterns != null) {
                     for (String rawPattern : rawPatterns) {
                         this.excludes.add(GavtcsPattern.of(rawPattern));
+                    }
+                }
+                return this;
+            }
+
+            /**
+             * Excludes the given {@code patterns}
+             *
+             * @param  patterns {@link Collection} of {@link GavtcsPattern}s to exclude
+             * @return          this {@link Builder}
+             *
+             * @since           4.7.0
+             */
+            public Builder excludePatterns(Collection<GavtcsPattern> patterns) {
+                if (patterns != null) {
+                    for (GavtcsPattern rawPattern : patterns) {
+                        this.excludes.add(rawPattern);
+                    }
+                }
+                return this;
+            }
+
+            /**
+             * Excludes the given {@code patterns}
+             *
+             * @param  patterns an array of {@link GavtcsPattern}s to exclude
+             * @return          this {@link Builder}
+             *
+             * @since           4.7.0
+             */
+            public Builder excludes(GavtcsPattern... patterns) {
+                if (patterns != null) {
+                    for (GavtcsPattern rawPattern : patterns) {
+                        this.excludes.add(rawPattern);
                     }
                 }
                 return this;
@@ -393,12 +440,74 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
             }
 
             /**
+             * Include a single GAV pattern.
+             *
+             * @param  pattern
+             * @return         this {@link Builder}
+             *
+             * @since          4.7.0
+             */
+            public Builder include(GavtcsPattern pattern) {
+                this.includes.add(pattern);
+                return this;
+            }
+
+            /**
              * Parses the entries of the given {@link Collection} of {@code rawPatterns} and includes those.
              *
              * @param  rawPatterns {@link Collection} of GAV patterns to parse via {@link GavtcsPattern#of(String)}
              * @return             this {@link Builder}
              */
             public Builder includes(Collection<String> rawPatterns) {
+                if (rawPatterns != null) {
+                    for (String rawPattern : rawPatterns) {
+                        this.includes.add(GavtcsPattern.of(rawPattern));
+                    }
+                }
+                return this;
+            }
+
+            /**
+             * Includes the given {@code patterns}.
+             *
+             * @param  patterns {@link Collection} of GAV patterns to parse via {@link GavtcsPattern#of(String)}
+             * @return          this {@link Builder}
+             *
+             * @since           4.7.0
+             */
+            public Builder includePatterns(Collection<GavtcsPattern> patterns) {
+                if (patterns != null) {
+                    for (GavtcsPattern rawPattern : patterns) {
+                        this.includes.add(rawPattern);
+                    }
+                }
+                return this;
+            }
+
+            /**
+             * Includes the given {@code patterns}.
+             *
+             * @param  patterns {@link Collection} of GAV patterns to parse via {@link GavtcsPattern#of(String)}
+             * @return          this {@link Builder}
+             *
+             * @since           4.7.0
+             */
+            public Builder includes(GavtcsPattern... patterns) {
+                if (patterns != null) {
+                    for (GavtcsPattern rawPattern : patterns) {
+                        this.includes.add(rawPattern);
+                    }
+                }
+                return this;
+            }
+
+            /**
+             * Parses the entries of the given array of {@code rawPatterns} and includes those.
+             *
+             * @param  rawPatterns a list of GAV patterns to parse via {@link GavtcsPattern#of(String)}
+             * @return             this {@link Builder}
+             */
+            public Builder includes(String... rawPatterns) {
                 if (rawPatterns != null) {
                     for (String rawPattern : rawPatterns) {
                         this.includes.add(GavtcsPattern.of(rawPattern));
@@ -418,21 +527,6 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
                     StringTokenizer st = new StringTokenizer(rawPatterns, ", \t\n\r");
                     while (st.hasMoreTokens()) {
                         this.includes.add(GavtcsPattern.of(st.nextToken()));
-                    }
-                }
-                return this;
-            }
-
-            /**
-             * Parses the entries of the given array of {@code rawPatterns} and includes those.
-             *
-             * @param  rawPatterns a list of GAV patterns to parse via {@link GavtcsPattern#of(String)}
-             * @return             this {@link Builder}
-             */
-            public Builder includes(String... rawPatterns) {
-                if (rawPatterns != null) {
-                    for (String rawPattern : rawPatterns) {
-                        this.includes.add(GavtcsPattern.of(rawPattern));
                     }
                 }
                 return this;
