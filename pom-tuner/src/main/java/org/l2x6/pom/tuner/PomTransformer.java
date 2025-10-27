@@ -56,10 +56,8 @@ import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.TransformerFactoryConfigurationError;
-import javax.xml.transform.dom.DOMResult;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
@@ -94,8 +92,6 @@ public class PomTransformer {
             Pattern.compile("(<\\?xml[^>]*\\?>)?(\\s*)<"),
             Pattern.compile("(\\s*)<project([^>]*)>")
     };
-    static final Pattern CDATA_START_PATTERN = Pattern.compile("\\Q<![CDATA[\\E");
-    static final Pattern CDATA_END_PATTERN = Pattern.compile("\\Q]]>\\E");
     static final Pattern EOL_PATTERN = Pattern.compile("\r?\n");
     static final Pattern WS_PATTERN = Pattern.compile("[ \t\n\r]+");
     static final Pattern INDENT_PATTERN = Pattern.compile("(\r?\n)([ \t]+)");
@@ -145,24 +141,13 @@ public class PomTransformer {
         String src = source.get();
         final String eol = detectEol(src);
 
-        final Matcher cdataStartMatcher = CDATA_START_PATTERN.matcher(src);
-        final boolean hasCData = cdataStartMatcher.find();
-        char startCData = 0;
-        char endCData = 0;
-        if (hasCData) {
-            startCData = findUnusedChar(src, (char) 255);
-            endCData = findUnusedChar(src, (char) (startCData - 1));
-            src = cdataStartMatcher.replaceAll("<![CDATA[" + startCData);
-            src = CDATA_END_PATTERN.matcher(src).replaceAll(endCData + "]]>");
-        }
-
         final Document document;
         try {
-            final DOMResult domResult = new DOMResult();
-            TransformerFactory.newInstance().newTransformer()
-                    .transform(new StreamSource(new StringReader(src)), domResult);
-            document = (Document) domResult.getNode();
-        } catch (TransformerException | TransformerFactoryConfigurationError e) {
+            DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
+            f.setNamespaceAware(true);
+            DocumentBuilder builder = f.newDocumentBuilder();
+            document = builder.parse(new InputSource(new StringReader(src)));
+        } catch (ParserConfigurationException | SAXException | IOException e) {
             throw new RuntimeException(String.format("Could not read DOM from [%s]", path), e);
         }
 
@@ -182,103 +167,9 @@ public class PomTransformer {
             throw new RuntimeException(String.format("Could not write DOM from [%s]", path), e);
         }
 
-        if (hasCData) {
-            result = restoreCData(result, startCData, endCData);
-        }
         result = EOL_PATTERN.matcher(result).replaceAll(eol);
         result = postprocess(src, result, simpleElementWhitespace);
         outConsumer.accept(result);
-    }
-
-    /**
-     * @param  text the text to search in
-     * @param  ch   start decrementing at this character
-     * @return      a character not available in the given {@code text}
-     */
-    static char findUnusedChar(String text, char ch) {
-        /* First try in ISO Latin 1 range */
-        if (ch <= 255) {
-            do {
-                if (ch != '$' && ch != '\\' && text.indexOf(ch) < 0) {
-                    return ch;
-                }
-                ch--;
-            } while (ch >= 33);
-        }
-
-        /* Did not find anything in ISO Latin 1 range, try larger */
-        ch = '\uD800' - 1;
-        do {
-            if (text.indexOf(ch) < 0) {
-                return ch;
-            }
-            ch--;
-        } while (ch > 255);
-        throw new IllegalStateException("Could not find unused char in the document");
-    }
-
-    /**
-     * @param  xmlDocument the XML document having the text nodes that were originally CDATA enclosed in {@code startCData}
-     *                     and {@code endCData}
-     * @param  startCData  the start tag
-     * @param  endCData    the end tag
-     * @return             the document with CDATA sections restored
-     */
-    private static String restoreCData(String xmlDocument, char startCData, char endCData) {
-        Matcher m = Pattern.compile("\\Q" + startCData + "\\E([^" + escape(endCData) + "]*)\\Q" + endCData + "\\E")
-                .matcher(xmlDocument);
-        StringBuffer sb = new StringBuffer(xmlDocument.length());
-        while (m.find()) {
-            m.appendReplacement(sb, "<![CDATA["
-                    + unescapeXml(m.group(1))
-                            .replace("\\", "\\\\")
-                            .replace("$", "\\$")
-                    + "]]>");
-        }
-        m.appendTail(sb);
-        return sb.toString();
-    }
-
-    /**
-     * @param  escaped a string with some characters possibly escaped so that they can be used as a part of an XML text node
-     * @return         a the {@code escaped} string with unescaped special characters
-     */
-    private static String unescapeXml(String escaped) {
-        if (escaped.isEmpty()) {
-            return escaped;
-        }
-        String xml = "<root>" + escaped + "</root>";
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setExpandEntityReferences(true);
-        try {
-            Document doc = factory.newDocumentBuilder().parse(new InputSource(new StringReader(xml)));
-            return doc.getDocumentElement().getTextContent();
-        } catch (DOMException | SAXException | IOException | ParserConfigurationException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    /**
-     * @param  character the character to escape
-     * @return           if the given {@code character} needs to be escaped for using withing a Java regex Character classe
-     *                   then it is prepended with {@code \} otherwise the given {@code character} is returned
-     */
-    static String escape(char character) {
-        if (Character.isSupplementaryCodePoint(character)) {
-            return String.format("\\x{%X}", character);
-        }
-        switch (character) {
-        case '\\':
-            return "\\\\";
-        case ']':
-            return "\\]";
-        case '-':
-            return "\\-";
-        case '^':
-            return "\\^";
-        default:
-            return String.valueOf(character); // literal
-        }
     }
 
     static String postprocess(String src, String result, SimpleElementWhitespace simpleElementWhitespace) {
