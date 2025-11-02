@@ -16,6 +16,7 @@
  */
 package org.l2x6.pom.tuner.model;
 
+import java.util.Objects;
 import java.util.StringTokenizer;
 
 /**
@@ -25,6 +26,10 @@ import java.util.StringTokenizer;
  */
 public class Ga implements Comparable<Ga> {
 
+    /**
+     * @deprecated use {@link GavPattern}
+     */
+    @Deprecated
     private static final Ga EXCELUDE_ALL = new Ga("*", "*");
     private final String artifactId;
     private final String groupId;
@@ -39,14 +44,19 @@ public class Ga implements Comparable<Ga> {
     public static Ga of(String gavString) {
         StringTokenizer st = new StringTokenizer(gavString, ":");
         if (!st.hasMoreTokens()) {
-            throw new IllegalStateException(String.format("Cannot parse [%s] to a " + Ga.class.getName(), gavString));
+            throw new IllegalStateException("Cannot parse '" + gavString + " to a " + Ga.class.getName()
+                    + "; expected '<groupId>:<artifactId>', found too little segments");
         } else {
             final String g = st.nextToken();
             if (!st.hasMoreTokens()) {
-                throw new IllegalStateException(
-                        String.format("Cannot parse [%s] to a " + Ga.class.getName(), gavString));
+                throw new IllegalStateException("Cannot parse '" + gavString + " to a " + Ga.class.getName()
+                        + "; expected '<groupId>:<artifactId>', found too little segments");
             } else {
                 final String a = st.nextToken();
+                if (st.hasMoreTokens()) {
+                    throw new IllegalStateException("Cannot parse '" + gavString + " to a " + Ga.class.getName()
+                            + "; expected '<groupId>:<artifactId>', found too many segments");
+                }
                 return new Ga(g, a);
             }
         }
@@ -61,8 +71,8 @@ public class Ga implements Comparable<Ga> {
 
     public Ga(String groupId, String artifactId) {
         super();
-        this.groupId = groupId;
-        this.artifactId = artifactId;
+        this.groupId = Objects.requireNonNull(groupId, "groupId");
+        this.artifactId = Objects.requireNonNull(artifactId, "artifactId");
         this.hashCode = 31 * (31 + artifactId.hashCode()) + groupId.hashCode();
     }
 
@@ -88,12 +98,18 @@ public class Ga implements Comparable<Ga> {
         return this.artifactId.equals(other.artifactId) && this.groupId.equals(other.groupId);
     }
 
-    public String getArtifactId() {
-        return artifactId;
-    }
-
+    /**
+     * @return the {@code groupId}, never {@code null}
+     */
     public String getGroupId() {
         return groupId;
+    }
+
+    /**
+     * @return the {@code artifactId}, never {@code null}
+     */
+    public String getArtifactId() {
+        return artifactId;
     }
 
     @Override
@@ -106,7 +122,34 @@ public class Ga implements Comparable<Ga> {
         return groupId + ":" + artifactId;
     }
 
+    /**
+     * Append {@code <groupId>:<artifactId>} to the given {@link StringBuilder} and return it.
+     *
+     * @param stringBuilder the {@link StringBuilder} to append to
+     * @return the passed-in {@link StringBuilder}
+     *
+     * @since 4.8.0
+     */
+    public StringBuilder toString(StringBuilder stringBuilder) {
+        return stringBuilder.append(groupId).append(':').append(artifactId);
+    }
+
+    /**
+     * @return {@link #EXCELUDE_ALL}
+     * @deprecated use {@link GavPattern}
+     */
+    @Deprecated
     public static Ga excludeAll() {
         return EXCELUDE_ALL;
+    }
+
+    /**
+     * @param version the version of this {@link Gav} or {@code null} if the version is unknown; an empty string is transformed to {@code null}
+     * @return new {@link Gav} embedding this {@link Ga} and having the given {@code version}.
+     *
+     * @since 4.8.0
+     */
+    public Gav toGav(String version) {
+        return new Gav(this, version);
     }
 }

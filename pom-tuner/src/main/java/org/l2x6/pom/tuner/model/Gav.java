@@ -16,69 +16,87 @@
  */
 package org.l2x6.pom.tuner.model;
 
+import java.util.Objects;
 import java.util.StringTokenizer;
 
 /**
  * An immutable {@link #groupId}, {@link #artifactId}, {@link #version} triple with a fast {@link #hashCode()} and
  * {@link #equals(Object)}.
+ * <p>
+ * It is possible to create a {@link Gav} instances with {@code null} version using {@link Gav#Gav(String, String, String)} or #{@link Gav#Gav(Ga, String)}.
+ * This might be useful to represent dependencies in a {@code pom.xml} whose versions are managed.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public class Gav implements Comparable<Gav> {
 
     /**
-     * Returns a new {@link Gav} instance parsed out of the given {@code gavString}.
+     * Parse the given {@code <groupId>:<artifactId>:<version>} {@code gavString} and return a new {@link Gavtc} instance.
+     * While it is possible to create a {@link Gav} instance with {@code null} version, this method requires a non empty {@code version}.
      *
-     * @param  gavString the string to parse, something of the form {@code groupId:artifactId:version}
+     * @param gavString the string to parse
      * @return           a new {@link Gav} instance parsed out of the given {@code gavString}
+     * @throws IllegalStateException on any parse errors
      */
     public static Gav of(String gavString) {
         StringTokenizer st = new StringTokenizer(gavString, ":");
         if (!st.hasMoreTokens()) {
-            throw new IllegalStateException(String.format("Cannot parse [%s] to a " + Gav.class.getName(), gavString));
+            throw new IllegalStateException("Cannot parse '" + gavString + " to a " + Gav.class.getName()
+                    + "; expected '<groupId>:<artifactId>:<version>', found too little segments");
         } else {
             final String g = st.nextToken();
             if (!st.hasMoreTokens()) {
-                throw new IllegalStateException(
-                        String.format("Cannot parse [%s] to a " + Gav.class.getName(), gavString));
+                throw new IllegalStateException("Cannot parse '" + gavString + " to a " + Gav.class.getName()
+                        + "; expected '<groupId>:<artifactId>:<version>', found too little segments");
             } else {
                 final String a = st.nextToken();
                 if (!st.hasMoreTokens()) {
-                    throw new IllegalStateException(
-                            String.format("Cannot parse [%s] to a " + Gav.class.getName(), gavString));
+                    throw new IllegalStateException("Cannot parse '" + gavString + " to a " + Gav.class.getName()
+                            + "; expected '<groupId>:<artifactId>:<version>', found too little segments");
                 } else {
                     final String v = st.nextToken();
+                    if (st.hasMoreTokens()) {
+                        throw new IllegalStateException("Cannot parse '" + gavString + " to a " + Gav.class.getName()
+                                + "; expected '<groupId>:<artifactId>:<version>', found too many segments");
+                    }
                     return new Gav(g, a, v);
                 }
             }
         }
     }
 
-    private final String artifactId;
-    private final String groupId;
+    private final Ga ga;
     private final int hashCode;
     private final String version;
 
+    /**
+     * @param ga the Ga instance to embed
+     * @param version the version of this {@link Gav} or {@code null} if the version is unknown; an empty string is transformed to {@code null}
+     *
+     * @since 4.8.0
+     */
+    public Gav(Ga ga, String version) {
+        this.ga = ga;
+        this.version = Gavtc.emptyToNull(version);
+        this.hashCode = 31 * ga.hashCode() + (version == null ? 0 : version.hashCode());
+    }
+
+    /**
+     * @param groupId the {@code groupId} (required)
+     * @param artifactId the {@code artifactId} (required)
+     * @param version the version of this {@link Gav} or {@code null} if the version is unknown; an empty string is transformed to {@code null}
+     */
     public Gav(String groupId, String artifactId, String version) {
-        super();
-        this.groupId = groupId;
-        this.artifactId = artifactId;
-        this.version = version;
-        this.hashCode = 31 * (31 * (31 + artifactId.hashCode()) + groupId.hashCode()) + version.hashCode();
+        this(new Ga(groupId, artifactId), version);
     }
 
     @Override
     public int compareTo(Gav o) {
-        int result = this.groupId.compareTo(o.groupId);
+        int result = this.ga.compareTo(o.ga);
         if (result != 0) {
             return result;
         } else {
-            result = this.artifactId.compareTo(o.artifactId);
-            if (result != 0) {
-                return result;
-            } else {
-                return this.version.compareTo(o.version);
-            }
+            return Gavtc.SAFE_STRING_COMPARATOR.compare(version, o.version);
         }
     }
 
@@ -91,18 +109,26 @@ public class Gav implements Comparable<Gav> {
         if (getClass() != obj.getClass())
             return false;
         Gav other = (Gav) obj;
-        return this.version.equals(other.version) && this.artifactId.equals(other.artifactId)
-                && this.groupId.equals(other.groupId);
+        return Objects.equals(this.version, other.version) && this.ga.equals(other.ga);
     }
 
-    public String getArtifactId() {
-        return artifactId;
-    }
-
+    /**
+     * @return the {@code groupId}, never {@code null}
+     */
     public String getGroupId() {
-        return groupId;
+        return ga.getGroupId();
     }
 
+    /**
+     * @return the {@code artifactId}, never {@code null}
+     */
+    public String getArtifactId() {
+        return ga.getArtifactId();
+    }
+
+    /**
+     * @return the version of this {@link Gav} or {@code null} if the version is unknown
+     */
     public String getVersion() {
         return version;
     }
@@ -114,10 +140,41 @@ public class Gav implements Comparable<Gav> {
 
     @Override
     public String toString() {
-        return groupId + ":" + artifactId + ":" + version;
+        return toString(new StringBuilder()).toString();
     }
 
-    public Ga toGa() {
-        return new Ga(groupId, artifactId);
+    /**
+     * Append {@code <groupId>:<artifactId>:<version>} to the given {@link StringBuilder} and return it.
+     *
+     * @param stringBuilder the {@link StringBuilder} to append to
+     * @return the passed-in {@link StringBuilder}
+     */
+    public StringBuilder toString(StringBuilder stringBuilder) {
+        ga.toString(stringBuilder).append(':');
+        if (version != null) {
+            stringBuilder.append(version);
+        }
+        return stringBuilder;
     }
+
+    /**
+     * Returns the embedded {@link Ga} instance.
+     *
+     * @return the embedded {@link Ga} instance
+     */
+    public Ga toGa() {
+        return ga;
+    }
+
+    /**
+     * @param type
+     * @param classifier
+     * @return new {@link Gavtc} embedding this {@link Gav} and having the given {@code type} and {@code classifier}.
+     *
+     * @since 4.8.0
+     */
+    public Gavtc toGavtc(String type, String classifier) {
+        return new Gavtc(this, type, classifier);
+    }
+
 }
