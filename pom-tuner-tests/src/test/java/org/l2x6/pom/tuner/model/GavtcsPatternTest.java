@@ -52,11 +52,76 @@ public class GavtcsPatternTest {
     }
 
     @Test
+    void matchesGavtc() {
+        assertMatchesGavtc(
+                GavtcsPattern::of,
+                (pat, ga) -> pat.matches(ga),
+                (pat, gav) -> pat.matches(gav[0], gav[1], gav[2], gav[3], gav[4]));
+    }
+
+    @Test
     void matchesGavtcs() {
         assertMatchesGavtcs(
                 GavtcsPattern::of,
                 (pat, ga) -> pat.matches(ga),
                 (pat, gav) -> pat.matches(gav[0], gav[1], gav[2], gav[3], gav[4], gav[5]));
+    }
+
+    static <T> void assertMatchesGavtc(
+            Function<String, T> of,
+            BiFunction<T, Gavtc, Boolean> matches1,
+            BiFunction<T, String[], Boolean> matches2) {
+        assertMatchesGavtc(of, matches1, matches2, "*", "g:a:v:t:c", true);
+        assertMatchesGavtc(of, matches1, matches2, "*:*", "g:a:v:t:c", true);
+        assertMatchesGavtc(of, matches1, matches2, "*:*:*", "g:a:v:t:c", true);
+        assertMatchesGavtc(of, matches1, matches2, "*:*:*:*", "g:a:v:t:c", true);
+        assertMatchesGavtc(of, matches1, matches2, "*:*:*:*:*", "g:a:v:t:c", true);
+        assertMatchesGavtc(of, matches1, matches2, "*:*:*:*:*:*", "g:a:v:t:c", true);
+
+        assertMatchesGavtc(of, matches1, matches2, "g", "g:a:v:t:c", true);
+        assertMatchesGavtc(of, matches1, matches2, "g:a", "g:a:v:t:c", true);
+        assertMatchesGavtc(of, matches1, matches2, "g:a:v", "g:a:v:t:c", true);
+        assertMatchesGavtc(of, matches1, matches2, "g:a:v:t:c:s", "g:a:v:t:c", true);
+        assertMatchesGavtc(of, matches1, matches2, "*:a", "g:a:v:t:c", true);
+        assertMatchesGavtc(of, matches1, matches2, "*:*:v", "g:a:v:t:c", true);
+        assertMatchesGavtc(of, matches1, matches2, "g:*", "g:a:v:t:c", true);
+        assertMatchesGavtc(of, matches1, matches2, "g:a:*", "g:a:v:t:c", true);
+        assertMatchesGavtc(of, matches1, matches2, "g:*:v", "g:a:v:t:c", true);
+
+        assertMatchesGavtc(of, matches1, matches2, "b", "g:a:v:t:c", false);
+        assertMatchesGavtc(of, matches1, matches2, "g:b", "g:a:v:t:c", false);
+        assertMatchesGavtc(of, matches1, matches2, "g:a:d", "g:a:v:t:c", false);
+        assertMatchesGavtc(of, matches1, matches2, "*:b", "g:a:v:t:c", false);
+        assertMatchesGavtc(of, matches1, matches2, "*:b:*", "g:a:v:t:c", false);
+        assertMatchesGavtc(of, matches1, matches2, "g:*:d", "g:a:v:t:c", false);
+
+        assertMatchesGavtc(of, matches1, matches2, "g:a:v:t:c:s", "x:a:v:t:c", false);
+        assertMatchesGavtc(of, matches1, matches2, "g:a:v:t:c:s", "g:x:v:t:c", false);
+        assertMatchesGavtc(of, matches1, matches2, "g:a:v:t:c:s", "g:a:x:t:c", false);
+        assertMatchesGavtc(of, matches1, matches2, "g:a:v:t:c:s", "g:a:v:x:c", false);
+        assertMatchesGavtc(of, matches1, matches2, "g:a:v:t:c:s", "g:a:v:t:x", false);
+
+    }
+
+    static <T> void assertMatchesGavtc(
+            Function<String, T> of,
+            BiFunction<T, Gavtc, Boolean> matches1,
+            BiFunction<T, String[], Boolean> matches2,
+            String pattern,
+            String probe,
+            boolean expected) {
+        final T pat = of.apply(pattern);
+        final Gavtc gav = Gavtc.of(probe);
+        assertThat(matches1.apply(pat, gav)).isEqualTo(expected);
+        assertThat(matches2.apply(
+                pat,
+                new String[] {
+                        gav.getGroupId(),
+                        gav.getArtifactId(),
+                        gav.getVersion(),
+                        gav.getType(),
+                        gav.getClassifier()
+                })).isEqualTo(expected);
     }
 
     static <T> void assertMatchesGavtcs(

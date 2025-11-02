@@ -362,6 +362,49 @@ public class GavtcsPattern implements Serializable, Comparable<GavtcsPattern>, P
     }
 
     /**
+     * Matches the given {@code groupId}, {@code artifactId}, {@code version}, {@code type}, {@code classifier} pentuple against this {@link GavtcsPattern}.
+     *
+     * @param  groupId
+     * @param  artifactId
+     * @param  version
+     * @param  type
+     * @param  classifier
+     * @return            {@code true} if this {@link GavtcsPattern} matches the given parameters and {@code false}
+     *                    otherwise
+     *
+     * @since             4.8.0
+     */
+    public boolean matches(
+            String groupId,
+            String artifactId,
+            String version,
+            String type,
+            String classifier) {
+        return groupIdPattern.matches(groupId) && //
+                artifactIdPattern.matches(artifactId) && //
+                versionPattern.matches(version) && //
+                typePattern.matches(Gavtcs.toEffectiveType(type)) && //
+                classifierPattern.matches(classifier == null ? "" : classifier);
+    }
+
+    /**
+     * Matches the given {@code groupId}, {@code artifactId}, {@code version}, {@code type}, {@code classifier}
+     * pentuple against this {@link GavtcsPattern}.
+     *
+     * @param  gavtc
+     * @return       {@code true} if this {@link GavtcsPattern} matches the given parameters and {@code false} otherwise
+     *
+     * @since        4.8.0
+     */
+    public boolean matches(Gavtc gavtc) {
+        return groupIdPattern.matches(gavtc.getGroupId()) && //
+                artifactIdPattern.matches(gavtc.getArtifactId()) && //
+                versionPattern.matches(gavtc.getVersion()) && //
+                typePattern.matches(gavtc.getType()) && //
+                classifierPattern.matches(gavtc.getClassifier());
+    }
+
+    /**
      * Matches the given {@code groupId}, {@code artifactId}, {@code version} triple against this {@link GavPattern}
      * disregarding the type, classifier and scope parts of the pattern.
      *

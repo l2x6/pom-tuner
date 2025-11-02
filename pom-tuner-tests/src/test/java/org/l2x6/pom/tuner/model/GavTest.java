@@ -16,7 +16,7 @@
  */
 package org.l2x6.pom.tuner.model;
 
-import org.junit.jupiter.api.Assertions;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -25,16 +25,55 @@ import org.junit.jupiter.api.Test;
 public class GavTest {
     @Test
     public void of() {
-        Assertions.assertEquals(new Gav("g", "a", "v"), Gav.of("g:a:v"));
+        Assertions.assertThat(new Gav("g", "a", "v")).isEqualTo(Gav.of("g:a:v"));
     }
 
     @Test
     public void ofMissingArtifactId() {
-        Assertions.assertThrows(IllegalStateException.class, () -> Gav.of("g"));
+        Assertions.assertThatThrownBy(() -> Gav.of("g")).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     public void ofMissingVersion() {
-        Assertions.assertThrows(IllegalStateException.class, () -> Gav.of("g:a"));
+        Assertions.assertThatThrownBy(() -> Gav.of("g:a")).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    public void ofTooManySegments() {
+        Assertions.assertThatThrownBy(() -> Gav.of("g:a:v:t")).isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    public void toStringTest() {
+        Assertions.assertThat(new Gav("g", "a", "v").toString()).isEqualTo("g:a:v");
+        Assertions.assertThat(new Gav("g", "a", null).toString()).isEqualTo("g:a:");
+    }
+
+    static final Gavtcs jffiNative = Gavtcs.of("com.github.jnr:jffi:1.3.10:jar:native");
+    static final Gavtcs jffi = Gavtcs.of("com.github.jnr:jffi:1.3.10:jar");
+
+    @Test
+    void groupFirstComparator() {
+        Assertions.assertThat(Gavtcs.groupFirstComparator().compare(jffi, jffiNative)).isEqualTo(-1);
+        Assertions.assertThat(Gavtcs.groupFirstComparator().compare(jffiNative, jffi)).isEqualTo(1);
+    }
+
+    @Test
+    public void comparable() {
+        Assertions.assertThat(new Gav("g", "a", "1").compareTo(new Gav("g", "a", "1"))).isEqualTo(0);
+        Assertions.assertThat(new Gav("g", "a", "1").compareTo(new Gav("g", "a", "2"))).isEqualTo(-1);
+        Assertions.assertThat(new Gav("g", "a", "2").compareTo(new Gav("g", "a", "1"))).isEqualTo(1);
+
+        Assertions.assertThat(new Gav("g", "a", "1").compareTo(new Gav("g", "a", null))).isEqualTo(1);
+        Assertions.assertThat(new Gav("g", "a", null).compareTo(new Gav("g", "a", "1"))).isEqualTo(-1);
+        Assertions.assertThat(new Gav("g", "a", "").compareTo(new Gav("g", "a", null))).isEqualTo(0);
+        Assertions.assertThat(new Gav("g", "a", null).compareTo(new Gav("g", "a", null))).isEqualTo(0);
+
+        Assertions.assertThat(new Gav("g", "a", "1").compareTo(new Gav("g", "b", "1"))).isEqualTo(-1);
+        Assertions.assertThat(new Gav("g", "b", "1").compareTo(new Gav("g", "a", "1"))).isEqualTo(1);
+
+        Assertions.assertThat(new Gav("g", "a", "1").compareTo(new Gav("h", "a", "1"))).isEqualTo(-1);
+        Assertions.assertThat(new Gav("h", "a", "1").compareTo(new Gav("g", "a", "1"))).isEqualTo(1);
+
     }
 }

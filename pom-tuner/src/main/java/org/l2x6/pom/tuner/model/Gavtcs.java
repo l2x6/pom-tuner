@@ -25,35 +25,34 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import org.l2x6.pom.tuner.Comparators;
 
 /**
- * A Maven dependency defined by {@code groupId}, {@code artifactId}, {@code version}, etc.
+ * A Maven dependency defined by {@code groupId}, {@code artifactId}, {@code version}, {@code type} and
+ * {@code classifier}.
+ *
+ * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public class Gavtcs {
     private static final Comparator<String> SCOPE_COMPARATOR = (a, b) -> scopeOrdinal(a) - scopeOrdinal(b);
-    private static final Comparator<String> TYPE_COMPARATOR = (a, b) -> (a == null ? "jar" : a)
-            .compareTo(b == null ? "jar" : b);
-    private static final Comparator<String> SAFE_STRING_COMPARATOR = Comparators.safeStringComparator();
+    private static final String DEFAULT_SCOPE = "compile";
 
     private static final Comparator<Gavtcs> GROUP_FIRST_COMPARATOR = Comparator
-            .comparing(Gavtcs::getGroupId, SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getArtifactId, SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getVersion, SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getType, TYPE_COMPARATOR)
-            .thenComparing(Gavtcs::getClassifier, SAFE_STRING_COMPARATOR)
+            .comparing(Gavtcs::getGroupId, Gavtc.SAFE_STRING_COMPARATOR)
+            .thenComparing(Gavtcs::getArtifactId, Gavtc.SAFE_STRING_COMPARATOR)
+            .thenComparing(Gavtcs::getVersion, Gavtc.SAFE_STRING_COMPARATOR)
+            .thenComparing(Gavtcs::getType, Gavtc.TYPE_COMPARATOR)
+            .thenComparing(Gavtcs::getClassifier, Gavtc.SAFE_STRING_COMPARATOR)
             .thenComparing(Gavtcs::getScope, SCOPE_COMPARATOR)
             .thenComparing(Gavtcs::getExclusions, new ListComparator<Ga>());
 
     private static final Comparator<Gavtcs> SCOPE_AND_TYPE_FIRST_COMPARATOR = Comparator
             .comparing(Gavtcs::getScope, SCOPE_COMPARATOR)
-            .thenComparing(Gavtcs::getType, TYPE_COMPARATOR)
-            .thenComparing(Gavtcs::getGroupId, SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getArtifactId, SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getVersion, SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getClassifier, SAFE_STRING_COMPARATOR)
+            .thenComparing(Gavtcs::getType, Gavtc.TYPE_COMPARATOR)
+            .thenComparing(Gavtcs::getGroupId, Gavtc.SAFE_STRING_COMPARATOR)
+            .thenComparing(Gavtcs::getArtifactId, Gavtc.SAFE_STRING_COMPARATOR)
+            .thenComparing(Gavtcs::getVersion, Gavtc.SAFE_STRING_COMPARATOR)
+            .thenComparing(Gavtcs::getClassifier, Gavtc.SAFE_STRING_COMPARATOR)
             .thenComparing(Gavtcs::getExclusions, new ListComparator<Ga>());
-    private static final String DEFAULT_SCOPE = "compile";
     private static final String DEFAULT_TYPE = "jar";
 
     static class ListComparator<T extends Comparable<? super T>> implements Comparator<SortedSet<T>> {
@@ -119,13 +118,21 @@ public class Gavtcs {
 
     public static Gavtcs of(String rawGavtcs) {
         String[] gavtcArr = rawGavtcs.split(":");
+        if (gavtcArr.length < 3) {
+            throw new IllegalStateException("Cannot parse '" + rawGavtcs + " to a " + Gavtc.class.getName()
+                    + "; expected '<groupId>:<artifactId>:<version>[:<type>[:<classifier>[:<scope>]]]', found too little segments");
+        }
+        if (gavtcArr.length > 6) {
+            throw new IllegalStateException("Cannot parse '" + rawGavtcs + " to a " + Gavtc.class.getName()
+                    + "; expected '<groupId>:<artifactId>:<version>[:<type>[:<classifier>[:<scope>]]]', found too many segments");
+        }
         int i = 0;
         final String groupId = gavtcArr[i++];
         final String artifactId = gavtcArr[i++];
         final String version = gavtcArr[i++];
-        final String type = i < gavtcArr.length ? emptyToNull(gavtcArr[i++]) : null;
-        final String classifier = i < gavtcArr.length ? emptyToNull(gavtcArr[i++]) : null;
-        final String scope = i < gavtcArr.length ? emptyToNull(gavtcArr[i++]) : null;
+        final String type = i < gavtcArr.length ? Gavtc.emptyToNull(gavtcArr[i++]) : null;
+        final String classifier = i < gavtcArr.length ? Gavtc.emptyToNull(gavtcArr[i++]) : null;
+        final String scope = i < gavtcArr.length ? Gavtc.emptyToNull(gavtcArr[i++]) : null;
         return new Gavtcs(groupId, artifactId, version, type, classifier, scope);
     }
 
@@ -149,83 +156,119 @@ public class Gavtcs {
         return scope == null || scope.isEmpty() ? DEFAULT_SCOPE : scope;
     }
 
-    private static String emptyToNull(String string) {
-        return string != null && !string.isEmpty() ? string : null;
-    }
-
-    private final String groupId;
-    private final String artifactId;
-    private final String version;
-    private final String type;
-    private final String classifier;
+    private final Gavtc gavtc;
     private final String scope;
     private final SortedSet<Ga> exclusions;
+    private final int hashCode;
 
     public Gavtcs(String groupId, String artifactId, String version) {
         this(groupId, artifactId, version, null, null, null);
     }
 
     public Gavtcs(String groupId, String artifactId, String version, String type, String classifier, String scope) {
-        this.groupId = groupId;
-        this.artifactId = artifactId;
-        this.version = version;
-        this.type = type == null || type.isEmpty() ? null : type;
-        this.classifier = classifier == null || classifier.isEmpty() ? null : classifier;
-        this.scope = scope == null || scope.isEmpty() ? null : scope;
-        this.exclusions = Collections.emptySortedSet();
+        this(new Gavtc(groupId, artifactId, version, type, classifier), scope);
     }
 
-    public Gavtcs(String groupId, String artifactId, String version, String type, String classifier, String scope,
-            Ga exclusion) {
-        super();
-        this.groupId = groupId;
-        this.artifactId = artifactId;
-        this.version = version;
-        this.type = type == null || type.isEmpty() ? null : type;
-        this.classifier = classifier == null || classifier.isEmpty() ? null : classifier;
+    /**
+     * @param gavtc
+     * @param scope
+     *
+     * @since 4.8.0
+     */
+    public Gavtcs(Gavtc gavtc, String scope) {
+        this.gavtc = gavtc;
+        this.scope = scope == null || scope.isEmpty() ? null : scope;
+        this.exclusions = Collections.emptySortedSet();
+        this.hashCode = hc();
+    }
+
+    /**
+     * @param gavtc
+     * @param scope
+     * @param exclusion
+     *
+     * @since 4.8.0
+     */
+    public Gavtcs(Gavtc gavtc, String scope, Ga exclusion) {
+        this.gavtc = gavtc;
         this.scope = scope == null || scope.isEmpty() ? null : scope;
         final TreeSet<Ga> set = new TreeSet<>();
         set.add(exclusion);
         this.exclusions = Collections.unmodifiableSortedSet(set);
+        this.hashCode = hc();
+    }
+
+    public Gavtcs(String groupId, String artifactId, String version, String type, String classifier, String scope,
+            Ga exclusion) {
+        this(new Gavtc(groupId, artifactId, version, type, classifier), scope, exclusion);
     }
 
     public Gavtcs(String groupId, String artifactId, String version, String type, String classifier, String scope,
             Collection<Ga> exclusions) {
+        this(new Gavtc(groupId, artifactId, version, type, classifier), scope, exclusions);
+    }
+
+    /**
+     * @param gavtc
+     * @param scope
+     * @param exclusions
+     *
+     * @since 4.8.0
+     */
+    public Gavtcs(Gavtc gavtc, String scope, Collection<Ga> exclusions) {
         super();
-        this.groupId = groupId;
-        this.artifactId = artifactId;
-        this.version = version;
-        this.type = type == null || type.isEmpty() ? null : type;
-        this.classifier = classifier == null || classifier.isEmpty() ? null : classifier;
+        this.gavtc = gavtc;
         this.scope = scope == null || scope.isEmpty() ? null : scope;
         this.exclusions = exclusions == null ? Collections.emptySortedSet()
                 : Collections.unmodifiableSortedSet(new TreeSet<>(exclusions));
+        this.hashCode = hc();
     }
 
+    /**
+     * @return the {@code groupId}, never {@code null}
+     */
     public String getGroupId() {
-        return groupId;
+        return gavtc.getGroupId();
     }
 
+    /**
+     * @return the {@code artifactId}, never {@code null}
+     */
     public String getArtifactId() {
-        return artifactId;
+        return gavtc.getArtifactId();
     }
 
+    /**
+     * @return the version of this {@link Gav} or {@code null} if the version is unknown
+     */
     public String getVersion() {
-        return version;
+        return gavtc.getVersion();
     }
 
+    /**
+     * @return the artifact type (sometimes called extension), such as `pom`, `jar`, `war`, etc.
+     */
     public String getType() {
-        return type;
+        return gavtc.getType();
     }
 
+    /**
+     * @return the classifier or {@code null} (rather than empty string) if it was not set
+     */
     public String getClassifier() {
-        return classifier;
+        return gavtc.getClassifier();
     }
 
+    /**
+     * @return the scope or {@code null} (rather than empty string) if it was not set
+     */
     public String getScope() {
         return scope;
     }
 
+    /**
+     * @return the exclusions, never {@code null}
+     */
     public SortedSet<Ga> getExclusions() {
         return exclusions;
     }
@@ -236,49 +279,50 @@ public class Gavtcs {
                 : Optional.empty();
     }
 
-    public Gavtcs toVirtualDeployment() {
-        return virtual(groupId, artifactId + "-deployment", version == null ? "${project.version}" : version);
-    }
-
-    public Gavtcs toVirtual() {
-        return virtual(groupId, artifactId, version == null ? "${project.version}" : version);
-    }
-
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder().append(groupId).append(':').append(artifactId).append(':')
-                .append(version);
+        return toString(new StringBuilder()).toString();
+    }
+
+    /**
+     * Append {@code <groupId>:<artifactId>} to the given {@link StringBuilder} and return it.
+     *
+     * @param stringBuilder the {@link StringBuilder} to append to
+     * @return the passed-in {@link StringBuilder}
+     *
+     * @since 4.8.0
+     */
+    public StringBuilder toString(StringBuilder stringBuilder) {
+        toGavtc().toGav().toString(stringBuilder);
+        final String type = getType();
+        final String classifier = getClassifier();
         if (type != null || classifier != null || scope != null) {
-            sb.append(':');
+            stringBuilder.append(':');
             if (type != null) {
-                sb.append(type);
+                stringBuilder.append(type);
             }
             if (classifier != null || scope != null) {
-                sb.append(':');
+                stringBuilder.append(':');
                 if (classifier != null) {
-                    sb.append(classifier);
+                    stringBuilder.append(classifier);
                 }
                 if (scope != null) {
-                    sb.append(':').append(scope);
+                    stringBuilder.append(':').append(scope);
                 }
             }
         }
-        return sb.toString();
+        return stringBuilder;
     }
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
+        return hashCode;
+    }
+
+    private int hc() {
         final String useScope = DEFAULT_SCOPE.equals(scope) ? null : scope;
-        final String useType = DEFAULT_TYPE.equals(type) ? null : type;
-        result = prime * result + ((artifactId == null) ? 0 : artifactId.hashCode());
-        result = prime * result + ((classifier == null) ? 0 : classifier.hashCode());
-        result = prime * result + ((exclusions == null) ? 0 : exclusions.hashCode());
-        result = prime * result + ((groupId == null) ? 0 : groupId.hashCode());
-        result = prime * result + ((useScope == null) ? 0 : useScope.hashCode());
-        result = prime * result + ((useType == null) ? 0 : useType.hashCode());
-        result = prime * result + ((version == null) ? 0 : version.hashCode());
+        int result = 31 * gavtc.hashCode() + ((useScope == null) ? 0 : useScope.hashCode());
+        result = 31 * result + ((exclusions == null) ? 0 : exclusions.hashCode());
         return result;
     }
 
@@ -291,25 +335,13 @@ public class Gavtcs {
         if (!(obj instanceof Gavtcs))
             return false;
         Gavtcs other = (Gavtcs) obj;
-        if (artifactId == null) {
-            if (other.artifactId != null)
-                return false;
-        } else if (!artifactId.equals(other.artifactId))
+        if (!this.gavtc.equals(other.gavtc)) {
             return false;
-        if (classifier == null) {
-            if (other.classifier != null)
-                return false;
-        } else if (!classifier.equals(other.classifier))
-            return false;
+        }
         if (exclusions == null) {
             if (other.exclusions != null)
                 return false;
         } else if (!exclusions.equals(other.exclusions))
-            return false;
-        if (groupId == null) {
-            if (other.groupId != null)
-                return false;
-        } else if (!groupId.equals(other.groupId))
             return false;
         final String useScope = DEFAULT_SCOPE.equals(scope) ? null : scope;
         final String useOtherScope = DEFAULT_SCOPE.equals(other.scope) ? null : other.scope;
@@ -318,34 +350,41 @@ public class Gavtcs {
                 return false;
         } else if (!useScope.equals(useOtherScope))
             return false;
-        final String useType = DEFAULT_TYPE.equals(type) ? null : type;
-        final String useOtherType = DEFAULT_TYPE.equals(other.type) ? null : other.type;
-        if (useType == null) {
-            if (useOtherType != null)
-                return false;
-        } else if (!useType.equals(useOtherType))
-            return false;
-        if (version == null) {
-            if (other.version != null)
-                return false;
-        } else if (!version.equals(other.version))
-            return false;
         return true;
     }
 
     public boolean isVirtual() {
-        return "pom".equals(type) && "test".equals(scope);
+        return "pom".equals(getType()) && "test".equals(scope);
     }
 
     public boolean isVirtualDeployment() {
-        return "pom".equals(type) && "test".equals(scope) && artifactId.endsWith("-deployment");
+        return "pom".equals(getType()) && "test".equals(scope) && getArtifactId().endsWith("-deployment");
     }
 
     /**
-     * @return a new {@link Ga} created out of this {@link Gavtcs}'s {@link #groupId} and {@link #artifactId}
+     * @return the embedded {@link Ga} instance, shorthand for {@link #toGavtc()}.{@link Gavtc#toGa()}
      */
     public Ga toGa() {
-        return new Ga(groupId, artifactId);
+        return gavtc.toGa();
+    }
+
+    /**
+     * @return the embedded {@link Gavtc} instance
+     *
+     * @since 4.8.0
+     */
+    public Gavtc toGavtc() {
+        return gavtc;
+    }
+
+    public Gavtcs toVirtualDeployment() {
+        final String version = getVersion();
+        return virtual(getGroupId(), getArtifactId() + "-deployment", version == null ? "${project.version}" : version);
+    }
+
+    public Gavtcs toVirtual() {
+        final String version = getVersion();
+        return virtual(getGroupId(), getArtifactId(), version == null ? "${project.version}" : version);
     }
 
 }

@@ -91,7 +91,7 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
     /**
      * Shorthand for {@code contains(ga.getGroupId(), ga.getArtifactId())}.
      *
-     * @param  ga the groupId and artiafctId to check for membership in this gavtcsSet
+     * @param  ga the {@link Ga} to check for membership in this {@link GavtcsSet}
      * @return    {@code true} if the given {@link Ga} is a member of this {@link GavtcsSet} and {@code false}
      *            otherwise
      *
@@ -114,7 +114,7 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
     /**
      * Shorthand for {@code contains(gav.getGrooupId(), gav.getArtifactId(), gav.getVersion())}.
      *
-     * @param  gav the groupId, artiafctId and version to check for membership in this gavtcsSet
+     * @param  gav {@link Gav} to check for membership in this gavtcsSet
      * @return     {@code true} if the given {@link Gav} is a member of this {@link GavtcsSet} and {@code false}
      *             otherwise
      *
@@ -125,9 +125,38 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
     }
 
     /**
-     * An implementation of {@link Predicate#test(Object)} Delegates to {@link #contains(Gav)}.
      *
-     * @param  gav the groupId, artiafctId and version to check for membership in this {@link GavSet}
+     * @param  groupId
+     * @param  artifactId
+     * @param  version
+     * @param  type
+     * @param  classifier
+     * @return            {@code true} if the given given {@code groupId}, {@code artifactId}, {@code version},
+     *                    {@code type}, {@code classifier},
+     *                    {@code scope} pentuple is a member of this {@link GavtcsSet} and {@code false}
+     *                    otherwise
+     * @since             4.8.0
+     */
+    boolean contains(String groupId, String artifactId, String version, String type, String classifier);
+
+    /**
+     * Shorthand for {@code contains(gavtc.getGrooupId(), gavtc.getArtifactId(), gavtc.getVersion(), gavtc.getType(), gavtc.getClassifier())}.
+     *
+     * @param  gavtc the {@link Gavtc} to check for membership in this gavtcsSet
+     * @return        {@code true} if the given {@link Gavtc} is a member of this {@link GavtcsSet} and {@code false}
+     *                otherwise
+     *
+     * @since         4.8.0
+     */
+    default boolean contains(Gavtc gavtc) {
+        return contains(gavtc.getGroupId(), gavtc.getArtifactId(), gavtc.getVersion(), gavtc.getType(),
+                gavtc.getClassifier());
+    }
+
+    /**
+     * An implementation of {@link Predicate#test(Object)}, delegates to {@link #contains(Gav)}.
+     *
+     * @param  gav {@link Gavtcs} to check for membership in this {@link GavSet}
      * @return     {@code true} if the given {@link Gav} is a member of this {@link GavSet} and {@code false}
      *             otherwise
      *
@@ -155,9 +184,9 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
     boolean contains(String groupId, String artifactId, String version, String type, String classifier, String scope);
 
     /**
-     * Shorthand for {@code contains(gav.getGrooupId(), gav.getArtifactId(), gav.getVersion())}.
+     * Shorthand for {@code contains(gavtcs.getGrooupId(), gavtcs.getArtifactId(), gavtcs.getVersion(), gavtcs.getType(), gavtcs.getClassifier(), gavtcs.getScope())}.
      *
-     * @param  gavtcs the groupId, artiafctId and version to check for membership in this gavtcsSet
+     * @param  gavtcs {@link Gavtcs} to check for membership in this gavtcsSet
      * @return        {@code true} if the given {@link Gavtcs} is a member of this {@link GavtcsSet} and {@code false}
      *                otherwise
      *
@@ -207,6 +236,11 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
         @Override
         public boolean contains(String groupId, String artifactId, String version) {
             return gavtcsSets.stream().anyMatch(gavtcsSet -> gavtcsSet.contains(groupId, artifactId, version));
+        }
+
+        @Override
+        public boolean contains(String groupId, String artifactId, String version, String type, String classifier) {
+            return gavtcsSets.stream().anyMatch(gavtcsSet -> gavtcsSet.contains(groupId, artifactId, version, type, classifier));
         }
 
         @Override
@@ -574,6 +608,15 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
             return false;
         }
 
+        private static boolean matches(String groupId, String artifactId, String version, String type, String classifier, List<GavtcsPattern> patterns) {
+            for (GavtcsPattern pattern : patterns) {
+                if (pattern.matches(groupId, artifactId, version, type, classifier)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private static boolean matches(String groupId, String artifactId, String version, String type, String classifier,
                 String scope, List<GavtcsPattern> patterns) {
             for (GavtcsPattern pattern : patterns) {
@@ -637,6 +680,12 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
          */
         public boolean contains(String groupId, String artifactId, String version) {
             return matches(groupId, artifactId, version, includes) && !matches(groupId, artifactId, version, excludes);
+        }
+
+        @Override
+        public boolean contains(String groupId, String artifactId, String version, String type, String classifier) {
+            return matches(groupId, artifactId, version, type, classifier, includes)
+                    && !matches(groupId, artifactId, version, type, classifier, excludes);
         }
 
         @Override
