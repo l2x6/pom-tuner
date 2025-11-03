@@ -52,6 +52,7 @@ import org.l2x6.pom.tuner.model.Module;
 import org.l2x6.pom.tuner.model.Plugin;
 import org.l2x6.pom.tuner.model.Profile;
 import org.l2x6.pom.tuner.model.ValueDefinition;
+import org.l2x6.pom.tuner.transform.modules;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
