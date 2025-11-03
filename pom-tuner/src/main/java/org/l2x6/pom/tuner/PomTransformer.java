@@ -64,6 +64,10 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.Gavtcs;
+import org.l2x6.pom.tuner.transform.dependencies;
+import org.l2x6.pom.tuner.transform.dependencyManagement;
+import org.l2x6.pom.tuner.transform.modules;
+import org.l2x6.pom.tuner.transform.plugins;
 import org.w3c.dom.Comment;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
@@ -93,9 +97,11 @@ public class PomTransformer {
             Pattern.compile("(\\s*)<project([^>]*)>")
     };
     static final Pattern EOL_PATTERN = Pattern.compile("\r?\n");
-    static final Pattern WS_PATTERN = Pattern.compile("[ \t\n\r]+");
+    static final String WS_REGEX = "[ \t\n\r]+";
+    static final Pattern WS_PATTERN = Pattern.compile(WS_REGEX);
     static final Pattern INDENT_PATTERN = Pattern.compile("(\r?\n)([ \t]+)");
-    static final Pattern EMPTY_LINE_PATTERN = Pattern.compile("[ \t]*\r?\n\r?\n[ \t\r\n]*");
+    static final String EMPTY_LINE_REGEX = "[ \t]*\r?\n\r?\n[ \t\r\n]*";
+    static final Pattern EMPTY_LINE_PATTERN = Pattern.compile(EMPTY_LINE_REGEX);
     static final Pattern SIMPLE_ELEM_WS_PATTERN = Pattern.compile("<([^ \t\n\r]+)([ \t\n\r]*)/>");
     private static final String MODULE_COMMENT_PREFIX = " <module>";
     private static final String MODULE_COMMENT_INFIX = "</module> ";
@@ -115,7 +121,9 @@ public class PomTransformer {
      * Loads the document under {@link #path}, applies the given {@code transformations}, mitigates the formatting
      * issues caused by {@link Transformer} and finally stores the document back to the file under {@link #path}.
      *
-     * @param transformations the {@link Transformation}s to apply
+     * @param      transformations the {@link Transformation}s to apply
+     *
+     * @deprecated                 use {@link #transform(Transformer...)}
      */
     public void transform(Transformation... transformations) {
         transform(Arrays.asList(transformations));
@@ -127,13 +135,23 @@ public class PomTransformer {
      *
      * @param transformations the {@link Transformation}s to apply
      */
-    public void transform(Collection<Transformation> transformations) {
+    public void transform(Transformer... transformations) {
+        transform(Arrays.asList(transformations));
+    }
+
+    /**
+     * Loads the document under {@link #path}, applies the given {@code transformations}, mitigates the formatting
+     * issues caused by {@link Transformer} and finally stores the document back to the file under {@link #path}.
+     *
+     * @param transformations the {@link Transformation}s to apply
+     */
+    public void transform(Collection<? extends Transformer> transformations) {
         LazyWriter lazyWriter = new LazyWriter(path, charset);
         transform(transformations, simpleElementWhitespace, path, lazyWriter::read, lazyWriter::write);
     }
 
     static void transform(
-            Collection<Transformation> edits,
+            Collection<? extends Transformer> edits,
             SimpleElementWhitespace simpleElementWhitespace,
             Path path,
             Supplier<String> source,
@@ -154,8 +172,8 @@ public class PomTransformer {
         final XPath xPath = XPathFactory.newInstance().newXPath();
         final TransformationContext context = new TransformationContext(path, document,
                 detectIndentation(document, xPath), xPath);
-        for (Transformation edit : edits) {
-            edit.perform(document, context);
+        for (Transformer edit : edits) {
+            edit.perform(context);
         }
         String result;
         try {
@@ -382,6 +400,17 @@ public class PomTransformer {
             }
         }
 
+        public void remove(Function<Node, List<Node>> siblingsSelector) {
+            Node parent = node.getParentNode();
+            if (parent != null) {
+                final List<Node> siblings = siblingsSelector.apply(node);
+                if (siblings != null && !siblings.isEmpty()) {
+                    siblings.forEach(parent::removeChild);
+                }
+                parent.removeChild(node);
+            }
+        }
+
         /**
          * Remove {@link #node} from the underlying DOM, optionally with preceding comments and preceding whitespace
          *
@@ -506,6 +535,31 @@ public class PomTransformer {
             return getFragment(TransformationContext.ALL_WHITESPACE_AND_COMMENTS);
         }
 
+        /**
+         * @return the name of the current XML node without the namespace or prefix
+         */
+        public String getName() {
+            return node.getLocalName();
+        }
+
+        /**
+         * @return the text content of the current XML text element
+         * @since  5.0.0
+         */
+        public String getText() {
+            return node.getTextContent();
+        }
+
+        /**
+         * Sets the text content of the current XML node.
+         *
+         * @param text the text content to set
+         * @since      5.0.0
+         */
+        public void setText(String text) {
+            node.setTextContent(text);
+        }
+
     }
 
     /**
@@ -556,6 +610,24 @@ public class PomTransformer {
          */
         public Stream<TextElement> childTextElementsStream() {
             return StreamSupport.stream(childTextElements().spliterator(), false);
+        }
+
+        /**
+         * @return {@code true} if this {@link ContainerElement} has child nodes of type {@link Node#ELEMENT_NODE}; otherwise
+         *         {@code false}
+         */
+        public boolean hasChildElements() {
+            final NodeList children = node.getChildNodes();
+            if (children.getLength() == 0) {
+                return false;
+            }
+            for (int i = 0; i < children.getLength(); i++) {
+                final Node child = children.item(i);
+                if (child.getNodeType() == Node.ELEMENT_NODE) {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /**
@@ -732,26 +804,29 @@ public class PomTransformer {
 
         public TextElement addChildTextElementIfNeeded(String nodeName, String nodeValue,
                 Comparator<Entry<String, String>> comparator) {
-            Entry<String, String> newEntry = new AbstractMap.SimpleImmutableEntry<>(nodeName, nodeValue);
             Node refNode = null;
-            for (TextElement child : childTextElements()) {
-                final Element node = child.getNode();
-                int comparison = comparator.compare(newEntry, new AbstractMap.SimpleImmutableEntry<>(
-                        node.getNodeName(), node.getTextContent()));
-                if (comparison == 0) {
-                    /* the given child is available, no need to add it */
-                    if (!Objects.equals(node.getTextContent(), nodeValue)) {
-                        node.setTextContent(nodeValue);
-                    }
-                    return child;
-                }
-                if (refNode == null && comparison < 0) {
-                    refNode = child.previousSiblingInsertionRefNode();
-                }
-            }
-
-            if (refNode == null) {
+            if (comparator == null) {
                 refNode = getOrAddLastIndent();
+            } else {
+                Entry<String, String> newEntry = new AbstractMap.SimpleImmutableEntry<>(nodeName, nodeValue);
+                for (TextElement child : childTextElements()) {
+                    final Element node = child.getNode();
+                    int comparison = comparator.compare(newEntry, new AbstractMap.SimpleImmutableEntry<>(
+                            node.getNodeName(), node.getTextContent()));
+                    if (comparison == 0) {
+                        /* the given child is available, no need to add it */
+                        if (!Objects.equals(node.getTextContent(), nodeValue)) {
+                            node.setTextContent(nodeValue);
+                        }
+                        return child;
+                    }
+                    if (refNode == null && comparison < 0) {
+                        refNode = child.previousSiblingInsertionRefNode();
+                    }
+                }
+                if (refNode == null) {
+                    refNode = getOrAddLastIndent();
+                }
             }
             return addChildTextElement(nodeName, nodeValue, refNode);
         }
@@ -962,6 +1037,64 @@ public class PomTransformer {
             }
         }
 
+        public ProfileElement asProfileElement() {
+            return new ProfileElement(context, node, lastIndent, indentLevel);
+        }
+
+        public GavtcsElement asGavtcsElement() {
+            String groupId = null;
+            String artifactId = null;
+            String version = null;
+            String type = null;
+            String classifier = null;
+            String scope = null;
+            List<Ga> exclusions = null;
+            for (ContainerElement depChild : childElements()) {
+                switch (depChild.node.getNodeName()) {
+                case "groupId":
+                    groupId = depChild.node.getTextContent();
+                    break;
+                case "artifactId":
+                    artifactId = depChild.node.getTextContent();
+                    break;
+                case "version":
+                    version = depChild.node.getTextContent();
+                    break;
+                case "type":
+                    type = depChild.node.getTextContent();
+                    break;
+                case "classifier":
+                    classifier = depChild.node.getTextContent();
+                    break;
+                case "scope":
+                    scope = depChild.node.getTextContent();
+                    break;
+                case "exclusions":
+                    exclusions = new ArrayList<>();
+                    for (ContainerElement excl : depChild.childElements()) {
+                        String exclGroupId = null;
+                        String exclArtifactId = null;
+                        for (ContainerElement exclChild : excl.childElements()) {
+                            switch (exclChild.node.getNodeName()) {
+                            case "groupId":
+                                exclGroupId = exclChild.node.getTextContent();
+                                break;
+                            case "artifactId":
+                                exclArtifactId = exclChild.node.getTextContent();
+                                break;
+                            }
+                        }
+                        exclusions.add(Ga.of(exclGroupId, exclArtifactId));
+                    }
+                    break;
+                default:
+                    break;
+                }
+            }
+            return new GavtcsElement(context, node, lastIndent, indentLevel,
+                    groupId, artifactId, version, type, classifier, scope, exclusions);
+        }
+
         static class NodeIterator<T> implements Iterator<T> {
 
             private final NodeList nodes;
@@ -1022,6 +1155,53 @@ public class PomTransformer {
                 currentIndex--;
             }
 
+        }
+    }
+
+    public static class ProfileElement extends ContainerElement {
+
+        private ProfileElement(TransformationContext context, Element containerElement, Text lastIndent, int indentLevel) {
+            super(context, containerElement, lastIndent, indentLevel);
+        }
+
+        /**
+         * @return {@code null} if this {@link ContainerElement} is a {@code project} node or otherwise the text content of the
+         *         {@code id} child of this {@link ContainerElement}
+         */
+        public String getId() {
+            if ("project".equals(getName())) {
+                return null;
+            }
+            return childTextElementsStream()
+                    .filter(textElement -> "id".equals(textElement.getName()))
+                    .map(TextElement::getText)
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Could not find the id value of profile " + this + " in " + context.getPomXmlPath()));
+        }
+
+    }
+
+    /**
+     * A {@link Gavtcs} storing the associated {@link ContainerElement} from the {@code pom.xml} file.
+     * This is useful for DOM modifications.
+     */
+    public static class GavtcsElement extends ContainerElement {
+        private final Gavtcs gavtcs;
+
+        GavtcsElement(
+                TransformationContext context, Element containerElement, Text lastIndent, int indentLevel,
+                String groupId, String artifactId, String version, String type, String classifier, String scope,
+                Collection<Ga> exclusions) {
+            super(context, containerElement, lastIndent, indentLevel);
+            this.gavtcs = new Gavtcs(groupId, artifactId, version, type, classifier, scope, exclusions);
+        }
+
+        /**
+         * @return the associated {@link Gavtcs}.
+         */
+        public Gavtcs getGavtcs() {
+            return gavtcs;
         }
     }
 
@@ -1202,12 +1382,22 @@ public class PomTransformer {
                     emptyLineAfter);
         }
 
+        /**
+         * @param  node the {@link Node} to decide about
+         * @return      {@code true} if the given {@code node} is a text node and its text matches
+         *              {@value PomTransformer#EMPTY_LINE_REGEX} or {@code false} otherwise
+         */
         public static boolean isEmptyLineNode(Node node) {
             return node.getNodeType() == Node.TEXT_NODE
                     && node.getTextContent() != null
                     && EMPTY_LINE_PATTERN.matcher(node.getTextContent()).matches();
         }
 
+        /**
+         * @param  node the {@link Node} to decide about
+         * @return      {@code true} if the given {@code node} is a text node and its text matches
+         *              {@value PomTransformer#WS_REGEX} or {@code false} otherwise
+         */
         public static boolean isWhiteSpaceNode(Node node) {
             return node.getNodeType() == Node.TEXT_NODE
                     && node.getTextContent() != null
@@ -1286,7 +1476,13 @@ public class PomTransformer {
             }
         }
 
+        /**
+         * @param  profileId the {@code id} of the profile to look up
+         * @return           an {@link Optional} containing a {@link ContainerElement} pointing at the {@code <profile>} element
+         *                   of the given profile or an empty {@link Optional} if no such profile exists
+         */
         public Optional<ContainerElement> getProfile(String profileId) {
+            Objects.requireNonNull(profileId, "profileId");
             try {
                 final Node node = (Node) xPath.evaluate(
                         PomTunerUtils.anyNs("project", "profiles", "profile") + "[." + PomTunerUtils.anyNs("id") + "/text() = '"
@@ -1301,7 +1497,28 @@ public class PomTransformer {
             }
         }
 
+        public List<ProfileElement> getProfiles() {
+            final List<ProfileElement> result = new ArrayList<>();
+            getContainerElement("project").map(ContainerElement::asProfileElement).ifPresent(result::add);
+            getContainerElement("project", "profiles").ifPresent(profiles -> {
+                profiles.childElementsStream()
+                        .map(ContainerElement::asProfileElement)
+                        .forEach(result::add);
+            });
+            return Collections.unmodifiableList(result);
+        }
+
+        public Stream<ProfileElement> getProfilesStream() {
+            return getProfiles().stream();
+        }
+
+        /**
+         * @param  profileId the {@code id} of the profile to look up or create
+         * @return           a {@link ContainerElement} pointing at a new or existing {@code <profile>} element having
+         *                   {@code <id>} equal to the given code {@code id}
+         */
         public ContainerElement getOrAddProfile(String profileId) {
+            Objects.requireNonNull(profileId, "profileId");
             try {
                 final Node node = (Node) xPath.evaluate(
                         PomTunerUtils.anyNs("project", "profiles", "profile") + "[." + PomTunerUtils.anyNs("id") + "/text() = '"
@@ -1319,6 +1536,11 @@ public class PomTransformer {
             }
         }
 
+        /**
+         * @param  profileId the {@code id} of the profile to look up; pass {@code null} to return the {@code <project>} element
+         * @return           an Optional containing the {@code <project>} element if the {@code profileId} is {@code null} or
+         *                   otherwise delegate to {@link #getProfile(String)}
+         */
         public Optional<ContainerElement> getProfileParent(String profileId) {
             if (profileId == null) {
                 final Node node = document.getDocumentElement();
@@ -1331,6 +1553,11 @@ public class PomTransformer {
             }
         }
 
+        /**
+         * @param  profileId the {@code id} of the profile to look up; pass {@code null} to return the {@code <project>} element
+         * @return           a {@link ContainerElement} pointing at the {@code <project>} element if the {@code profileId} is
+         *                   {@code null} or otherwise delegates to {@link #getOrAddProfile(String)}
+         */
         public ContainerElement getOrAddProfileParent(String profileId) {
             if (profileId == null) {
                 final Node node = document.getDocumentElement();
@@ -1367,6 +1594,13 @@ public class PomTransformer {
             }
         }
 
+        /**
+         * Returns a {@link LinkedHashSet} of dependencies under {@code project/dependencies} node.
+         * The elements a backed by the nodes of the {@link Document} of this {@link TransformationContext},
+         * so any edits on those will get effective upon storing the {@link Document} back to {@link #pomXmlPath}.
+         *
+         * @return a {@link LinkedHashSet} of dependencies under the {@code <project>}
+         */
         public Set<NodeGavtcs> getDependencies() {
             return getContainerElement("project", "dependencies")
                     .map(deps -> deps.childElementsStream()
@@ -1375,6 +1609,13 @@ public class PomTransformer {
                     .orElse(Collections.emptySet());
         }
 
+        /**
+         * Returns a {@link LinkedHashSet} of dependencies under {@code project/dependencyManagement/dependencies} node.
+         * The elements a backed by the nodes of the {@link Document} of this {@link TransformationContext},
+         * so any edits on those will get effective upon storing the {@link Document} back to {@link #pomXmlPath}.
+         *
+         * @return a {@link LinkedHashSet} of dependencies under the {@code <project>}
+         */
         public Set<NodeGavtcs> getManagedDependencies() {
             return getContainerElement("project", "dependencyManagement", "dependencies")
                     .map(deps -> deps.childElementsStream()
@@ -1383,6 +1624,11 @@ public class PomTransformer {
                     .orElse(Collections.emptySet());
         }
 
+        /**
+         * @param  gavtcs the {@link Gavtcs} to find
+         * @return        an optional containing the dependency node matching the given {@code gavtcs} or an empty
+         *                {@link Optional} if no such dependency exists
+         */
         public Optional<ContainerElement> findDependency(Gavtcs gavtcs) {
             return getContainerElement("project", "dependencies")
                     .map(depsNode -> depsNode.childElementsStream()
@@ -1391,6 +1637,13 @@ public class PomTransformer {
                             .orElse(null));
         }
 
+        /**
+         * Removes the given dependency if it exists; otherwise does nothing.
+         *
+         * @param removedDependency         the dependency to remove
+         * @param removePrecedingComments   if {@code true} any preceding comments will be removed
+         * @param removePrecedingWhitespace if {@code true} any preceding whitespace will be removed
+         */
         public void removeDependency(Gavtcs removedDependency, boolean removePrecedingComments,
                 boolean removePrecedingWhitespace) {
             getContainerElement("project", "dependencies")
@@ -1401,6 +1654,13 @@ public class PomTransformer {
                                     removePrecedingWhitespace)));
         }
 
+        /**
+         * Removes the given managed dependency if it exists; otherwise does nothing.
+         *
+         * @param removedDependency         the dependency to remove
+         * @param removePrecedingComments   if {@code true} any preceding comments will be removed
+         * @param removePrecedingWhitespace if {@code true} any preceding whitespace will be removed
+         */
         public void removeManagedDependency(Gavtcs removedDependency, boolean removePrecedingComments,
                 boolean removePrecedingWhitespace) {
             getContainerElement("project", "dependencyManagement", "dependencies")
@@ -1411,10 +1671,28 @@ public class PomTransformer {
                                     removePrecedingWhitespace)));
         }
 
+        /**
+         * Adds a dependency unless it available already
+         *
+         * @param gavtcs     the dependency to add
+         * @param comparator decides where to add the given dependency amongst the existing dependencies
+         *
+         * @see              Comparators
+         */
         public void addDependencyIfNeeded(Gavtcs gavtcs, Comparator<Gavtcs> comparator) {
             getOrAddContainerElement("dependencies").addGavtcsIfNeeded(gavtcs, comparator);
         }
 
+        /**
+         * Adds a text node under the given {@code parent} unless the specified node exists already.
+         *
+         * @param parent     the {@link Node} under which the specified text node should be added
+         * @param nodeName   the name of the node to add
+         * @param nodeValue  the text value of the node to add
+         * @param comparator decides where to add the given dependency amongst the existing dependencies
+         *
+         * @see              Comparators
+         */
         public void addTextChildIfNeeded(ContainerElement parent, String nodeName, String nodeValue,
                 Comparator<String> comparator) {
             parent.addChildTextElementIfNeeded(nodeName, nodeValue,
@@ -1429,8 +1707,9 @@ public class PomTransformer {
          *                                  otherwise the preceding comments won't be removed
          * @param removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
          *                                  also be removed; otherwise the preceding whitespace nodes won't be removed
-         * @param onlyIfEmpty               the node is removed only if it has no child nodes or if it has only comment and
-         *                                  whitespace child nodes
+         * @param onlyIfEmpty               if {@code true}, the node is removed only if it has no child nodes or if it has only
+         *                                  comment and
+         *                                  whitespace child nodes; otherwise the node is always removed
          */
         public void removeNode(String xPathExpression, boolean removePrecedingComments, boolean removePrecedingWhitespace,
                 boolean onlyIfEmpty) {
@@ -1448,8 +1727,9 @@ public class PomTransformer {
          * @param xPathExpression        an XPath expression to select {@link Node}s to remove
          * @param precedingNodesConsumer a custom handler for e.g. removing the preceding whitespace and commets - see
          *                               {@link #removePrecedingCommentsAndWhiteSpace(boolean, boolean)}
-         * @param onlyIfEmpty            the node is removed only if it has no child nodes or if it has only comment and
-         *                               whitespace child nodes
+         * @param onlyIfEmpty            if {@code true}, the node is removed only if it has no child nodes or if it has only
+         *                               comment and
+         *                               whitespace child nodes; otherwise the node is always removed
          */
         public void removeNode(String xPathExpression, BiConsumer<Node, Node> precedingNodesConsumer,
                 boolean onlyIfEmpty) {
@@ -1579,11 +1859,21 @@ public class PomTransformer {
             return false;
         }
 
+        /**
+         * Encloses the given text node in XML comment marks {@code <!--} and {@code -->} optionally adding a comment before the
+         * closing mark.
+         *
+         * @param  node        the node to comment
+         * @param  commentText an optional comment text to add before the closing mark {@code -->}
+         * @return             the new {@link Comment} node
+         */
         public static Comment commentTextNode(Node node, String commentText) {
             final String moduleText = node.getTextContent();
             final Node parent = node.getParentNode();
+            final String nodeName = node.getLocalName();
             final Comment moduleComment = node.getOwnerDocument()
-                    .createComment(MODULE_COMMENT_PREFIX + moduleText + MODULE_COMMENT_INFIX + commentText + " ");
+                    .createComment(" <" + nodeName + ">" + moduleText + "</" + nodeName + ">"
+                            + (commentText != null ? (" " + commentText + " ") : " "));
             parent.replaceChild(moduleComment, node);
             return moduleComment;
         }
@@ -1677,7 +1967,17 @@ public class PomTransformer {
     /**
      * A transformation of a DOM
      */
-    public interface Transformation {
+    public interface Transformer {
+        /**
+         * Perform this {@link Transformation} on the given {@code document}
+         *
+         * @param context the current {@link TransformationContext}
+         */
+        void perform(TransformationContext context);
+
+    }
+
+    public interface Transformation extends Transformer {
 
         public static Transformation addModule(String module) {
             return addModules(null, Collections.singleton(module));
@@ -1951,6 +2251,15 @@ public class PomTransformer {
             };
         }
 
+        /**
+         * @param      removePrecedingComments
+         * @param      removePrecedingWhitespace
+         * @param      module
+         * @return
+         *
+         * @deprecated                           use {@link modules#remove(String...)} instead
+         */
+        @Deprecated
         public static Transformation removeModule(boolean removePrecedingComments, boolean removePrecedingWhitespace,
                 String module) {
             return (Document document, TransformationContext context) -> {
@@ -1959,6 +2268,15 @@ public class PomTransformer {
             };
         }
 
+        /**
+         * @param      removePrecedingComments
+         * @param      removePrecedingWhitespace
+         * @param      modules
+         * @return
+         *
+         * @deprecated                           use {@link modules#remove(String...)} instead
+         */
+        @Deprecated
         public static Transformation removeModules(boolean removePrecedingComments, boolean removePrecedingWhitespace,
                 Set<String> modules) {
             return (Document document, TransformationContext context) -> {
@@ -1969,6 +2287,15 @@ public class PomTransformer {
             };
         }
 
+        /**
+         * @param      profileId
+         * @param      removePrecedingComments
+         * @param      removePrecedingWhitespace
+         * @return
+         *
+         * @deprecated                           use {@link modules#removeAll()} instead
+         */
+        @Deprecated
         public static Transformation removeAllModules(String profileId, boolean removePrecedingComments,
                 boolean removePrecedingWhitespace) {
             return (Document document, TransformationContext context) -> {
@@ -2036,6 +2363,15 @@ public class PomTransformer {
             };
         }
 
+        /**
+         * @param      removePrecedingComments
+         * @param      removePrecedingWhitespace
+         * @param      propertyName
+         * @return
+         *
+         * @deprecated                           use {@link properties#remove(String...)} instead
+         */
+        @Deprecated
         public static Transformation removeProperty(boolean removePrecedingComments, boolean removePrecedingWhitespace,
                 String propertyName) {
             return (Document document, TransformationContext context) -> {
@@ -2070,17 +2406,20 @@ public class PomTransformer {
         /**
          * Remove plugins matching the given {@code predicate} from the given profile.
          *
-         * @param  profileId                 the {@code id} of the profile under which the changes should happen or {@code null}
-         *                                   if the
-         *                                   changes should happen in the default profile-less area
-         * @param  removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
-         *                                   otherwise the preceding comments won't be removed
-         * @param  removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
-         *                                   also be removed; otherwise the preceding whitespace nodes won't be removed
-         * @param  predicate                 the predicate to select the nodes to remove, such as
-         *                                   {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
-         * @return                           a new {@link Transformation}
+         * @param      profileId                 the {@code id} of the profile under which the changes should happen or
+         *                                       {@code null}
+         *                                       if the
+         *                                       changes should happen in the default profile-less area
+         * @param      removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
+         *                                       otherwise the preceding comments won't be removed
+         * @param      removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
+         *                                       also be removed; otherwise the preceding whitespace nodes won't be removed
+         * @param      predicate                 the predicate to select the nodes to remove, such as
+         *                                       {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
+         * @return                               a new {@link Transformation}
+         * @deprecated                           use {@link plugins#remove(org.l2x6.pom.tuner.model.GavtcsPattern...)}
          */
+        @Deprecated
         public static Transformation removePlugins(String profileId, boolean removePrecedingComments,
                 boolean removePrecedingWhitespace,
                 Predicate<Gavtcs> predicate) {
@@ -2112,17 +2451,20 @@ public class PomTransformer {
         /**
          * Remove dependencies matching the given {@code predicate} from the given profile.
          *
-         * @param  profileId                 the {@code id} of the profile under which the changes should happen or {@code null}
-         *                                   if the
-         *                                   changes should happen in the default profile-less area
-         * @param  removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
-         *                                   otherwise the preceding comments won't be removed
-         * @param  removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
-         *                                   also be removed; otherwise the preceding whitespace nodes won't be removed
-         * @param  predicate                 the predicate to select the nodes to remove, such as
-         *                                   {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
-         * @return                           a new {@link Transformation}
+         * @param      profileId                 the {@code id} of the profile under which the changes should happen or
+         *                                       {@code null}
+         *                                       if the
+         *                                       changes should happen in the default profile-less area
+         * @param      removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
+         *                                       otherwise the preceding comments won't be removed
+         * @param      removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
+         *                                       also be removed; otherwise the preceding whitespace nodes won't be removed
+         * @param      predicate                 the predicate to select the nodes to remove, such as
+         *                                       {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
+         * @return                               a new {@link Transformation}
+         * @deprecated                           use {@link dependencies#remove(org.l2x6.pom.tuner.model.GavtcsPattern...)}
          */
+        @Deprecated
         public static Transformation removeDependencies(String profileId, boolean removePrecedingComments,
                 boolean removePrecedingWhitespace,
                 Predicate<Gavtcs> predicate) {
@@ -2154,17 +2496,20 @@ public class PomTransformer {
         /**
          * Remove managed dependencies matching the given {@code predicate} from the given profile.
          *
-         * @param  profileId                 the {@code id} of the profile under which the changes should happen or {@code null}
-         *                                   if the
-         *                                   changes should happen in the default profile-less area
-         * @param  removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
-         *                                   otherwise the preceding comments won't be removed
-         * @param  removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
-         *                                   also be removed; otherwise the preceding whitespace nodes won't be removed
-         * @param  predicate                 the predicate to select the nodes to remove, such as
-         *                                   {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
-         * @return                           a new {@link Transformation}
+         * @param      profileId                 the {@code id} of the profile under which the changes should happen or
+         *                                       {@code null}
+         *                                       if the
+         *                                       changes should happen in the default profile-less area
+         * @param      removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
+         *                                       otherwise the preceding comments won't be removed
+         * @param      removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
+         *                                       also be removed; otherwise the preceding whitespace nodes won't be removed
+         * @param      predicate                 the predicate to select the nodes to remove, such as
+         *                                       {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
+         * @return                               a new {@link Transformation}
+         * @deprecated                           {@link dependencyManagement#remove(org.l2x6.pom.tuner.model.GavtcsPattern...)}
          */
+        @Deprecated
         public static Transformation removeManagedDependencies(String profileId, boolean removePrecedingComments,
                 boolean removePrecedingWhitespace,
                 Predicate<Gavtcs> predicate) {
@@ -2271,6 +2616,10 @@ public class PomTransformer {
          * @param context  the current {@link TransformationContext}
          */
         void perform(Document document, TransformationContext context);
+
+        default void perform(TransformationContext context) {
+            perform(context.document, context);
+        }
 
         public static class SetTextValueTransformation implements Transformation {
 
