@@ -77,7 +77,7 @@ public class RemoveElementsTransformer<T extends TextElement> implements Transfo
      */
     public static Function<ProfileElement, Stream<TextElement>> textGrandChildrenMapper(String name) {
         return profile -> profile.childElementsStream()
-                .filter(ch -> name.equals(ch.getName()))
+                .filter(ch -> name.equals(ch.getElementName()))
                 .findFirst()
                 .map(parent -> parent.childTextElementsStream())
                 .orElse(Stream.empty());
@@ -129,7 +129,7 @@ public class RemoveElementsTransformer<T extends TextElement> implements Transfo
 
     /**
      * @param  profileSelector the profile selector to set on the resulting {@link RemoveElementsTransformer}
-     * @return                 a new {@link RemoveElementsTransformer} instance, same as the current one, but with the
+     * @return                 a copy of this {@link RemoveElementsTransformer} instance with the
      *                         {@link #profileSelector} set to the given {@code profileSelector}
      * @since                  5.0.0
      * @see                    ProfileId
@@ -146,7 +146,7 @@ public class RemoveElementsTransformer<T extends TextElement> implements Transfo
     /**
      * @param  profileIds the profile {@code id}s to select on the resulting {@link RemoveElementsTransformer} in addition
      *                    to the {@link ProfileId#main()}
-     * @return            a new {@link RemoveElementsTransformer} instance, same as the current one, but with the
+     * @return            a copy of this {@link RemoveElementsTransformer} instance with the
      *                    {@link #profileSelector} adjusted
      * @since             5.0.0
      * @see               ProfileId#ids(String...)
@@ -163,7 +163,7 @@ public class RemoveElementsTransformer<T extends TextElement> implements Transfo
     /**
      * @param  profileIds the profile {@code id}s to select on the resulting {@link RemoveElementsTransformer} (but not the
      *                    {@link ProfileId#main()}
-     * @return            a new {@link RemoveElementsTransformer} instance, same as the current one, but with the
+     * @return            a copy of this {@link RemoveElementsTransformer} instance with the
      *                    {@link #profileSelector} adjusted
      * @since             5.0.0
      * @see               ProfileId#idsOnly(String...)
@@ -187,7 +187,7 @@ public class RemoveElementsTransformer<T extends TextElement> implements Transfo
      *
      * @param  siblingsSelector a {@link Function} that for given removed node returns a list of nodes that should also be
      *                          removed.
-     * @return                  a new {@link RemoveElementsTransformer} instance, same as the current one, but with
+     * @return                  a copy of this {@link RemoveElementsTransformer} instance with
      *                          {@link #siblingsSelectors} adjusted
      * @since                   5.0.0
      * @see                     Siblings
@@ -211,7 +211,7 @@ public class RemoveElementsTransformer<T extends TextElement> implements Transfo
      *
      * @param  nodeSelector a {@link Predicate} deciding which of the preceding siblings should be removed; the siblings are
      *                      iterated while {@code nodeSelector} returns {@code true}
-     * @return              a new {@link RemoveElementsTransformer} instance, same as the current one, but with
+     * @return              a copy of this {@link RemoveElementsTransformer} instance with
      *                      {@link #siblingsSelectors} adjusted
      * @since               5.0.0
      * @see                 Siblings#previous(Predicate)
@@ -235,7 +235,7 @@ public class RemoveElementsTransformer<T extends TextElement> implements Transfo
      *
      * @param  nodeSelector a {@link Predicate} deciding which of the following siblings should be removed; the siblings are
      *                      iterated while {@code nodeSelector} returns {@code true}
-     * @return              a new {@link RemoveElementsTransformer} instance, same as the current one, but with
+     * @return              a copy of this {@link RemoveElementsTransformer} instance with
      *                      {@link #siblingsSelectors} adjusted
      * @since               5.0.0
      * @see                 Siblings#next(Predicate)
@@ -255,7 +255,7 @@ public class RemoveElementsTransformer<T extends TextElement> implements Transfo
      * Use {@link #alsoRemove(Function)} {@link #alsoRemoveNext(Predicate)} or {@link #alsoRemovePrevious(Predicate)}
      * to select additional neighbor nodes for removal.
      *
-     * @return a new {@link RemoveElementsTransformer} instance, same as the current one, but with
+     * @return a copy of this {@link RemoveElementsTransformer} instance with
      *         {@link #siblingsSelectors} adjusted
      * @since  5.0.0
      * @see    Siblings

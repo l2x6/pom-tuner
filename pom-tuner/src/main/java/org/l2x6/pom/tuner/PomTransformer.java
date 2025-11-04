@@ -22,7 +22,6 @@ import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -32,7 +31,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -68,6 +66,7 @@ import org.l2x6.pom.tuner.transform.dependencies;
 import org.l2x6.pom.tuner.transform.dependencyManagement;
 import org.l2x6.pom.tuner.transform.modules;
 import org.l2x6.pom.tuner.transform.plugins;
+import org.l2x6.pom.tuner.transform.properties;
 import org.w3c.dom.Comment;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
@@ -335,6 +334,12 @@ public class PomTransformer {
         protected final Element node;
         protected final int indentLevel;
 
+        static TextElement dummy(TransformationContext context, String elementName, String textContent) {
+            Element n = context.document.createElementNS(null, elementName);
+            n.setTextContent(textContent);
+            return new TextElement(context, n, 0);
+        }
+
         public TextElement(TransformationContext context, Element node, int indentLevel) {
             this.context = context;
             this.node = node;
@@ -537,8 +542,10 @@ public class PomTransformer {
 
         /**
          * @return the name of the current XML node without the namespace or prefix
+         *
+         * @since  5.0.0
          */
-        public String getName() {
+        public String getElementName() {
             return node.getLocalName();
         }
 
@@ -546,7 +553,7 @@ public class PomTransformer {
          * @return the text content of the current XML text element
          * @since  5.0.0
          */
-        public String getText() {
+        public String getTextContent() {
             return node.getTextContent();
         }
 
@@ -556,7 +563,7 @@ public class PomTransformer {
          * @param text the text content to set
          * @since      5.0.0
          */
-        public void setText(String text) {
+        public void setTextContent(String text) {
             node.setTextContent(text);
         }
 
@@ -803,16 +810,15 @@ public class PomTransformer {
         }
 
         public TextElement addChildTextElementIfNeeded(String nodeName, String nodeValue,
-                Comparator<Entry<String, String>> comparator) {
+                Comparator<TextElement> comparator) {
             Node refNode = null;
             if (comparator == null) {
                 refNode = getOrAddLastIndent();
             } else {
-                Entry<String, String> newEntry = new AbstractMap.SimpleImmutableEntry<>(nodeName, nodeValue);
+                TextElement newEntry = TextElement.dummy(context, nodeName, nodeValue);
                 for (TextElement child : childTextElements()) {
                     final Element node = child.getNode();
-                    int comparison = comparator.compare(newEntry, new AbstractMap.SimpleImmutableEntry<>(
-                            node.getNodeName(), node.getTextContent()));
+                    int comparison = comparator.compare(newEntry, child);
                     if (comparison == 0) {
                         /* the given child is available, no need to add it */
                         if (!Objects.equals(node.getTextContent(), nodeValue)) {
@@ -899,7 +905,7 @@ public class PomTransformer {
          * @param  refNode a {@link Node} before which the new {@link Element} should be added
          * @return         the newly created child node
          */
-        public ContainerElement addGavtcs(Gavtcs gavtcs, Node refNode) {
+        public GavtcsElement addGavtcs(Gavtcs gavtcs, Node refNode) {
 
             final String parentName = getNode().getNodeName();
             final String childName = parentName.equals("dependencies") ? "dependency"
@@ -923,20 +929,20 @@ public class PomTransformer {
                     exclusionNode.addChildTextElement("artifactId", ga.getArtifactId());
                 }
             }
-            return dep;
+            return dep.asGavtcsElement();
         }
 
         /**
          * If not available already, add a new {@code <dependency>} node under {@link #node} with {@code <groupId>},
          * {@code <artifactId>}, etc. set to value taken from the specified {@link Gavtcs}.
-         * The availability an dinsertion point is determined using the given {@link Comparator}.
+         * The availability and insertion point is determined using the given {@link Comparator}.
          *
          * @param  gavtcs     the GAV coordinates to use when creating the new {@code <dependency>}
          * @param  comparator for figuring out whether the given {@code gavtcs} is already available under this
          *                    {@link ContainerElement} or for determining the insert position for a newly added child node
          * @return            the newly created child node
          */
-        public ContainerElement addGavtcsIfNeeded(Gavtcs gavtcs, Comparator<Gavtcs> comparator) {
+        public GavtcsElement addGavtcsIfNeeded(Gavtcs gavtcs, Comparator<Gavtcs> comparator) {
             /* Find the insertion position if the gavtcs is not available yet and possibly add it */
             Node refNode = null;
             for (ContainerElement dep : childElements()) {
@@ -944,7 +950,7 @@ public class PomTransformer {
                 int comparison = comparator.compare(gavtcs, depGavtcs);
                 if (comparison == 0) {
                     /* We have found the item, no need to add it */
-                    return dep;
+                    return dep.asGavtcsElement();
                 }
                 if (refNode == null && comparison < 0) {
                     refNode = dep.previousSiblingInsertionRefNode();
@@ -1169,12 +1175,12 @@ public class PomTransformer {
          *         {@code id} child of this {@link ContainerElement}
          */
         public String getId() {
-            if ("project".equals(getName())) {
+            if ("project".equals(getElementName())) {
                 return null;
             }
             return childTextElementsStream()
-                    .filter(textElement -> "id".equals(textElement.getName()))
-                    .map(TextElement::getText)
+                    .filter(textElement -> "id".equals(textElement.getElementName()))
+                    .map(TextElement::getTextContent)
                     .findFirst()
                     .orElseThrow(() -> new IllegalStateException(
                             "Could not find the id value of profile " + this + " in " + context.getPomXmlPath()));
@@ -1481,7 +1487,7 @@ public class PomTransformer {
          * @return           an {@link Optional} containing a {@link ContainerElement} pointing at the {@code <profile>} element
          *                   of the given profile or an empty {@link Optional} if no such profile exists
          */
-        public Optional<ContainerElement> getProfile(String profileId) {
+        public Optional<ProfileElement> getProfile(String profileId) {
             Objects.requireNonNull(profileId, "profileId");
             try {
                 final Node node = (Node) xPath.evaluate(
@@ -1489,7 +1495,7 @@ public class PomTransformer {
                                 + profileId + "']",
                         document, XPathConstants.NODE);
                 if (node != null) {
-                    return Optional.of(new ContainerElement(this, (Element) node, null, 2));
+                    return Optional.of(new ProfileElement(this, (Element) node, null, 2));
                 }
                 return Optional.empty();
             } catch (XPathExpressionException e) {
@@ -1541,11 +1547,11 @@ public class PomTransformer {
          * @return           an Optional containing the {@code <project>} element if the {@code profileId} is {@code null} or
          *                   otherwise delegate to {@link #getProfile(String)}
          */
-        public Optional<ContainerElement> getProfileParent(String profileId) {
+        public Optional<ProfileElement> getProfileParent(String profileId) {
             if (profileId == null) {
                 final Node node = document.getDocumentElement();
                 if (node != null) {
-                    return Optional.of(new ContainerElement(this, (Element) node, null, 0));
+                    return Optional.of(new ProfileElement(this, (Element) node, null, 0));
                 }
                 return Optional.empty();
             } else {
@@ -1695,8 +1701,7 @@ public class PomTransformer {
          */
         public void addTextChildIfNeeded(ContainerElement parent, String nodeName, String nodeValue,
                 Comparator<String> comparator) {
-            parent.addChildTextElementIfNeeded(nodeName, nodeValue,
-                    (en1, en2) -> comparator.compare(en1.getValue(), en2.getValue()));
+            parent.addChildTextElementIfNeeded(nodeName, nodeValue, Comparators.textContent());
         }
 
         /**
@@ -1979,14 +1984,37 @@ public class PomTransformer {
 
     public interface Transformation extends Transformer {
 
+        /**
+         * @param module
+         * @return
+         *
+         * @deprecated                           use {@link modules#add(String)} instead
+         */
+        @Deprecated
         public static Transformation addModule(String module) {
             return addModules(null, Collections.singleton(module));
         }
 
+        /**
+         * @param profileId
+         * @param modulePaths
+         * @return
+         *
+         * @deprecated                           use {@link modules#add(String)} instead
+         */
+        @Deprecated
         public static Transformation addModules(String profileId, String... modulePaths) {
             return addModules(profileId, Arrays.asList(modulePaths));
         }
 
+        /**
+         * @param module
+         * @param comparator
+         * @return
+         *
+         * @deprecated                           use {@link modules#add(String)} instead
+         */
+        @Deprecated
         public static Transformation addModuleIfNeeded(String module, Comparator<String> comparator) {
             return (Document document, TransformationContext context) -> {
                 ContainerElement modules = context.getOrAddContainerElement("modules");
@@ -1994,10 +2022,27 @@ public class PomTransformer {
             };
         }
 
+        /**
+         * @param profileId
+         * @param modulePaths
+         * @return
+         *
+         * @deprecated                           use {@link modules#add(String)} instead
+         */
+        @Deprecated
         public static Transformation addModules(String profileId, Collection<String> modulePaths) {
             return addModulesIfNeeded(profileId, null, modulePaths);
         }
 
+        /**
+         * @param profileId
+         * @param comparator
+         * @param modulePaths
+         * @return
+         *
+         * @deprecated                           use {@link modules#add(String)} instead
+         */
+        @Deprecated
         public static Transformation addModulesIfNeeded(String profileId, Comparator<String> comparator,
                 Collection<String> modulePaths) {
             return (Document document, TransformationContext context) -> {
@@ -2013,6 +2058,14 @@ public class PomTransformer {
             };
         }
 
+        /**
+         * @param name
+         * @param value
+         * @return
+         *
+         * @deprecated                           use {@link properties#set(String, String)} instead
+         */
+        @Deprecated
         public static Transformation addProperty(String name, String value) {
             return (Document document, TransformationContext context) -> {
                 final ContainerElement props = context.getOrAddContainerElement("properties");
@@ -2020,6 +2073,15 @@ public class PomTransformer {
             };
         }
 
+
+        /**
+         * @param name
+         * @param value
+         * @return
+         *
+         * @deprecated                           use {@link properties#set(String, String)} instead
+         */
+        @Deprecated
         public static Transformation addOrSetProperty(String name, String value) {
             return (Document document, TransformationContext context) -> {
                 final ContainerElement props = context.getOrAddContainerElement("properties");
@@ -2032,10 +2094,27 @@ public class PomTransformer {
                     furtherNames);
         }
 
+
+        /**
+         * @param groupId
+         * @param artifactId
+         * @param version
+         * @return
+         *
+         * @deprecated                           use {@link dependencyManagement#add(Gavtcs)} instead
+         */
+        @Deprecated
         public static Transformation addManagedDependency(String groupId, String artifactId, String version) {
             return addManagedDependency(new Gavtcs(groupId, artifactId, version, null, null, null));
         }
 
+        /**
+         * @param gavtcs
+         * @return
+         *
+         * @deprecated                           use {@link dependencyManagement#add(Gavtcs)} instead
+         */
+        @Deprecated
         public static Transformation addManagedDependency(Gavtcs gavtcs) {
             return (Document document, TransformationContext context) -> {
                 final ContainerElement dependencyManagementDeps = context.getOrAddContainerElements("dependencyManagement",
@@ -2044,6 +2123,12 @@ public class PomTransformer {
             };
         }
 
+        /**
+         * @param gavtcs
+         * @return
+         * @deprecated                           use {@link dependencyManagement#add(Gavtcs)} instead
+         */
+        @Deprecated
         public static Transformation addManagedDependencyIfNeeded(Gavtcs gavtcs) {
             return (Document document, TransformationContext context) -> {
                 final ContainerElement dependencyManagementDeps = context.getOrAddContainerElements("dependencyManagement",
@@ -2165,6 +2250,13 @@ public class PomTransformer {
             };
         }
 
+        /**
+         * @param gavtcs
+         * @param comparator
+         * @return
+         * @deprecated                           use {@link dependencies#add(Gavtcs)} instead
+         */
+        @Deprecated
         public static Transformation addDependencyIfNeeded(Gavtcs gavtcs, Comparator<Gavtcs> comparator) {
             return (Document document, TransformationContext context) -> context.addDependencyIfNeeded(gavtcs, comparator);
         }

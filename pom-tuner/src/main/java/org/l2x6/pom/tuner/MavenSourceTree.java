@@ -256,7 +256,7 @@ public class MavenSourceTree {
         }
 
         /**
-         * Perform the operations added via {@link #add(String, DomEdit)}.
+         * Perform the operations added via {@link #set(String, DomEdit)}.
          *
          * @param rootDirectory
          * @param encoding
