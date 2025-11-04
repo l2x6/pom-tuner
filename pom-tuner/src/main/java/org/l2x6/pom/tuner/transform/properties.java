@@ -17,14 +17,14 @@
 package org.l2x6.pom.tuner.transform;
 
 import java.util.Comparator;
-import java.util.Map;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
-import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.transform.api.AddElementTransformer;
 import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 
 /**
@@ -36,21 +36,32 @@ import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 public interface properties {
     public static final String ELEMENT_NAME = "properties";
 
-    public static Transformer addOrSet(String name, String value) {
-        return addOrSet(name, value, null, null);
-    }
-
-    public static Transformer addOrSet(String name, String value, Comparator<Map.Entry<String, String>> comparator) {
-        return addOrSet(name, value, null, null);
-    }
-
-    public static Transformer addOrSet(String name, String value, String profileId,
-            Comparator<Map.Entry<String, String>> comparator) {
-        return (TransformationContext context) -> {
-            final ContainerElement profileParent = context.getOrAddProfileParent(profileId);
-            final ContainerElement props = profileParent.getOrAddChildContainerElement(ELEMENT_NAME);
-            props.addChildTextElementIfNeeded(name, value, comparator);
-        };
+    /**
+     * If available already, sets the given property; otherwise adds the given property as the last element under
+     * {@code /project/properties}.
+     * <p>
+     * If the {@code <properties>} element does not exist under {@code <project>} or under the {@code <profile>} specified
+     * via
+     * {@link AddElementTransformer#profile(String)}, the it is silently created.
+     * <p>
+     * The returned {@link AddElementTransformer} instance can be further customized to target a specific profile using
+     * {@link AddElementTransformer#profile(String)}
+     * or to insert the property at some specific position using {@link AddElementTransformer#beforeElement(String)},
+     * {@link AddElementTransformer#afterElement(String)} or {@link AddElementTransformer#at(Comparator)} and compatible
+     * {@link Comparators}.
+     *
+     * @param  name  the property name to add
+     * @param  value the property value to set
+     * @return       a new customizable {@link AddElementTransformer}
+     *
+     * @since        5.0.0
+     */
+    public static <THIS extends AddElementTransformer<ContainerElement, TextElement, THIS>> AddElementTransformer<ContainerElement, TextElement, THIS> set(String name,
+            String value) {
+        return new AddElementTransformer<>(
+                profile -> profile.getOrAddChildContainerElement(ELEMENT_NAME),
+                (parent, comparator) -> parent.addChildTextElementIfNeeded(name, value, comparator),
+                Comparators.elementName(Comparators.afterLast()));
     }
 
     /**
@@ -71,7 +82,7 @@ public interface properties {
     public static RemoveElementsTransformer<TextElement> remove(String... propertyNames) {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.textGrandChildrenMapper(ELEMENT_NAME),
-                textElement -> Stream.of(propertyNames).anyMatch(textElement.getName()::equals));
+                textElement -> Stream.of(propertyNames).anyMatch(textElement.getElementName()::equals));
     }
 
     /**

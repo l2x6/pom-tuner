@@ -16,13 +16,18 @@
  */
 package org.l2x6.pom.tuner.transform;
 
+import java.util.Comparator;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+
+import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.model.GavtcsPattern;
+import org.l2x6.pom.tuner.transform.api.AddGavtcsTransformer;
 import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 
 /**
@@ -35,6 +40,28 @@ public interface plugins {
 
     public static final String ELEMENT_NAME = "build";
     public static final String OTHER_ELEMENT_NAMES = "plugins";
+
+    /**
+     * If the given plugin is available already, does nothing; otherwise adds the given plugin as the last element
+     * under {@code /project/build/plugins}.
+     * <p>
+     * The returned {@link AddGavtcsTransformer} instance can be further customized to target a specific profile using
+     * {@link AddGavtcsTransformer#profile(String)}
+     * or to insert the plugin at some specific position using {@link AddGavtcsTransformer#before(Gavtcs)},
+     * {@link AddGavtcsTransformer#after(Gavtcs)} or {@link AddGavtcsTransformer#at(Comparator)} and
+     * compatible {@link Comparators}.
+     *
+     * @param  plugin the plugin to add
+     * @return      a new customizable {@link AddGavtcsTransformer}
+     *
+     * @since       5.0.0
+     */
+    public static <THIS extends AddGavtcsTransformer<ContainerElement, GavtcsElement, THIS>> AddGavtcsTransformer<ContainerElement, GavtcsElement, THIS> add(Gavtcs plugin) {
+        return new AddGavtcsTransformer<>(
+                profile -> profile.getOrAddChildContainerElement(ELEMENT_NAME).getOrAddChildContainerElement(OTHER_ELEMENT_NAMES),
+                (parent, comparator) -> parent.addGavtcsIfNeeded(plugin, comparator),
+                Comparators.afterLast());
+    }
 
     /**
      * Returns a new {@link RemoveElementsTransformer} removing plugins matching any of the specified {@code patterns};

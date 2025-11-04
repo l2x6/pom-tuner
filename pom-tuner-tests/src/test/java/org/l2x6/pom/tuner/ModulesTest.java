@@ -4,15 +4,294 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
+import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.transform.api.ProfileId;
 import org.l2x6.pom.tuner.transform.api.Siblings;
 import org.l2x6.pom.tuner.transform.modules;
 
 public class ModulesTest {
+
+    @Test
+    void add() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <!-- foo -->\n" //
+                + "    </modules>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <!-- foo -->\n" //
+                + "        <module>module-2</module>\n" //
+                + "    </modules>\n" //
+                + "</project>\n";
+        assertTransformation(source, Arrays.asList(
+                modules.add("module-2")), expected);
+    }
+
+    @Test
+    void addIdempotent() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <!-- foo -->\n" //
+                + "        <module>module-2</module>\n" //
+                + "    </modules>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <!-- foo -->\n" //
+                + "        <module>module-2</module>\n" //
+                + "    </modules>\n" //
+                + "</project>\n";
+        assertTransformation(source, Arrays.asList(
+                modules.add("module-2")), expected);
+    }
+
+    @Test
+    void addNoParent() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-2</module>\n" //
+                + "    </modules>\n" //
+                + "</project>\n";
+        assertTransformation(source, Arrays.asList(
+                modules.add("module-2")), expected);
+    }
+
+    @Test
+    void addAt() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <!-- foo -->\n" //
+                + "        <module>module-3</module>\n" //
+                + "    </modules>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <module>module-2</module>\n" //
+                + "        <!-- foo -->\n" //
+                + "        <module>module-3</module>\n" //
+                + "    </modules>\n" //
+                + "</project>\n";
+        assertTransformation(source, Arrays.asList(
+                modules.add("module-2")
+                        .at(Comparator.comparing(TextElement::getTextContent, Comparators.after("module-1")))),
+                expected);
+    }
+
+    @Test
+    void addBefore() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <!-- foo -->\n" //
+                + "        <module>module-3</module>\n" //
+                + "    </modules>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <module>module-2</module>\n" //
+                + "        <!-- foo -->\n" //
+                + "        <module>module-3</module>\n" //
+                + "    </modules>\n" //
+                + "</project>\n";
+        assertTransformation(source, Arrays.asList(
+                modules.add("module-2")
+                        .beforeTextContent("module-3")),
+                expected);
+    }
+
+    @Test
+    void addAfter() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <!-- foo -->\n" //
+                + "        <module>module-3</module>\n" //
+                + "    </modules>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <module>module-2</module>\n" //
+                + "        <!-- foo -->\n" //
+                + "        <module>module-3</module>\n" //
+                + "    </modules>\n" //
+                + "</project>\n";
+        assertTransformation(source, Arrays.asList(
+                modules.add("module-2")
+                        .afterTextContent("module-1")),
+                expected);
+    }
+
+    @Test
+    void addProfile() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <module>module-2</module>\n" //
+                + "    </modules>\n" //
+                + "    <profiles>\n" //
+                + "        <profile>\n" //
+                + "            <id>profile1</id>\n" //
+                + "            <modules>\n" //
+                + "                <module>module-4</module>\n" //
+                + "                <module>module-5</module>\n" //
+                + "                <!-- foo -->\n" //
+                + "                <module>module-6</module>\n" //
+                + "            </modules>\n" //
+                + "        </profile>\n" //
+                + "    </profiles>\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <module>module-2</module>\n" //
+                + "    </modules>\n" //
+                + "    <profiles>\n" //
+                + "        <profile>\n" //
+                + "            <id>profile1</id>\n" //
+                + "            <modules>\n" //
+                + "                <module>module-4</module>\n" //
+                + "                <module>module-7</module>\n" //
+                + "                <module>module-5</module>\n" //
+                + "                <!-- foo -->\n" //
+                + "                <module>module-6</module>\n" //
+                + "            </modules>\n" //
+                + "        </profile>\n" //
+                + "    </profiles>\n" //
+                + "</project>\n";
+        assertTransformation(source, Collections.singletonList(
+
+                modules.add("module-7").profile("profile1").afterTextContent("module-4")
+
+        ),
+                expected);
+    }
 
     @Test
     void removeByPaths() {
@@ -84,7 +363,7 @@ public class ModulesTest {
                 + "</project>\n";
         assertTransformation(source, Arrays.asList(
                 modules
-                        .remove(te -> te.getText().equals("module-2"))
+                        .remove(te -> te.getTextContent().equals("module-2"))
                         .alsoRemoveNone()
                         .alsoRemoveNext(Siblings.commentsOrWhitespace())),
                 expected);

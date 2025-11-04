@@ -19,6 +19,7 @@ package org.l2x6.pom.tuner;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Objects;
+import org.l2x6.pom.tuner.PomTransformer.TextElement;
 
 public class Comparators {
     private static final Comparator<String> SAFE_STRING_COMPARATOR = (a, b) -> a == b
@@ -36,6 +37,24 @@ public class Comparators {
     public static Comparator<Map.Entry<String, String>> entryValueOnly() {
         return Comparator
                 .comparing(Map.Entry::getValue, SAFE_STRING_COMPARATOR);
+    }
+
+    public static <T extends TextElement> Comparator<T> textContent() {
+        return textContent(SAFE_STRING_COMPARATOR);
+    }
+
+    public static <T extends TextElement> Comparator<T> textContent(Comparator<String> textContentComparator) {
+        return Comparator
+                .comparing(TextElement::getTextContent, textContentComparator);
+    }
+
+    public static <T extends TextElement> Comparator<T> elementName() {
+        return elementName(SAFE_STRING_COMPARATOR);
+    }
+
+    public static <T extends TextElement> Comparator<T> elementName(Comparator<String> nodeNameComparator) {
+        return Comparator
+                .comparing(TextElement::getElementName, nodeNameComparator);
     }
 
     public static Comparator<Map.Entry<String, String>> entryKeyValue() {

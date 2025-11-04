@@ -16,17 +16,17 @@
  */
 package org.l2x6.pom.tuner.transform;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
+import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
+import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
-import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.transform.api.AddElementTransformer;
+import org.l2x6.pom.tuner.transform.api.AddGavtcsTransformer;
 import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 
 /**
@@ -38,38 +38,29 @@ import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 public interface modules {
     public static final String ELEMENT_NAME = "modules";
 
-    public static Transformer addIfNeeded(String module) {
-        return addIfNeeded(null, null, Collections.singleton(module));
-    }
-
-    public static Transformer addIfNeeded(String profileId, String... modulePaths) {
-        return addIfNeeded(profileId, null, Arrays.asList(modulePaths));
-    }
-
-    public static Transformer addIfNeeded(String module, Comparator<String> comparator) {
-        return (TransformationContext context) -> {
-            ContainerElement modules = context.getOrAddContainerElement(ELEMENT_NAME);
-            context.addTextChildIfNeeded(modules, "module", module, comparator);
-        };
-    }
-
-    public static Transformer addIfNeeded(String profileId, Collection<String> modulePaths) {
-        return addIfNeeded(profileId, null, modulePaths);
-    }
-
-    public static Transformer addIfNeeded(String profileId, Comparator<String> comparator,
-            Collection<String> modulePaths) {
-        return (TransformationContext context) -> {
-            final ContainerElement profileParent = context.getOrAddProfileParent(profileId);
-            final ContainerElement modules = profileParent.getOrAddChildContainerElement(ELEMENT_NAME);
-            for (String m : modulePaths) {
-                if (comparator != null) {
-                    context.addTextChildIfNeeded(modules, "module", m, comparator);
-                } else {
-                    modules.addChildTextElement("module", m);
-                }
-            }
-        };
+    /**
+     * If the given {@code path} is available already, does nothing; otherwise adds the given module as the last element
+     * under {@code /project/modules}.
+     * <p>
+     * If the {@code <modules>} element does not exist under {@code <project>} or under the {@code <profile>} specified via
+     * {@link AddElementTransformer#profile(String)}, the it is silently created.
+     * <p>
+     * The returned {@link AddElementTransformer} instance can be further customized to target a specific profile using
+     * {@link AddElementTransformer#profile(String)}
+     * or to insert the module at some specific position using {@link AddElementTransformer#beforeTextContent(String)},
+     * {@link AddElementTransformer#afterTextContent(String)} or {@link AddElementTransformer#at(Comparator)} and
+     * compatible {@link Comparators}.
+     *
+     * @param  path the module path to add
+     * @return      a new customizable {@link AddElementTransformer}
+     *
+     * @since       5.0.0
+     */
+    public static <THIS extends AddElementTransformer<ContainerElement, TextElement, THIS>> AddElementTransformer<ContainerElement, TextElement, THIS> add(String path) {
+        return new AddElementTransformer<>(
+                profile -> profile.getOrAddChildContainerElement(ELEMENT_NAME),
+                (parent, comparator) -> parent.addChildTextElementIfNeeded("module", path, comparator),
+                Comparators.textContent(Comparators.afterLast()));
     }
 
     /**
@@ -90,7 +81,7 @@ public interface modules {
     public static RemoveElementsTransformer<TextElement> remove(String... modulePaths) {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.textGrandChildrenMapper(ELEMENT_NAME),
-                textElement -> Stream.of(modulePaths).anyMatch(textElement.getText()::equals));
+                textElement -> Stream.of(modulePaths).anyMatch(textElement.getTextContent()::equals));
     }
 
     /**

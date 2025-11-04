@@ -21,10 +21,8 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -510,7 +508,7 @@ public class PomTransformerTest {
         assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
-                    props.addChildTextElementIfNeeded("p2", "new", Comparators.entryKeyOnly());
+                    props.addChildTextElementIfNeeded("p2", "new", Comparators.elementName());
                 }), expected);
     }
 
@@ -550,7 +548,7 @@ public class PomTransformerTest {
         assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
-                    props.addChildTextElementIfNeeded("p2", "new", Comparators.entryKeyOnly());
+                    props.addChildTextElementIfNeeded("p2", "new", Comparators.elementName());
                 }), expected);
     }
 
@@ -590,7 +588,7 @@ public class PomTransformerTest {
         assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
-                    props.addChildTextElementIfNeeded("p0", "new", Comparators.entryKeyOnly());
+                    props.addChildTextElementIfNeeded("p0", "new", Comparators.elementName());
                 }), expected);
         assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
@@ -632,7 +630,7 @@ public class PomTransformerTest {
         assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
-                    props.addChildTextElementIfNeeded("p1", "new", Comparators.entryKeyOnly());
+                    props.addChildTextElementIfNeeded("p1", "new", Comparators.elementName());
                 }), expected);
     }
 
@@ -669,7 +667,7 @@ public class PomTransformerTest {
         assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
-                    props.addChildTextElementIfNeeded("p1", "new", Comparators.entryKeyOnly());
+                    props.addChildTextElementIfNeeded("p1", "new", Comparators.elementName());
                 }), expected);
     }
 
@@ -707,7 +705,7 @@ public class PomTransformerTest {
         assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
-                    props.addChildTextElementIfNeeded("p5", "new", Comparators.entryKeyOnly());
+                    props.addChildTextElementIfNeeded("p5", "new", Comparators.elementName());
                 }), expected);
         assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
@@ -753,7 +751,7 @@ public class PomTransformerTest {
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p2", "new",
-                            Comparator.comparing(Map.Entry::getKey, Comparators.before("p1")));
+                            Comparators.elementName(Comparators.before("p1")));
                 }), expected);
     }
 
@@ -792,7 +790,7 @@ public class PomTransformerTest {
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new",
-                            Comparator.comparing(Map.Entry::getKey, Comparators.before("p1")));
+                            Comparators.elementName(Comparators.before("p1")));
                 }), expected);
     }
 
@@ -831,7 +829,7 @@ public class PomTransformerTest {
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new",
-                            Comparator.comparing(Map.Entry::getKey, Comparators.before("p2")));
+                            Comparators.elementName(Comparators.before("p2")));
                 }), expected);
     }
 
@@ -872,7 +870,7 @@ public class PomTransformerTest {
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p2", "new",
-                            Comparator.comparing(Map.Entry::getKey, Comparators.after("p1")));
+                            Comparators.elementName(Comparators.after("p1")));
                 }), expected);
     }
 
@@ -911,7 +909,7 @@ public class PomTransformerTest {
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new",
-                            Comparator.comparing(Map.Entry::getKey, Comparators.after("p1")));
+                            Comparators.elementName(Comparators.after("p1")));
                 }), expected);
     }
 
@@ -950,7 +948,7 @@ public class PomTransformerTest {
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new",
-                            Comparator.comparing(Map.Entry::getKey, Comparators.after("p2")));
+                            Comparators.elementName(Comparators.after("p2")));
                 }), expected);
     }
 
@@ -990,7 +988,7 @@ public class PomTransformerTest {
         assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
-                    props.addChildTextElementIfNeeded("p2", "new", Comparators.entryKeyOnly());
+                    props.addChildTextElementIfNeeded("p2", "new", Comparators.elementName());
                 }), expected);
     }
 
@@ -1029,7 +1027,7 @@ public class PomTransformerTest {
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p", "new",
-                            Comparator.comparing(Map.Entry::getKey, Comparators.before("p3")));
+                            Comparators.elementName(Comparators.before("p3")));
                 }), expected);
     }
 
