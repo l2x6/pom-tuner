@@ -33,13 +33,18 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 
 /**
- * A generic remover of {@code pom.xml} elements such as {@code <properties>}, their child properties,
+ * A generic removed of {@code pom.xml} elements such as {@code <properties>}, their child properties,
  * {@code <modules>}, {@code <module>}, etc.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
  */
-public class RemoveElementsTransformer<T extends TextElement, THIS extends RemoveElementsTransformer<T, THIS>> extends RemoveTransformer<T, THIS> {
+public class RemoveTransformer<T extends TextElement, THIS extends RemoveTransformer<T, THIS>> implements Transformer {
+
+    final Predicate<String> profileSelector;
+    final Function<ProfileElement, Stream<T>> profileToRemovedElements;
+    final Predicate<T> elementSelector;
+    final List<Function<Node, List<Node>>> siblingsSelectors;
 
     /**
      * Maps a {@link ProfileElement} to a stream of text elements whose parent is a direct child of the given
@@ -97,16 +102,21 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
                 .map(ContainerElement::asGavtcsElement);
     }
 
-    private RemoveElementsTransformer(
+    RemoveTransformer(
             Predicate<String> profileSelector,
             Function<ProfileElement, Stream<T>> profileToTextElements,
             Predicate<T> elementSelector,
             List<Function<Node, List<Node>>> siblingsSelectors,
             boolean immutableSiblingsSelectors) {
-        super(profileSelector, profileToTextElements, elementSelector, siblingsSelectors, immutableSiblingsSelectors);
+        this.profileSelector = profileSelector;
+        this.profileToRemovedElements = profileToTextElements;
+        this.elementSelector = elementSelector;
+        this.siblingsSelectors = immutableSiblingsSelectors
+                ? siblingsSelectors
+                : Collections.unmodifiableList(new ArrayList<>(siblingsSelectors));
     }
 
-    public RemoveElementsTransformer(
+    public RemoveTransformer(
             Function<ProfileElement, Stream<T>> profileToTextElements,
             Predicate<T> elementSelector) {
         this(
@@ -114,59 +124,6 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
                 profileToTextElements,
                 elementSelector,
                 Collections.singletonList(Siblings.previousCommentsOrWhitespace()),
-                true);
-    }
-
-    /**
-     * @param  profileSelector the profile selector to set on the resulting {@link RemoveElementsTransformer}
-     * @return                 a copy of this {@link RemoveElementsTransformer} instance with the
-     *                         {@link #profileSelector} set to the given {@code profileSelector}
-     * @since                  5.0.0
-     * @see                    ProfileId
-     */
-    @SuppressWarnings("unchecked")
-    public THIS profiles(Predicate<String> profileSelector) {
-        return (THIS) new RemoveElementsTransformer<>(
-                profileSelector,
-                profileToRemovedElements,
-                elementSelector,
-                siblingsSelectors,
-                true);
-    }
-
-    /**
-     * @param  profileIds the profile {@code id}s to select on the resulting {@link RemoveElementsTransformer} in addition
-     *                    to the {@link ProfileId#main()}
-     * @return            a copy of this {@link RemoveElementsTransformer} instance with the
-     *                    {@link #profileSelector} adjusted
-     * @since             5.0.0
-     * @see               ProfileId#ids(String...)
-     */
-    @SuppressWarnings("unchecked")
-    public THIS profiles(String... profileIds) {
-        return (THIS) new RemoveElementsTransformer<>(
-                ProfileId.ids(profileIds),
-                profileToRemovedElements,
-                elementSelector,
-                siblingsSelectors,
-                true);
-    }
-
-    /**
-     * @param  profileIds the profile {@code id}s to select on the resulting {@link RemoveElementsTransformer} (but not the
-     *                    {@link ProfileId#main()}
-     * @return            a copy of this {@link RemoveElementsTransformer} instance with the
-     *                    {@link #profileSelector} adjusted
-     * @since             5.0.0
-     * @see               ProfileId#idsOnly(String...)
-     */
-    @SuppressWarnings("unchecked")
-    public THIS profilesOnly(String... profileIds) {
-        return (THIS) new RemoveElementsTransformer<>(
-                ProfileId.idsOnly(profileIds),
-                profileToRemovedElements,
-                elementSelector,
-                siblingsSelectors,
                 true);
     }
 
@@ -180,14 +137,14 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
      *
      * @param  siblingsSelector a {@link Function} that for given removed node returns a list of nodes that should also be
      *                          removed.
-     * @return                  a copy of this {@link RemoveElementsTransformer} instance with
+     * @return                  a copy of this {@link RemoveTransformer} instance with
      *                          {@link #siblingsSelectors} adjusted
      * @since                   5.0.0
      * @see                     Siblings
      */
     @SuppressWarnings("unchecked")
     public THIS alsoRemove(Function<Node, List<Node>> siblingsSelector) {
-        return (THIS) new RemoveElementsTransformer<>(
+        return (THIS) new RemoveTransformer<>(
                 profileSelector,
                 profileToRemovedElements,
                 elementSelector,
@@ -205,14 +162,14 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
      *
      * @param  nodeSelector a {@link Predicate} deciding which of the preceding siblings should be removed; the siblings are
      *                      iterated while {@code nodeSelector} returns {@code true}
-     * @return              a copy of this {@link RemoveElementsTransformer} instance with
+     * @return              a copy of this {@link RemoveTransformer} instance with
      *                      {@link #siblingsSelectors} adjusted
      * @since               5.0.0
      * @see                 Siblings#previous(Predicate)
      */
     @SuppressWarnings("unchecked")
     public THIS alsoRemovePrevious(Predicate<Node> nodeSelector) {
-        return (THIS) new RemoveElementsTransformer<>(
+        return (THIS) new RemoveTransformer<>(
                 profileSelector,
                 profileToRemovedElements,
                 elementSelector,
@@ -230,14 +187,14 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
      *
      * @param  nodeSelector a {@link Predicate} deciding which of the following siblings should be removed; the siblings are
      *                      iterated while {@code nodeSelector} returns {@code true}
-     * @return              a copy of this {@link RemoveElementsTransformer} instance with
+     * @return              a copy of this {@link RemoveTransformer} instance with
      *                      {@link #siblingsSelectors} adjusted
      * @since               5.0.0
      * @see                 Siblings#next(Predicate)
      */
     @SuppressWarnings("unchecked")
     public THIS alsoRemoveNext(Predicate<Node> nodeSelector) {
-        return (THIS) new RemoveElementsTransformer<>(
+        return (THIS) new RemoveTransformer<>(
                 profileSelector,
                 profileToRemovedElements,
                 elementSelector,
@@ -251,14 +208,14 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
      * Use {@link #alsoRemove(Function)} {@link #alsoRemoveNext(Predicate)} or {@link #alsoRemovePrevious(Predicate)}
      * to select additional neighbor nodes for removal.
      *
-     * @return a copy of this {@link RemoveElementsTransformer} instance with
+     * @return a copy of this {@link RemoveTransformer} instance with
      *         {@link #siblingsSelectors} adjusted
      * @since  5.0.0
      * @see    Siblings
      */
     @SuppressWarnings("unchecked")
     public THIS alsoRemoveNone() {
-        return (THIS) new RemoveElementsTransformer<>(
+        return (THIS) new RemoveTransformer<>(
                 profileSelector,
                 profileToRemovedElements,
                 elementSelector,

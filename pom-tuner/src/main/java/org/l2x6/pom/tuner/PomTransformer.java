@@ -854,14 +854,16 @@ public class PomTransformer {
          * the given {@code value} as its text content.
          *
          * @param elementName the name of the {@link Element} to add
-         * @param value       the text content of the newly added {@link Element}
+         * @param textContent       the text content of the newly added {@link Element}
          */
-        public void addOrSetChildTextElement(String name, String value) {
-            Optional<ContainerElement> existingChild = getChildContainerElement(name);
+        public void addOrSetChildTextElement(String elementName, String textContent) {
+            Objects.requireNonNull(elementName, elementName + " must not be null");
+            Objects.requireNonNull(textContent, "Text content of element "+ elementName + " must not be null");
+            Optional<ContainerElement> existingChild = getChildContainerElement(elementName);
             if (existingChild.isPresent()) {
-                existingChild.get().node.setTextContent(value);
+                existingChild.get().node.setTextContent(textContent);
             } else {
-                addChildTextElement(name, value, getOrAddLastIndent());
+                addChildTextElement(elementName, textContent, getOrAddLastIndent());
             }
         }
 

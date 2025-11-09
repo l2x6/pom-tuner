@@ -78,7 +78,7 @@ public interface modules {
      * @return             a new {@link RemoveElementsTransformer} removing modules having the specified {@code modulePaths}
      * @since              5.0.0
      */
-    public static RemoveElementsTransformer<TextElement> remove(String... modulePaths) {
+    public static <THIS extends RemoveElementsTransformer<TextElement, THIS>>  RemoveElementsTransformer<TextElement, THIS> remove(String... modulePaths) {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.textGrandChildrenMapper(ELEMENT_NAME),
                 textElement -> Stream.of(modulePaths).anyMatch(textElement.getTextContent()::equals));
@@ -99,7 +99,7 @@ public interface modules {
      * @return          a new {@link RemoveElementsTransformer} removing modules having the specified {@code modulePaths}
      * @since           5.0.0
      */
-    public static RemoveElementsTransformer<TextElement> remove(Predicate<TextElement> selector) {
+    public static <THIS extends RemoveElementsTransformer<TextElement, THIS>>  RemoveElementsTransformer<TextElement, THIS> remove(Predicate<TextElement> selector) {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.textGrandChildrenMapper(ELEMENT_NAME),
                 selector);
@@ -120,7 +120,7 @@ public interface modules {
      * @return a new {@link RemoveElementsTransformer} removing modules having the specified names
      * @since  5.0.0
      */
-    public static RemoveElementsTransformer<ContainerElement> removeAll() {
+    public static <THIS extends RemoveElementsTransformer<ContainerElement, THIS>> RemoveElementsTransformer<ContainerElement, THIS> removeAll() {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.containerElementsMapper(ELEMENT_NAME),
                 containerElement -> true);
@@ -143,7 +143,7 @@ public interface modules {
      * @return a new {@link RemoveElementsTransformer} removing modules having the specified names
      * @since  5.0.0
      */
-    public static RemoveElementsTransformer<ContainerElement> removeEmptyParent() {
+    public static <THIS extends RemoveElementsTransformer<ContainerElement, THIS>> RemoveElementsTransformer<ContainerElement, THIS> removeEmptyParent() {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.containerElementsMapper(ELEMENT_NAME),
                 ((Predicate<ContainerElement>) ContainerElement::hasChildElements).negate());
