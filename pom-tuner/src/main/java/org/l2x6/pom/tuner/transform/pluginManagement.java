@@ -23,6 +23,7 @@ import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
+import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.model.GavtcsPattern;
@@ -82,7 +83,7 @@ public interface pluginManagement {
      *                  specified {@code patterns}
      * @since           5.0.0
      */
-    public static RemoveElementsTransformer<GavtcsElement> remove(GavtcsPattern... patterns) {
+    public static <THIS extends RemoveElementsTransformer<GavtcsElement, THIS>>  RemoveElementsTransformer<GavtcsElement, THIS> remove(GavtcsPattern... patterns) {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
                 textElement -> Stream.of(patterns).anyMatch(pattern -> pattern.matches(textElement.getGavtcs())));
@@ -106,7 +107,7 @@ public interface pluginManagement {
      *                  specified {@code patterns}
      * @since           5.0.0
      */
-    public static RemoveElementsTransformer<GavtcsElement> remove(String... patterns) {
+    public static <THIS extends RemoveElementsTransformer<GavtcsElement, THIS>>  RemoveElementsTransformer<GavtcsElement, THIS> remove(String... patterns) {
         return remove(Stream.of(patterns).map(GavtcsPattern::of).toArray(GavtcsPattern[]::new));
     }
 
@@ -127,7 +128,7 @@ public interface pluginManagement {
      * @return a new {@link RemoveElementsTransformer} removing plugins having the specified names
      * @since  5.0.0
      */
-    public static RemoveElementsTransformer<ContainerElement> removeAll() {
+    public static <THIS extends RemoveElementsTransformer<ContainerElement, THIS>> RemoveElementsTransformer<ContainerElement, THIS> removeAll() {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.containerElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
                 containerElement -> true);
@@ -152,7 +153,7 @@ public interface pluginManagement {
      * @return          a new {@link RemoveElementsTransformer} removing plugins having the specified names
      * @since           5.0.0
      */
-    public static RemoveElementsTransformer<ContainerElement> removeEmptyParent() {
+    public static <THIS extends RemoveElementsTransformer<ContainerElement, THIS>> RemoveElementsTransformer<ContainerElement, THIS> removeEmptyParent() {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.containerElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
                 ((Predicate<ContainerElement>) ContainerElement::hasChildElements).negate());

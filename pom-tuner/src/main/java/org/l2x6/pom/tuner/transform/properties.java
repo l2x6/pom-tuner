@@ -22,6 +22,7 @@ import java.util.stream.Stream;
 import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
+import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.transform.api.AddElementTransformer;
@@ -79,7 +80,7 @@ public interface properties {
      * @return               a new {@link RemoveElementsTransformer} removing properties having the specified names
      * @since                5.0.0
      */
-    public static RemoveElementsTransformer<TextElement> remove(String... propertyNames) {
+    public static <THIS extends RemoveElementsTransformer<TextElement, THIS>>  RemoveElementsTransformer<TextElement, THIS> remove(String... propertyNames) {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.textGrandChildrenMapper(ELEMENT_NAME),
                 textElement -> Stream.of(propertyNames).anyMatch(textElement.getElementName()::equals));
@@ -100,7 +101,7 @@ public interface properties {
      * @return          a new {@link RemoveElementsTransformer} removing properties having the specified names
      * @since           5.0.0
      */
-    public static RemoveElementsTransformer<TextElement> remove(Predicate<TextElement> selector) {
+    public static <THIS extends RemoveElementsTransformer<TextElement, THIS>>  RemoveElementsTransformer<TextElement, THIS> remove(Predicate<TextElement> selector) {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.textGrandChildrenMapper(ELEMENT_NAME),
                 selector);
@@ -122,7 +123,7 @@ public interface properties {
      * @return a new {@link RemoveElementsTransformer} removing properties having the specified names
      * @since  5.0.0
      */
-    public static RemoveElementsTransformer<ContainerElement> removeAll() {
+    public static <THIS extends RemoveElementsTransformer<ContainerElement, THIS>> RemoveElementsTransformer<ContainerElement, THIS> removeAll() {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.containerElementsMapper(ELEMENT_NAME),
                 containerElement -> true);
@@ -145,7 +146,7 @@ public interface properties {
      * @return a new {@link RemoveElementsTransformer} removing properties having the specified names
      * @since  5.0.0
      */
-    public static RemoveElementsTransformer<ContainerElement> removeEmptyParent() {
+    public static <THIS extends RemoveElementsTransformer<ContainerElement, THIS>> RemoveElementsTransformer<ContainerElement, THIS> removeEmptyParent() {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.containerElementsMapper(ELEMENT_NAME),
                 ((Predicate<ContainerElement>) ContainerElement::hasChildElements).negate());
