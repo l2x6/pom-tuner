@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-name: CI
+name: verify
 
 on:
   push:
@@ -47,17 +47,20 @@ jobs:
             pom-tuner-
       - name: Install
         shell: bash
-        run: ./mvnw install -e -B -V -ntp
+        run: ./mvnw install -DskipTests -e -B -V -ntp
 
   test:
     name: Test
     needs: install
-    runs-on: ubuntu-latest
+
     strategy:
       fail-fast: false
       matrix:
         os: [ "ubuntu-latest", "windows-latest", "macOS-latest" ]
-        jdk: [ "8", "21", "25" ]
+        jdk: [ "8", "11", "17", "21", "25" ]
+
+    runs-on: ${{ matrix.os }}
+
     steps:
       - uses: actions/checkout@v6
         with:
