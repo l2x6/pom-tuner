@@ -221,4 +221,5 @@ public abstract class AbstractSetTest<T> {
             containsGav(true, set, "org.group1", "artifact2", "2.3.4");
         }
     }
+
 }

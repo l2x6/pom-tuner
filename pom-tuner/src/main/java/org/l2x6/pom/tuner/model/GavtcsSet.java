@@ -463,13 +463,17 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
             }
 
             /**
-             * Include a single GAV pattern.
+             * Exclude the specified GAVTCS pattern if it starts with {@code !}; include it otherwise.
              *
              * @param  rawPattern
              * @return            this {@link Builder}
              */
             public Builder include(String rawPattern) {
-                this.includes.add(GavtcsPattern.of(rawPattern));
+                if (rawPattern.startsWith("!")) {
+                    this.excludes.add(GavtcsPattern.of(rawPattern.substring(1)));
+                } else {
+                    this.includes.add(GavtcsPattern.of(rawPattern));
+                }
                 return this;
             }
 
@@ -487,15 +491,16 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
             }
 
             /**
-             * Parses the entries of the given {@link Collection} of {@code rawPatterns} and includes those.
+             * For each of the entries of the given GAVTCS patterns: if the entry starts with
+             * {@code !}, remove the first character and exclude the pattern; otherwise include the pattern.
              *
-             * @param  rawPatterns {@link Collection} of GAV patterns to parse via {@link GavtcsPattern#of(String)}
+             * @param  rawPatterns {@link Collection} of GAVTCS patterns some of which may start with the {@code !} exclusion mark
              * @return             this {@link Builder}
              */
             public Builder includes(Collection<String> rawPatterns) {
                 if (rawPatterns != null) {
                     for (String rawPattern : rawPatterns) {
-                        this.includes.add(GavtcsPattern.of(rawPattern));
+                        include(rawPattern);
                     }
                 }
                 return this;
@@ -536,31 +541,34 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
             }
 
             /**
+             * For each of the entries of the given GAVTCS patterns array: if the entry starts with
+             * {@code !}, remove the first character and exclude the pattern; otherwise include the pattern.
              * Parses the entries of the given array of {@code rawPatterns} and includes those.
              *
-             * @param  rawPatterns a list of GAV patterns to parse via {@link GavtcsPattern#of(String)}
+             * @param  rawPatterns a list of GAVTCS patterns some of which may start with the {@code !} exclusion mark
              * @return             this {@link Builder}
              */
             public Builder includes(String... rawPatterns) {
                 if (rawPatterns != null) {
                     for (String rawPattern : rawPatterns) {
-                        this.includes.add(GavtcsPattern.of(rawPattern));
+                        include(rawPattern);
                     }
                 }
                 return this;
             }
 
             /**
-             * Parses the given comma or whitespace separated list of {@code rawPatterns} and includes those.
+             * Split the given comma or whitespace separated list of GAVTCS patterns into pattern tokens and
+             * pass each of those to {@link #include(String)}.
              *
-             * @param  rawPatterns a comma separated list of GAV patterns
+             * @param  rawPatterns a comma separated list of GAVTCS patterns some of which may start with the {@code !} exclusion mark
              * @return             this {@link Builder}
              */
             public Builder includes(String rawPatterns) {
                 if (rawPatterns != null) {
                     StringTokenizer st = new StringTokenizer(rawPatterns, ", \t\n\r");
                     while (st.hasMoreTokens()) {
-                        this.includes.add(GavtcsPattern.of(st.nextToken()));
+                        include(st.nextToken());
                     }
                 }
                 return this;
