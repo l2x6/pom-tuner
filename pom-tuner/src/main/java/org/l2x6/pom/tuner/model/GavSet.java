@@ -388,13 +388,17 @@ public interface GavSet extends Predicate<Gav> {
             }
 
             /**
-             * Include a single GAV pattern.
+             * Exclude the specified GAV pattern if it starts with {@code !}; include it otherwise.
              *
-             * @param  rawPattern
+             * @param  rawPattern a GAV pattern possibly starting with {@code !} exclusion mark
              * @return            this {@link Builder}
              */
             public Builder include(String rawPattern) {
-                this.includes.add(GavPattern.of(rawPattern));
+                if (rawPattern.startsWith("!")) {
+                    this.excludes.add(GavPattern.of(rawPattern.substring(1)));
+                } else {
+                    this.includes.add(GavPattern.of(rawPattern));
+                }
                 return this;
             }
 
@@ -412,15 +416,16 @@ public interface GavSet extends Predicate<Gav> {
             }
 
             /**
-             * Parses the entries of the given {@link Collection} of {@code rawPatterns} and includes those.
+             * For each of the entries of the given GAV patterns: if the entry starts with
+             * {@code !}, remove the first character and exclude the pattern; otherwise include the pattern.
              *
-             * @param  rawPatterns {@link Collection} of GAV patterns to parse via {@link GavPattern#of(String)}
+             * @param  rawPatterns {@link Collection} of GAV patterns some of which may start with the {@code !} exclusion mark
              * @return             this {@link Builder}
              */
             public Builder includes(Collection<String> rawPatterns) {
                 if (rawPatterns != null) {
                     for (String rawPattern : rawPatterns) {
-                        this.includes.add(GavPattern.of(rawPattern));
+                        include(rawPattern);
                     }
                 }
                 return this;
@@ -446,7 +451,7 @@ public interface GavSet extends Predicate<Gav> {
             /**
              * Includes the given {@code patterns}.
              *
-             * @param  patterns {@link Collection} of GAV patterns to parse via {@link GavPattern#of(String)}
+             * @param  patterns {@link Collection} of GAV patterns to include
              * @return          this {@link Builder}
              *
              * @since           4.7.0
@@ -461,36 +466,38 @@ public interface GavSet extends Predicate<Gav> {
             }
 
             /**
-             * Parses the given comma or whitespace separated list of {@code rawPatterns} and includes those.
+             * For each of the entries of the given GAV patterns array: if the entry starts with
+             * {@code !}, remove the first character and exclude the pattern; otherwise include the pattern.
+             * Parses the entries of the given array of {@code rawPatterns} and includes those.
              *
-             * @param  rawPatterns a comma separated list of GAV patterns
+             * @param  rawPatterns a list of GAV patterns some of which may start with the {@code !} exclusion mark
              * @return             this {@link Builder}
              */
-            public Builder includes(String rawPatterns) {
+            public Builder includes(String... rawPatterns) {
                 if (rawPatterns != null) {
-                    StringTokenizer st = new StringTokenizer(rawPatterns, ", \t\n\r");
-                    while (st.hasMoreTokens()) {
-                        this.includes.add(GavPattern.of(st.nextToken()));
+                    for (String rawPattern : rawPatterns) {
+                        include(rawPattern);
                     }
                 }
                 return this;
             }
 
             /**
-             * Parses the entries of the given array of {@code rawPatterns} and includes those.
+             * Split the given comma or whitespace separated list of GAV patterns into pattern tokens and
+             * pass each of those to {@link #include(String)}.
              *
-             * @param  rawPatterns a list of GAV patterns to parse via {@link GavPattern#of(String)}
+             * @param  rawPatterns a comma separated list of GAV patterns some of which may start with the {@code !} exclusion mark
              * @return             this {@link Builder}
              */
-            public Builder includes(String... rawPatterns) {
+            public Builder includes(String rawPatterns) {
                 if (rawPatterns != null) {
-                    for (String rawPattern : rawPatterns) {
-                        this.includes.add(GavPattern.of(rawPattern));
+                    StringTokenizer st = new StringTokenizer(rawPatterns, ", \t\n\r");
+                    while (st.hasMoreTokens()) {
+                        include(st.nextToken());
                     }
                 }
                 return this;
             }
-
         }
 
         private static final List<GavPattern> EMPTY_LIST = Collections.emptyList();

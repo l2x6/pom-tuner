@@ -53,6 +53,16 @@ public class GavSetTest extends AbstractSetTest<GavSet> {
             result.add(b.build());
         }
 
+        /* Exclusion mark */
+        final List<String> exclIncludes = Stream.concat(Stream.of(includes), Stream.of(excludes).map(e -> "!" + e))
+                .collect(Collectors.toList());
+        result.add(GavSet.builder().includes(exclIncludes).build());
+        result.add(GavSet.builder().includes(exclIncludes.toArray(new String[0])).build());
+        result.add(GavSet.builder().includes(exclIncludes.stream().collect(Collectors.joining(","))).build());
+        Builder b = GavSet.builder();
+        exclIncludes.forEach(b::include);
+        result.add(b.build());
+
         return result;
     }
 
