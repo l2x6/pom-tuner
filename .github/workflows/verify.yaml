@@ -46,7 +46,7 @@ jobs:
         run: ./mvnw install -e -B -V -ntp
 
       - name: Upload ~/.m2/repository
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: local-maven-repo-${{ github.sha }}
           path: ~/.m2/repository
