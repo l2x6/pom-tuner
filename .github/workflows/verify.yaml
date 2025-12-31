@@ -85,7 +85,7 @@ jobs:
           echo "steps.maven-m2.outputs.repo=${{ steps.maven-m2.outputs.repo }}"
 
       - name: Download ~/.m2/repository
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: local-maven-repo-${{ github.sha }}
           path: ${{ steps.maven-m2.outputs.repo }}
