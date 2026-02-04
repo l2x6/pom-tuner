@@ -47,17 +47,17 @@ public class Ga implements Comparable<Ga> {
     public static Ga of(String gavString) {
         StringTokenizer st = new StringTokenizer(gavString, ":");
         if (!st.hasMoreTokens()) {
-            throw new IllegalStateException("Cannot parse '" + gavString + " to a " + Ga.class.getName()
+            throw new IllegalStateException("Cannot parse '" + gavString + "' to a " + Ga.class.getName()
                     + "; expected '<groupId>:<artifactId>', found too little segments");
         } else {
             final String g = st.nextToken();
             if (!st.hasMoreTokens()) {
-                throw new IllegalStateException("Cannot parse '" + gavString + " to a " + Ga.class.getName()
+                throw new IllegalStateException("Cannot parse '" + gavString + "' to a " + Ga.class.getName()
                         + "; expected '<groupId>:<artifactId>', found too little segments");
             } else {
                 final String a = st.nextToken();
                 if (st.hasMoreTokens()) {
-                    throw new IllegalStateException("Cannot parse '" + gavString + " to a " + Ga.class.getName()
+                    throw new IllegalStateException("Cannot parse '" + gavString + "' to a " + Ga.class.getName()
                             + "; expected '<groupId>:<artifactId>', found too many segments");
                 }
                 return new Ga(g, a);

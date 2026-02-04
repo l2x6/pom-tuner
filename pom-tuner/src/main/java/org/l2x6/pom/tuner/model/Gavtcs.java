@@ -119,11 +119,11 @@ public class Gavtcs {
     public static Gavtcs of(String rawGavtcs) {
         String[] gavtcArr = rawGavtcs.split(":");
         if (gavtcArr.length < 3) {
-            throw new IllegalStateException("Cannot parse '" + rawGavtcs + " to a " + Gavtc.class.getName()
+            throw new IllegalStateException("Cannot parse '" + rawGavtcs + "' to a " + Gavtc.class.getName()
                     + "; expected '<groupId>:<artifactId>:<version>[:<type>[:<classifier>[:<scope>]]]', found too little segments");
         }
         if (gavtcArr.length > 6) {
-            throw new IllegalStateException("Cannot parse '" + rawGavtcs + " to a " + Gavtc.class.getName()
+            throw new IllegalStateException("Cannot parse '" + rawGavtcs + "' to a " + Gavtc.class.getName()
                     + "; expected '<groupId>:<artifactId>:<version>[:<type>[:<classifier>[:<scope>]]]', found too many segments");
         }
         int i = 0;
