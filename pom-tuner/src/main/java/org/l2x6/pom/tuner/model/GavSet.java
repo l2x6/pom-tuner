@@ -486,7 +486,8 @@ public interface GavSet extends Predicate<Gav> {
              * Split the given comma or whitespace separated list of GAV patterns into pattern tokens and
              * pass each of those to {@link #include(String)}.
              *
-             * @param  rawPatterns a comma separated list of GAV patterns some of which may start with the {@code !} exclusion mark
+             * @param  rawPatterns a comma separated list of GAV patterns some of which may start with the {@code !} exclusion
+             *                     mark
              * @return             this {@link Builder}
              */
             public Builder includes(String rawPatterns) {

@@ -16,16 +16,18 @@
  */
 package org.l2x6.pom.tuner.model;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.io.Writer;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.function.Predicate;
 import org.l2x6.pom.tuner.Comparators;
 
 /**
  * A Maven artifact defined by {@code groupId}, {@code artifactId}, {@code version}, {@code type} and
  * {@code classifier}.
  *
- * @since 4.8.0
+ * @since  4.8.0
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public class Gavtc {
@@ -49,12 +51,14 @@ public class Gavtc {
             .thenComparing(Gavtc::getClassifier, SAFE_STRING_COMPARATOR);
 
     /**
-     * Parse the given {@code <groupId>:<artifactId>:<version>[:<type>[:<classifier>]]} {@code rawGavtcs} and return a new {@link Gavtc} instance.
-     * @param rawGavtcs the string to parse
-     * @return a new {@link Gavtc} instance
+     * Parse the given {@code <groupId>:<artifactId>:<version>[:<type>[:<classifier>]]} {@code rawGavtcs} and return a new
+     * {@link Gavtc} instance.
+     *
+     * @param  rawGavtcs             the string to parse
+     * @return                       a new {@link Gavtc} instance
      * @throws IllegalStateException on any parse errors
      *
-     * @since 4.8.0
+     * @since                        4.8.0
      */
     public static Gavtc of(String rawGavtcs) {
         String[] gavtcArr = rawGavtcs.split(":");
@@ -77,16 +81,17 @@ public class Gavtc {
 
     /**
      * @return a {@link Comparator} that compares on {@link #getGroupId()}, {@link #getArtifactId()}, {@link #getVersion()},
-     * {@link #getType()} and {@link #getClassifier()} respectively.
+     *         {@link #getType()} and {@link #getClassifier()} respectively.
      *
-     * @see #typeFirstComparator()
+     * @see    #typeFirstComparator()
      */
     public static Comparator<Gavtc> groupFirstComparator() {
         return GROUP_FIRST_COMPARATOR;
     }
 
     /**
-     * @return a {@link Comparator} that compares on {@link #getType()}, {@link #getGroupId()}, {@link #getArtifactId()}, {@link #getVersion()} and {@link #getClassifier()} respectively.
+     * @return a {@link Comparator} that compares on {@link #getType()}, {@link #getGroupId()}, {@link #getArtifactId()},
+     *         {@link #getVersion()} and {@link #getClassifier()} respectively.
      */
     public static Comparator<Gavtc> typeFirstComparator() {
         return TYPE_FIRST_COMPARATOR;
@@ -127,10 +132,11 @@ public class Gavtc {
         h = 31 * h + ((useType == null) ? 0 : useType.hashCode());
         this.hashCode = h;
     }
+
     /**
      * @return the {@code groupId}, never {@code null}
      *
-     * @since 4.8.0
+     * @since  4.8.0
      */
     public String getGroupId() {
         return gav.getGroupId();
@@ -139,7 +145,7 @@ public class Gavtc {
     /**
      * @return the {@code artifactId}, never {@code null}
      *
-     * @since 4.8.0
+     * @since  4.8.0
      */
     public String getArtifactId() {
         return gav.getArtifactId();
@@ -148,7 +154,7 @@ public class Gavtc {
     /**
      * @return the version of this {@link Gav} or {@code null} if the version is unknown
      *
-     * @since 4.8.0
+     * @since  4.8.0
      */
     public String getVersion() {
         return gav.getVersion();
@@ -157,7 +163,7 @@ public class Gavtc {
     /**
      * @return the artifact type (sometimes called extension), such as `pom`, `jar`, `war`, etc.
      *
-     * @since 4.8.0
+     * @since  4.8.0
      */
     public String getType() {
         return type;
@@ -166,7 +172,7 @@ public class Gavtc {
     /**
      * @return the classifier or {@code null} (rather than empty string) if it was not set
      *
-     * @since 4.8.0
+     * @since  4.8.0
      */
     public String getClassifier() {
         return classifier;
@@ -181,10 +187,10 @@ public class Gavtc {
      * Append {@code <groupId>:<artifactId>:<version>:<type>:<classifier>} to the given {@link StringBuilder} and return it.
      * The {@link #classifier} is only appended if it is not {@code null}.
      *
-     * @param stringBuilder the {@link StringBuilder} to append to
-     * @return the passed-in {@link StringBuilder}
+     * @param  stringBuilder the {@link StringBuilder} to append to
+     * @return               the passed-in {@link StringBuilder}
      *
-     * @since 4.8.0
+     * @since                4.8.0
      */
     public StringBuilder toString(StringBuilder stringBuilder) {
         gav.toString(stringBuilder);
@@ -238,7 +244,7 @@ public class Gavtc {
     /**
      * @return the embedded {@link Ga} instance, shorthand for {@link #toGav()}.{@link Gav#toGa()}
      *
-     * @since 4.8.0
+     * @since  4.8.0
      */
     public Ga toGa() {
         return gav.toGa();
@@ -247,41 +253,78 @@ public class Gavtc {
     /**
      * @return the embedded {@link Gav} instance
      *
-     * @since 4.8.0
+     * @since  4.8.0
      */
     public Gav toGav() {
         return gav;
     }
 
     /**
-     * @param scope
-     * @return new {@link Gavtcs} embedding this {@link Gavtc} and having the given {@code scope}.
+     * @param  scope
+     * @return       new {@link Gavtcs} embedding this {@link Gavtc} and having the given {@code scope}.
      *
-     * @since 4.8.0
+     * @since        4.8.0
      */
     public Gavtcs toGavtcs(String scope) {
         return new Gavtcs(this, scope);
     }
 
     /**
-     * @param scope
-     * @return new {@link Gavtcs} embedding this {@link Gavtc} and having the given {@code scope} and {@code exclusion}
+     * @param  scope
+     * @return       new {@link Gavtcs} embedding this {@link Gavtc} and having the given {@code scope} and
+     *               {@code exclusion}
      *
-     * @since 4.8.0
+     * @since        4.8.0
      */
     public Gavtcs toGavtcs(String scope, Ga exclusion) {
         return new Gavtcs(this, scope, exclusion);
     }
 
     /**
-     * @param scope
-     * @param exclusions
-     * @return new {@link Gavtcs} embedding this {@link Gavtc} and having the given {@code scope} and {@code exclusions}
+     * @param  scope
+     * @param  exclusions
+     * @return            new {@link Gavtcs} embedding this {@link Gavtc} and having the given {@code scope} and
+     *                    {@code exclusions}
      *
-     * @since 4.8.0
+     * @since             4.8.0
      */
     public Gavtcs toGavtcs(String scope, Collection<Ga> exclusions) {
         return new Gavtcs(this, scope, exclusions);
     }
 
+    /**
+     * @return a {@code /}-separated path that, when resolved against a local Maven repository root directory
+     *         (such as {@code ~/.m2/repository} or base URL (such as {@code https://repo1.maven.org/maven2}) can be used
+     *         to access the artifact associated with this {@link Gavtc}.
+     * @since  4.10.0
+     */
+    public String getRepositoryPath() {
+        return appendRepositoryPath(new StringBuilder()).toString();
+    }
+
+    /**
+     * Append a {@code /}-separated path to the given {@link Appendable} that, when resolved against a local Maven
+     * repository root directory (such as {@code ~/.m2/repository} or base URL (such as
+     * {@code https://repo1.maven.org/maven2}), can be used to access the artifact associated with this {@link Gavtc}.
+     *
+     * @param  <T>                  a subtype of {@link Appendable}
+     * @param  appendable           typically a {@link StringBuilder} or {@link Writer} to append to
+     * @return                      the {@code stringBuilder} with the path appended
+     * @throws UncheckedIOException in case {@link Appendable#append(CharSequence)} throws an {@link IOException}
+     * @since                       4.10.0
+     */
+    public <T extends Appendable> T appendRepositoryPath(T stringBuilder) {
+        gav.appendRepositoryPath(stringBuilder);
+        try {
+            stringBuilder.append('/').append(gav.getArtifactId())
+                    .append("-").append(gav.getVersion());
+            if (classifier != null && !classifier.isEmpty()) {
+                stringBuilder.append('-').append(classifier);
+            }
+            stringBuilder.append('.').append(nullOrEmptyToDefault(type));
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return stringBuilder;
+    }
 }

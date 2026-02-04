@@ -173,7 +173,7 @@ public class Gavtcs {
      * @param gavtc
      * @param scope
      *
-     * @since 4.8.0
+     * @since       4.8.0
      */
     public Gavtcs(Gavtc gavtc, String scope) {
         this.gavtc = gavtc;
@@ -187,7 +187,7 @@ public class Gavtcs {
      * @param scope
      * @param exclusion
      *
-     * @since 4.8.0
+     * @since           4.8.0
      */
     public Gavtcs(Gavtc gavtc, String scope, Ga exclusion) {
         this.gavtc = gavtc;
@@ -213,7 +213,7 @@ public class Gavtcs {
      * @param scope
      * @param exclusions
      *
-     * @since 4.8.0
+     * @since            4.8.0
      */
     public Gavtcs(Gavtc gavtc, String scope, Collection<Ga> exclusions) {
         super();
@@ -287,10 +287,10 @@ public class Gavtcs {
     /**
      * Append {@code <groupId>:<artifactId>} to the given {@link StringBuilder} and return it.
      *
-     * @param stringBuilder the {@link StringBuilder} to append to
-     * @return the passed-in {@link StringBuilder}
+     * @param  stringBuilder the {@link StringBuilder} to append to
+     * @return               the passed-in {@link StringBuilder}
      *
-     * @since 4.8.0
+     * @since                4.8.0
      */
     public StringBuilder toString(StringBuilder stringBuilder) {
         toGavtc().toGav().toString(stringBuilder);
@@ -371,7 +371,7 @@ public class Gavtcs {
     /**
      * @return the embedded {@link Gavtc} instance
      *
-     * @since 4.8.0
+     * @since  4.8.0
      */
     public Gavtc toGavtc() {
         return gavtc;

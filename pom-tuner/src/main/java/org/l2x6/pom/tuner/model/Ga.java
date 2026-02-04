@@ -16,6 +16,9 @@
  */
 package org.l2x6.pom.tuner.model;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.io.Writer;
 import java.util.Objects;
 import java.util.StringTokenizer;
 
@@ -125,17 +128,17 @@ public class Ga implements Comparable<Ga> {
     /**
      * Append {@code <groupId>:<artifactId>} to the given {@link StringBuilder} and return it.
      *
-     * @param stringBuilder the {@link StringBuilder} to append to
-     * @return the passed-in {@link StringBuilder}
+     * @param  stringBuilder the {@link StringBuilder} to append to
+     * @return               the passed-in {@link StringBuilder}
      *
-     * @since 4.8.0
+     * @since                4.8.0
      */
     public StringBuilder toString(StringBuilder stringBuilder) {
         return stringBuilder.append(groupId).append(':').append(artifactId);
     }
 
     /**
-     * @return {@link #EXCELUDE_ALL}
+     * @return     {@link #EXCELUDE_ALL}
      * @deprecated use {@link GavPattern}
      */
     @Deprecated
@@ -144,12 +147,47 @@ public class Ga implements Comparable<Ga> {
     }
 
     /**
-     * @param version the version of this {@link Gav} or {@code null} if the version is unknown; an empty string is transformed to {@code null}
-     * @return new {@link Gav} embedding this {@link Ga} and having the given {@code version}.
+     * @param  version the version of this {@link Gav} or {@code null} if the version is unknown; an empty string is
+     *                 transformed to {@code null}
+     * @return         new {@link Gav} embedding this {@link Ga} and having the given {@code version}.
      *
-     * @since 4.8.0
+     * @since          4.8.0
      */
     public Gav toGav(String version) {
         return new Gav(this, version);
+    }
+
+    /**
+     * @return a {@code /}-separated path that, when resolved against a local Maven repository root directory
+     *         (such as {@code ~/.m2/repository} or base URL (such as {@code https://repo1.maven.org/maven2}) can be used
+     *         to access the versions of this {@link Ga}.
+     * @since  4.10.0
+     */
+    public String getRepositoryPath() {
+        return appendRepositoryPath(new StringBuilder()).toString();
+    }
+
+    /**
+     * Append a {@code /}-separated path to the given {@link Appendable} that, when resolved against a local Maven
+     * repository root directory (such as {@code ~/.m2/repository} or base URL (such as
+     * {@code https://repo1.maven.org/maven2}), can be used to access the versions of this {@link Ga}.
+     *
+     * @param  <T>                  a subtype of {@link Appendable}
+     * @param  appendable           typically a {@link StringBuilder} or {@link Writer} to append to
+     * @return                      the {@code stringBuilder} with the path appended
+     * @throws UncheckedIOException in case {@link Appendable#append(CharSequence)} throws an {@link IOException}
+     * @since                       4.10.0
+     */
+    public <T extends Appendable> T appendRepositoryPath(T appendable) {
+        try {
+            StringTokenizer st = new StringTokenizer(groupId, ".");
+            while (st.hasMoreTokens()) {
+                appendable.append(st.nextToken()).append('/');
+            }
+            appendable.append(artifactId);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return appendable;
     }
 }

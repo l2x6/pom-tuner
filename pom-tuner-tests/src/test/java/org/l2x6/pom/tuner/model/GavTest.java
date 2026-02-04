@@ -76,4 +76,11 @@ public class GavTest {
         Assertions.assertThat(new Gav("h", "a", "1").compareTo(new Gav("g", "a", "1"))).isEqualTo(1);
 
     }
+
+    @Test
+    void getRepositoryPath() {
+        Assertions.assertThat(Gav.of("org.foo:bar:1.2.3").getRepositoryPath()).isEqualTo("org/foo/bar/1.2.3");
+        Assertions.assertThat(Gav.of("foo:bar:1.2.3").getRepositoryPath()).isEqualTo("foo/bar/1.2.3");
+    }
+
 }
