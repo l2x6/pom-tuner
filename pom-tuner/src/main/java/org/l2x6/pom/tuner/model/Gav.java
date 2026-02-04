@@ -46,22 +46,22 @@ public class Gav implements Comparable<Gav> {
     public static Gav of(String gavString) {
         StringTokenizer st = new StringTokenizer(gavString, ":");
         if (!st.hasMoreTokens()) {
-            throw new IllegalStateException("Cannot parse '" + gavString + " to a " + Gav.class.getName()
+            throw new IllegalStateException("Cannot parse '" + gavString + "' to a " + Gav.class.getName()
                     + "; expected '<groupId>:<artifactId>:<version>', found too little segments");
         } else {
             final String g = st.nextToken();
             if (!st.hasMoreTokens()) {
-                throw new IllegalStateException("Cannot parse '" + gavString + " to a " + Gav.class.getName()
+                throw new IllegalStateException("Cannot parse '" + gavString + "' to a " + Gav.class.getName()
                         + "; expected '<groupId>:<artifactId>:<version>', found too little segments");
             } else {
                 final String a = st.nextToken();
                 if (!st.hasMoreTokens()) {
-                    throw new IllegalStateException("Cannot parse '" + gavString + " to a " + Gav.class.getName()
+                    throw new IllegalStateException("Cannot parse '" + gavString + "' to a " + Gav.class.getName()
                             + "; expected '<groupId>:<artifactId>:<version>', found too little segments");
                 } else {
                     final String v = st.nextToken();
                     if (st.hasMoreTokens()) {
-                        throw new IllegalStateException("Cannot parse '" + gavString + " to a " + Gav.class.getName()
+                        throw new IllegalStateException("Cannot parse '" + gavString + "' to a " + Gav.class.getName()
                                 + "; expected '<groupId>:<artifactId>:<version>', found too many segments");
                     }
                     return new Gav(g, a, v);
