@@ -362,7 +362,8 @@ public class GavtcsPattern implements Serializable, Comparable<GavtcsPattern>, P
     }
 
     /**
-     * Matches the given {@code groupId}, {@code artifactId}, {@code version}, {@code type}, {@code classifier} pentuple against this {@link GavtcsPattern}.
+     * Matches the given {@code groupId}, {@code artifactId}, {@code version}, {@code type}, {@code classifier} pentuple
+     * against this {@link GavtcsPattern}.
      *
      * @param  groupId
      * @param  artifactId

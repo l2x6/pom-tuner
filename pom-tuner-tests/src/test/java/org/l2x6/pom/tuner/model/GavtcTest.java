@@ -53,4 +53,12 @@ public class GavtcTest {
         Assertions.assertThat(new Gavtc("g", "a", "v", "t", "c").toString()).isEqualTo("g:a:v:t:c");
     }
 
+    @Test
+    void getRepositoryPath() {
+        Assertions.assertThat(Gavtc.of("org.foo:bar:1.2.3").getRepositoryPath()).isEqualTo("org/foo/bar/1.2.3/bar-1.2.3.jar");
+        Assertions.assertThat(Gavtc.of("org.foo:bar:1.2.3:pom").getRepositoryPath())
+                .isEqualTo("org/foo/bar/1.2.3/bar-1.2.3.pom");
+        Assertions.assertThat(Gavtc.of("org.foo:bar:1.2.3:jar:javadoc").getRepositoryPath())
+                .isEqualTo("org/foo/bar/1.2.3/bar-1.2.3-javadoc.jar");
+    }
 }

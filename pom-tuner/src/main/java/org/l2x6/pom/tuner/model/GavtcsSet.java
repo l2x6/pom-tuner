@@ -140,13 +140,14 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
     boolean contains(String groupId, String artifactId, String version, String type, String classifier);
 
     /**
-     * Shorthand for {@code contains(gavtc.getGrooupId(), gavtc.getArtifactId(), gavtc.getVersion(), gavtc.getType(), gavtc.getClassifier())}.
+     * Shorthand for
+     * {@code contains(gavtc.getGrooupId(), gavtc.getArtifactId(), gavtc.getVersion(), gavtc.getType(), gavtc.getClassifier())}.
      *
      * @param  gavtc the {@link Gavtc} to check for membership in this gavtcsSet
-     * @return        {@code true} if the given {@link Gavtc} is a member of this {@link GavtcsSet} and {@code false}
-     *                otherwise
+     * @return       {@code true} if the given {@link Gavtc} is a member of this {@link GavtcsSet} and {@code false}
+     *               otherwise
      *
-     * @since         4.8.0
+     * @since        4.8.0
      */
     default boolean contains(Gavtc gavtc) {
         return contains(gavtc.getGroupId(), gavtc.getArtifactId(), gavtc.getVersion(), gavtc.getType(),
@@ -184,7 +185,8 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
     boolean contains(String groupId, String artifactId, String version, String type, String classifier, String scope);
 
     /**
-     * Shorthand for {@code contains(gavtcs.getGrooupId(), gavtcs.getArtifactId(), gavtcs.getVersion(), gavtcs.getType(), gavtcs.getClassifier(), gavtcs.getScope())}.
+     * Shorthand for
+     * {@code contains(gavtcs.getGrooupId(), gavtcs.getArtifactId(), gavtcs.getVersion(), gavtcs.getType(), gavtcs.getClassifier(), gavtcs.getScope())}.
      *
      * @param  gavtcs {@link Gavtcs} to check for membership in this gavtcsSet
      * @return        {@code true} if the given {@link Gavtcs} is a member of this {@link GavtcsSet} and {@code false}
@@ -240,7 +242,8 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
 
         @Override
         public boolean contains(String groupId, String artifactId, String version, String type, String classifier) {
-            return gavtcsSets.stream().anyMatch(gavtcsSet -> gavtcsSet.contains(groupId, artifactId, version, type, classifier));
+            return gavtcsSets.stream()
+                    .anyMatch(gavtcsSet -> gavtcsSet.contains(groupId, artifactId, version, type, classifier));
         }
 
         @Override
@@ -494,7 +497,8 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
              * For each of the entries of the given GAVTCS patterns: if the entry starts with
              * {@code !}, remove the first character and exclude the pattern; otherwise include the pattern.
              *
-             * @param  rawPatterns {@link Collection} of GAVTCS patterns some of which may start with the {@code !} exclusion mark
+             * @param  rawPatterns {@link Collection} of GAVTCS patterns some of which may start with the {@code !} exclusion
+             *                     mark
              * @return             this {@link Builder}
              */
             public Builder includes(Collection<String> rawPatterns) {
@@ -561,7 +565,8 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
              * Split the given comma or whitespace separated list of GAVTCS patterns into pattern tokens and
              * pass each of those to {@link #include(String)}.
              *
-             * @param  rawPatterns a comma separated list of GAVTCS patterns some of which may start with the {@code !} exclusion mark
+             * @param  rawPatterns a comma separated list of GAVTCS patterns some of which may start with the {@code !}
+             *                     exclusion mark
              * @return             this {@link Builder}
              */
             public Builder includes(String rawPatterns) {
@@ -616,7 +621,8 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
             return false;
         }
 
-        private static boolean matches(String groupId, String artifactId, String version, String type, String classifier, List<GavtcsPattern> patterns) {
+        private static boolean matches(String groupId, String artifactId, String version, String type, String classifier,
+                List<GavtcsPattern> patterns) {
             for (GavtcsPattern pattern : patterns) {
                 if (pattern.matches(groupId, artifactId, version, type, classifier)) {
                     return true;

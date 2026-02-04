@@ -60,4 +60,10 @@ public class GaTest {
         Assertions.assertThat(new Ga("h", "a").compareTo(new Ga("g", "a"))).isEqualTo(1);
     }
 
+    @Test
+    void getRepositoryPath() {
+        Assertions.assertThat(Ga.of("org.foo:bar").getRepositoryPath()).isEqualTo("org/foo/bar");
+        Assertions.assertThat(Ga.of("foo:bar").getRepositoryPath()).isEqualTo("foo/bar");
+    }
+
 }
