@@ -39,22 +39,22 @@ public class Comparators {
                 .comparing(Map.Entry::getValue, SAFE_STRING_COMPARATOR);
     }
 
-    public static <T extends TextElement> Comparator<T> textContent() {
+    public static Comparator<Map.Entry<String, String>> textContent() {
         return textContent(SAFE_STRING_COMPARATOR);
     }
 
-    public static <T extends TextElement> Comparator<T> textContent(Comparator<String> textContentComparator) {
+    public static Comparator<Map.Entry<String, String>> textContent(Comparator<String> textContentComparator) {
         return Comparator
-                .comparing(TextElement::getTextContent, textContentComparator);
+                .comparing(Map.Entry::getValue, textContentComparator);
     }
 
-    public static <T extends TextElement> Comparator<T> elementName() {
+    public static Comparator<Map.Entry<String, String>> elementName() {
         return elementName(SAFE_STRING_COMPARATOR);
     }
 
-    public static <T extends TextElement> Comparator<T> elementName(Comparator<String> nodeNameComparator) {
+    public static Comparator<Map.Entry<String, String>> elementName(Comparator<String> nodeNameComparator) {
         return Comparator
-                .comparing(TextElement::getElementName, nodeNameComparator);
+                .comparing(Map.Entry::getKey, nodeNameComparator);
     }
 
     public static Comparator<Map.Entry<String, String>> entryKeyValue() {

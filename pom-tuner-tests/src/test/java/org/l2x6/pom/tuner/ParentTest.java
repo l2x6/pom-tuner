@@ -3,21 +3,11 @@ package org.l2x6.pom.tuner;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
-import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
-import org.l2x6.pom.tuner.model.Gav;
-import org.l2x6.pom.tuner.model.Gavtcs;
-import org.l2x6.pom.tuner.transform.api.ProfileId;
-import org.l2x6.pom.tuner.transform.dependencies;
 import org.l2x6.pom.tuner.transform.parent;
-import org.l2x6.pom.tuner.transform.dependencies;
-import org.l2x6.pom.tuner.transform.properties;
 
 public class ParentTest {
 
@@ -63,7 +53,6 @@ public class ParentTest {
                 parent.set("org.foo", "foo", "0.2-SNAPSHOT", "../../pom.xml")), expected);
     }
 
-
     @Test
     void setGav() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
@@ -105,7 +94,6 @@ public class ParentTest {
         assertTransformation(source, Arrays.asList(
                 parent.set("org.foo", "foo", "0.2-SNAPSHOT")), expected);
     }
-
 
     @Test
     void setParent() {
@@ -190,7 +178,6 @@ public class ParentTest {
         assertTransformation(source, Arrays.asList(
                 parent.setArtifactId("foo")), expected);
     }
-
 
     @Test
     void setVersion() {
@@ -351,6 +338,7 @@ public class ParentTest {
         assertTransformation(source, Arrays.asList(
                 parent.remove()), expected);
     }
+
     static void assertTransformation(String src, Collection<Transformer> transformations, String expected) {
         PomTransformer.transform(transformations, SimpleElementWhitespace.EMPTY, Paths.get("pom.xml"),
                 () -> src, xml -> Assertions.assertThat(xml).isEqualTo(expected));

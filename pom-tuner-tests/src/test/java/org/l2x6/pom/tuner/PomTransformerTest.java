@@ -29,7 +29,6 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.xml.transform.TransformerConfigurationException;
@@ -1603,6 +1602,7 @@ public class PomTransformerTest {
         PomTransformer.transform(transformations, SimpleElementWhitespace.EMPTY, Paths.get("pom.xml"),
                 () -> src, xml -> org.assertj.core.api.Assertions.assertThat(xml).isEqualTo(expected));
     }
+
     static <T extends Transformer> void assertTransformer(String src, Collection<T> transformations, String expected) {
         PomTransformer.transform(transformations, SimpleElementWhitespace.EMPTY, Paths.get("pom.xml"),
                 () -> src, xml -> org.assertj.core.api.Assertions.assertThat(xml).isEqualTo(expected));
@@ -3714,23 +3714,22 @@ public class PomTransformerTest {
                 + "\n" //
                 + "</project>\n";
         {
-            Path pomXml = Paths.get("target/"+ UUID.randomUUID() + ".pom.xml");
+            Path pomXml = Paths.get("target/" + UUID.randomUUID() + ".pom.xml");
             Files.write(pomXml, source.getBytes(StandardCharsets.UTF_8));
             PomTransformer.of(
                     parent.set("org.foo", "foo", "0.2-SNAPSHOT"))
-            .transform(pomXml);
+                    .transform(pomXml);
             org.assertj.core.api.Assertions.assertThat(pomXml).content(StandardCharsets.UTF_8).isEqualTo(expected);
         }
         {
-            Path pomXml = Paths.get("target/"+ UUID.randomUUID() + ".pom.xml");
+            Path pomXml = Paths.get("target/" + UUID.randomUUID() + ".pom.xml");
             Files.write(pomXml, source.getBytes(StandardCharsets.UTF_8));
             PomTransformer.of(
                     Arrays.asList(parent.set("org.foo", "foo", "0.2-SNAPSHOT")))
-            .transform(pomXml);
+                    .transform(pomXml);
             org.assertj.core.api.Assertions.assertThat(pomXml).content(StandardCharsets.UTF_8).isEqualTo(expected);
         }
     }
-
 
     @Test
     void setVersion() throws IOException {
@@ -3757,14 +3756,15 @@ public class PomTransformerTest {
                 + "\n" //
                 + "</project>\n";
         {
-            Path pomXml = Paths.get("target/"+ UUID.randomUUID() + ".pom.xml");
+            Path pomXml = Paths.get("target/" + UUID.randomUUID() + ".pom.xml");
             Files.write(pomXml, source.getBytes(StandardCharsets.UTF_8));
             PomTransformer.of(
                     (TransformationContext context) -> context.getProject().addOrSetChildTextElement("version", "0.2-SNAPSHOT"))
-            .transform(pomXml);
+                    .transform(pomXml);
             org.assertj.core.api.Assertions.assertThat(pomXml).content(StandardCharsets.UTF_8).isEqualTo(expected);
         }
     }
+
     public IntStream intStream(int count) {
         return IntStream.range(1, count + 1);
     }

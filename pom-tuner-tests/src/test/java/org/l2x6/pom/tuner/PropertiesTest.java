@@ -5,10 +5,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
-import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.transform.api.ProfileId;
 import org.l2x6.pom.tuner.transform.api.Siblings;
@@ -112,7 +112,7 @@ public class PropertiesTest {
                 + "</project>\n";
         assertTransformation(source, Arrays.asList(
                 properties.set("p3", "v3")
-                        .at(Comparator.comparing(TextElement::getElementName, Comparators.after("p1")))),
+                        .at(Comparator.comparing(Map.Entry::getKey, Comparators.after("p1")))),
                 expected);
     }
 

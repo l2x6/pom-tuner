@@ -434,7 +434,7 @@ public class PomTransformer {
         }
     }
 
-    public static class TextElement {
+    public static class TextElement implements Map.Entry<String, String> {
         protected final TransformationContext context;
         protected final Element node;
         protected final int indentLevel;
@@ -670,6 +670,23 @@ public class PomTransformer {
          */
         public void setTextContent(String text) {
             node.setTextContent(text);
+        }
+
+        @Override
+        public String getKey() {
+            return getElementName();
+        }
+
+        @Override
+        public String getValue() {
+            return getTextContent();
+        }
+
+        @Override
+        public String setValue(String value) {
+            String oldValue = getTextContent();
+            setTextContent(value);
+            return oldValue;
         }
 
     }
@@ -915,7 +932,7 @@ public class PomTransformer {
         }
 
         public TextElement addChildTextElementIfNeeded(String nodeName, String nodeValue,
-                Comparator<TextElement> comparator) {
+                Comparator<Map.Entry<String, String>> comparator) {
             Node refNode = null;
             if (comparator == null) {
                 refNode = getOrAddLastIndent();

@@ -19,6 +19,7 @@ package org.l2x6.pom.tuner.transform.api;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -36,21 +37,21 @@ import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
  */
-public class AddElementTransformer<P extends ContainerElement, T extends TextElement, THIS extends AddElementTransformer<P,T,THIS>> extends AbstractAddTransformer<P, T,T, THIS> {
+public class AddElementTransformer<P extends ContainerElement, T extends TextElement, THIS extends AddElementTransformer<P,T,THIS>> extends AbstractAddTransformer<P, T,Map.Entry<String, String>, THIS> {
 
     AddElementTransformer(
             Function<TransformationContext, ProfileElement> profileSelector,
             Function<ProfileElement, P> profileToParentElement,
-            BiFunction<ContainerElement, Comparator<T>, T> createChild,
-            Comparator<T> comparator,
+            BiFunction<ContainerElement, Comparator<Map.Entry<String, String>>, T> createChild,
+            Comparator<Map.Entry<String, String>> comparator,
             List<Consumer<T>> postprocessors) {
         super(profileSelector, profileToParentElement, createChild, comparator, postprocessors);
     }
 
     public AddElementTransformer(
             Function<ProfileElement, P> profileToParentElement,
-            BiFunction<ContainerElement, Comparator<T>, T> createChild,
-            Comparator<T> comparator) {
+            BiFunction<ContainerElement, Comparator<Map.Entry<String, String>>, T> createChild,
+            Comparator<Map.Entry<String, String>> comparator) {
         this(
                 selectProject(),
                 profileToParentElement,
@@ -102,7 +103,7 @@ public class AddElementTransformer<P extends ContainerElement, T extends TextEle
      * @since           5.0.0
      */
     @SuppressWarnings("unchecked")
-    public THIS at(Comparator<T> position) {
+    public THIS at(Comparator<Map.Entry<String, String>> position) {
         return (THIS) new AddElementTransformer<P, T, THIS>(
                 profileSelector,
                 profileToParentElement,
