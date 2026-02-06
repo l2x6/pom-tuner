@@ -4,19 +4,13 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
-
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
-import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
-import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.transform.api.ProfileId;
 import org.l2x6.pom.tuner.transform.dependencies;
-import org.l2x6.pom.tuner.transform.dependencies;
-import org.l2x6.pom.tuner.transform.properties;
 
 public class DependenciesTest {
 
@@ -399,13 +393,12 @@ public class DependenciesTest {
         assertTransformation(source, Collections.singletonList(
 
                 dependencies.add(new Gavtcs("org.acme", "dep5", "1.2.3"))
-                .profile("profile1")
-                .after(new Gavtcs("org.acme", "dep3", "1.2.3"))
+                        .profile("profile1")
+                        .after(new Gavtcs("org.acme", "dep3", "1.2.3"))
 
         ),
                 expected);
     }
-
 
     @Test
     void remove() {

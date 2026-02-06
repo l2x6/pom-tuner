@@ -10,7 +10,6 @@ import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.transform.api.ProfileId;
-import org.l2x6.pom.tuner.transform.dependencies;
 import org.l2x6.pom.tuner.transform.dependencyManagement;
 
 public class DependencyManagementTest {
@@ -424,12 +423,13 @@ public class DependencyManagementTest {
         assertTransformation(source, Collections.singletonList(
 
                 dependencyManagement.add(new Gavtcs("org.acme", "dep5", "1.2.3"))
-                .profile("profile1")
-                .after(new Gavtcs("org.acme", "dep3", "1.2.3"))
+                        .profile("profile1")
+                        .after(new Gavtcs("org.acme", "dep3", "1.2.3"))
 
         ),
                 expected);
     }
+
     @Test
     void remove() {
         final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //

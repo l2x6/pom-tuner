@@ -11,7 +11,6 @@ import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.transform.api.ProfileId;
 import org.l2x6.pom.tuner.transform.pluginManagement;
-import org.l2x6.pom.tuner.transform.plugins;
 
 public class PluginManagementTest {
 
@@ -454,8 +453,8 @@ public class PluginManagementTest {
         assertTransformation(source, Collections.singletonList(
 
                 pluginManagement.add(new Gavtcs("org.acme", "dep5", "1.2.3"))
-                .profile("profile1")
-                .after(new Gavtcs("org.acme", "dep3", "1.2.3"))
+                        .profile("profile1")
+                        .after(new Gavtcs("org.acme", "dep3", "1.2.3"))
 
         ),
                 expected);

@@ -5,10 +5,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
-import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.transform.api.ProfileId;
 import org.l2x6.pom.tuner.transform.api.Siblings;
@@ -150,7 +150,7 @@ public class ModulesTest {
                 + "</project>\n";
         assertTransformation(source, Arrays.asList(
                 modules.add("module-2")
-                        .at(Comparator.comparing(TextElement::getTextContent, Comparators.after("module-1")))),
+                        .at(Comparator.comparing(Map.Entry::getValue, Comparators.after("module-1")))),
                 expected);
     }
 
