@@ -567,7 +567,7 @@ public class PluginsTest {
                 + "</project>\n";
         assertTransformation(source, Collections.singletonList(
 
-                plugins.remove("org.acme:dep2", "org.acme:dep4").profiles("profile1")
+                plugins.remove("org.acme:dep2", "org.acme:dep4").from("profile1")
 
         ),
                 expected);
@@ -621,7 +621,7 @@ public class PluginsTest {
                 + "</project>\n";
         assertTransformation(source, Collections.singletonList(
 
-                plugins.removeEmptyParent().profiles(ProfileId.all())
+                plugins.removeEmptyParent().from(ProfileId.all())
 
         ),
                 expected);

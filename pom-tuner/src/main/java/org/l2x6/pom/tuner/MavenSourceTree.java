@@ -851,7 +851,7 @@ public class MavenSourceTree {
      * A fast alternative to {@code mvn versions:set -DnewVersion=...}
      *
      * @param newVersion              the new version to set
-     * @param isProfileActive         a {@link Profile} filter, see {@link #profiles(String...)}
+     * @param isProfileActive         a {@link Profile} filter, see {@link #from(String...)}
      * @param simpleElementWhitespace see {@link SimpleElementWhitespace}
      */
     public void setVersions(final String newVersion, final Predicate<Profile> isProfileActive,
@@ -926,7 +926,7 @@ public class MavenSourceTree {
      * {@code remove} set to {@code false}.
      *
      * @param requiredModules         a list of {@code groupId:artifactId}s
-     * @param isProfileActive         a {@link Profile} filter, see {@link #profiles(String...)}
+     * @param isProfileActive         a {@link Profile} filter, see {@link #from(String...)}
      * @param encoding                the encoding for reading and writing pom.xml files
      * @param simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
      * @param commentText             for @{@code commentText} {@code "a comment"} the resulting snippet would look like
@@ -944,7 +944,7 @@ public class MavenSourceTree {
      * {@code <module>} elements from {@code pom.xml} files.
      *
      * @param requiredModules         a list of {@code groupId:artifactId}s that are required to build
-     * @param isProfileActive         a {@link Profile} filter, see {@link #profiles(String...)}
+     * @param isProfileActive         a {@link Profile} filter, see {@link #from(String...)}
      * @param encoding                the encoding for reading and writing pom.xml files
      * @param simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
      * @param remover                 a {@link Function} that takes a {@link Set} of module names (as in

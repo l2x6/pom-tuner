@@ -488,7 +488,7 @@ public class PropertiesTest {
                 + "</project>\n";
         assertTransformation(source, Collections.singletonList(
 
-                properties.remove("p2", "p5").profiles("profile1")
+                properties.remove("p2", "p5").from("profile1")
 
         ),
                 expected);
@@ -548,7 +548,7 @@ public class PropertiesTest {
                 + "</project>\n";
         assertTransformation(source, Collections.singletonList(
 
-                properties.remove("p2", "p5").profilesOnly("profile1")
+                properties.remove("p2", "p5").fromProfilesOnly("profile1")
 
         ),
                 expected);
@@ -603,7 +603,7 @@ public class PropertiesTest {
                 + "</project>\n";
         assertTransformation(source, Collections.singletonList(
 
-                properties.removeEmptyParent().profiles(ProfileId.all())
+                properties.removeEmptyParent().from(ProfileId.all())
 
         ),
                 expected);

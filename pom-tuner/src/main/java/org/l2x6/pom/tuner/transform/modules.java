@@ -16,17 +16,23 @@
  */
 package org.l2x6.pom.tuner.transform;
 
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
+import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.transform.api.AddElementTransformer;
 import org.l2x6.pom.tuner.transform.api.AddGavtcsTransformer;
+import org.l2x6.pom.tuner.transform.api.ElementSet;
 import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 
 /**
@@ -147,5 +153,57 @@ public interface modules {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.containerElementsMapper(ELEMENT_NAME),
                 ((Predicate<ContainerElement>) ContainerElement::hasChildElements).negate());
+    }
+
+    /**
+     * Select some {@code <module>} nodes for modification.
+     * <p>
+     * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     *
+     * @param <THIS> type of this {@link ElementSet}
+     * @param modulePaths a {@link Predicate} selecting modules by their path as present in {@code <module>path</module>}
+     * @return a new {@link ElementSet} having its node selector set as specified
+     * @since  5.0.0
+     */
+    public static <THIS extends ElementSet<TextElement, THIS>> ElementSet<TextElement, THIS> select(Predicate<String> modulePaths) {
+        return new ElementSet<>(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> modulePaths.test(textElement.getTextContent()));
+    }
+
+    /**
+     * Select some {@code <module>} nodes for modification.
+     * <p>
+     * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     *
+     * @param <THIS> type of this {@link ElementSet}
+     * @param modulePaths module paths as present in {@code <module>path</module>} to select for modification
+     * @return a new {@link ElementSet} having its node selector set as specified
+     * @since  5.0.0
+     */
+    public static <THIS extends ElementSet<TextElement, THIS>> ElementSet<TextElement, THIS> select(String... modulePaths) {
+        final Set<String> set;
+        if (modulePaths.length == 0) {
+            set = Collections.emptySet();
+        } else if (modulePaths.length == 1) {
+            set = Collections.singleton(modulePaths[0]);
+        } else {
+            set = new HashSet<>();
+            for (int i = 0; i < modulePaths.length; i++) {
+                set.add(modulePaths[i]);
+            }
+        }
+        return new ElementSet<>(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> set.contains(textElement.getTextContent()));
+    }
+
+    /**
+     * Select all {@code <module>} nodes for modification.
+     * <p>
+     * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     *
+     * @param <THIS> type of this {@link ElementSet}
+     * @return a new {@link ElementSet} having its node selector set as specified
+     * @since  5.0.0
+     */
+    public static <THIS extends ElementSet<TextElement, THIS>> ElementSet<TextElement, THIS> selectAll() {
+        return new ElementSet<>(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> true);
     }
 }
