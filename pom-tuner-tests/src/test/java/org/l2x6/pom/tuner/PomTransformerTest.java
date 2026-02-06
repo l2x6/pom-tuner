@@ -16,7 +16,11 @@
  */
 package org.l2x6.pom.tuner;
 
+import java.io.IOException;
 import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,6 +28,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.UUID;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import javax.xml.transform.TransformerConfigurationException;
@@ -43,8 +49,11 @@ import org.l2x6.pom.tuner.PomTransformer.NodeGavtcs;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
+import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.Gavtcs;
+import org.l2x6.pom.tuner.transform.modules;
+import org.l2x6.pom.tuner.transform.parent;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
@@ -1123,9 +1132,9 @@ public class PomTransformerTest {
                 + "        <module>module-1</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertTransformation(source, Arrays.asList(
+        assertTransformer(source, Arrays.asList(
                 Transformation.removeModule(true, true, "module-2"),
-                Transformation.removeContainerElementIfEmpty(true, true, true, "modules")), expected);
+                modules.removeEmptyParent()), expected);
     }
 
     @Test
@@ -1251,9 +1260,9 @@ public class PomTransformerTest {
                 + "    <version>0.1-SNAPSHOT</version>\n" //
                 + "    <packaging>pom</packaging>\n" //
                 + "</project>\n";
-        assertTransformation(source, Arrays.asList(
+        assertTransformer(source, Arrays.asList(
                 Transformation.removeModule(true, true, "module-1"),
-                Transformation.removeContainerElementIfEmpty(true, true, true, "modules")), expected);
+                modules.removeEmptyParent()), expected);
     }
 
     @Test
@@ -1591,6 +1600,10 @@ public class PomTransformerTest {
     }
 
     static void assertTransformation(String src, Collection<Transformation> transformations, String expected) {
+        PomTransformer.transform(transformations, SimpleElementWhitespace.EMPTY, Paths.get("pom.xml"),
+                () -> src, xml -> org.assertj.core.api.Assertions.assertThat(xml).isEqualTo(expected));
+    }
+    static <T extends Transformer> void assertTransformer(String src, Collection<T> transformations, String expected) {
         PomTransformer.transform(transformations, SimpleElementWhitespace.EMPTY, Paths.get("pom.xml"),
                 () -> src, xml -> org.assertj.core.api.Assertions.assertThat(xml).isEqualTo(expected));
     }
@@ -2730,106 +2743,13 @@ public class PomTransformerTest {
         assertTransformation(source,
                 Collections.singletonList(
                         (Document document, TransformationContext context) -> {
-                            Set<NodeGavtcs> deps = context.getDependencies();
+                            Set<NodeGavtcs> deps = context.getProject().getDependencies();
                             Iterator<NodeGavtcs> it = deps.iterator();
                             it.next();
                             NodeGavtcs dep2 = it.next();
                             context.reIndent(dep2.getNode().getNodes(TransformationContext.ALL_WHITESPACE_AND_COMMENTS),
                                     "                ");
                         }),
-                expected);
-    }
-
-    @Test
-    void updateDependencySubset() {
-        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
-                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
-                + "    <modelVersion>4.0.0</modelVersion>\n" //
-                + "    <groupId>org.acme</groupId>\n" //
-                + "    <artifactId>bom</artifactId>\n" //
-                + "    <version>0.1-SNAPSHOT</version>\n" //
-                + "    <packaging>pom</packaging>\n" //
-                + "\n" //
-                + "    <dependencies>\n" //
-                + "        <dependency>\n" //
-                + "            <groupId>org.acme</groupId>\n" //
-                + "            <artifactId>a1</artifactId>\n" //
-                + "            <version>${project.version}</version>\n" //
-                + "        </dependency>\n" //
-                + "\n" //
-                + "        <!-- initial comment -->\n" //
-                + "        <dependency>\n" //
-                + "            <groupId>org.acme</groupId>\n" //
-                + "            <artifactId>a2</artifactId>\n" //
-                + "            <version>${project.version}</version>\n" //
-                + "            <type>pom</type>\n" //
-                + "            <scope>test</scope>\n" //
-                + "            <exclusions>\n" //
-                + "                <exclusion>\n" //
-                + "                    <groupId>*</groupId>\n" //
-                + "                    <artifactId>*</artifactId>\n" //
-                + "                </exclusion>\n" //
-                + "            </exclusions>\n" //
-                + "        </dependency>\n" //
-                + "        <dependency>\n" //
-                + "            <groupId>org.acme</groupId>\n" //
-                + "            <artifactId>a3</artifactId>\n" //
-                + "            <version>${project.version}</version>\n" //
-                + "            <type>pom</type>\n" //
-                + "            <scope>test</scope>\n" //
-                + "            <exclusions>\n" //
-                + "                <exclusion>\n" //
-                + "                    <groupId>*</groupId>\n" //
-                + "                    <artifactId>*</artifactId>\n" //
-                + "                </exclusion>\n" //
-                + "            </exclusions>\n" //
-                + "        </dependency>\n" //
-                + "    </dependencies>\n" //
-                + "\n" //
-                + "    <build/>\n" //
-                + "</project>\n";
-        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
-                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
-                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
-                + "    <modelVersion>4.0.0</modelVersion>\n" //
-                + "    <groupId>org.acme</groupId>\n" //
-                + "    <artifactId>bom</artifactId>\n" //
-                + "    <version>0.1-SNAPSHOT</version>\n" //
-                + "    <packaging>pom</packaging>\n" //
-                + "\n" //
-                + "    <dependencies>\n" //
-                + "        <dependency>\n" //
-                + "            <groupId>org.acme</groupId>\n" //
-                + "            <artifactId>a1</artifactId>\n" //
-                + "            <version>${project.version}</version>\n" //
-                + "        </dependency>\n" //
-                + "\n" //
-                + "        <!-- initial comment -->\n" //
-                + "        <dependency>\n" //
-                + "            <groupId>org.acme</groupId>\n" //
-                + "            <artifactId>a2</artifactId>\n" //
-                + "            <version>${project.version}</version>\n" //
-                + "            <type>pom</type>\n" //
-                + "            <scope>test</scope>\n" //
-                + "            <exclusions>\n" //
-                + "                <exclusion>\n" //
-                + "                    <groupId>*</groupId>\n" //
-                + "                    <artifactId>*</artifactId>\n" //
-                + "                </exclusion>\n" //
-                + "            </exclusions>\n" //
-                + "        </dependency>\n" //
-                + "    </dependencies>\n" //
-                + "\n" //
-                + "    <build/>\n" //
-                + "</project>\n";
-        assertTransformation(source,
-                Collections.singletonList(
-                        Transformation.updateDependencySubset(
-                                gavtcs -> gavtcs.isVirtual(),
-                                Collections.singleton(new Gavtcs("org.acme", "a2", "${project.version}").toVirtual()),
-                                Gavtcs.scopeAndTypeFirstComparator(),
-                                " initial comment ")),
                 expected);
     }
 
@@ -3755,6 +3675,96 @@ public class PomTransformerTest {
         assertTransformation(source, Collections.emptyList(), source);
     }
 
+    @Test
+    void of() throws IOException {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "\n" //
+                + "    <parent>\n" //
+                + "        <groupId>org.acme</groupId>\n" //
+                + "        <artifactId>parent</artifactId>\n" //
+                + "        <version>0.1-SNAPSHOT</version>\n" //
+                + "        <relativePath>../pom.xml</relativePath>\n" //
+                + "    </parent>\n" //
+                + "\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "\n" //
+                + "    <parent>\n" //
+                + "        <groupId>org.foo</groupId>\n" //
+                + "        <artifactId>foo</artifactId>\n" //
+                + "        <version>0.2-SNAPSHOT</version>\n" //
+                + "        <relativePath>../pom.xml</relativePath>\n" //
+                + "    </parent>\n" //
+                + "\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "</project>\n";
+        {
+            Path pomXml = Paths.get("target/"+ UUID.randomUUID() + ".pom.xml");
+            Files.write(pomXml, source.getBytes(StandardCharsets.UTF_8));
+            PomTransformer.of(
+                    parent.set("org.foo", "foo", "0.2-SNAPSHOT"))
+            .transform(pomXml);
+            org.assertj.core.api.Assertions.assertThat(pomXml).content(StandardCharsets.UTF_8).isEqualTo(expected);
+        }
+        {
+            Path pomXml = Paths.get("target/"+ UUID.randomUUID() + ".pom.xml");
+            Files.write(pomXml, source.getBytes(StandardCharsets.UTF_8));
+            PomTransformer.of(
+                    Arrays.asList(parent.set("org.foo", "foo", "0.2-SNAPSHOT")))
+            .transform(pomXml);
+            org.assertj.core.api.Assertions.assertThat(pomXml).content(StandardCharsets.UTF_8).isEqualTo(expected);
+        }
+    }
+
+
+    @Test
+    void setVersion() throws IOException {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "</project>\n";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.2-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "</project>\n";
+        {
+            Path pomXml = Paths.get("target/"+ UUID.randomUUID() + ".pom.xml");
+            Files.write(pomXml, source.getBytes(StandardCharsets.UTF_8));
+            PomTransformer.of(
+                    (TransformationContext context) -> context.getProject().addOrSetChildTextElement("version", "0.2-SNAPSHOT"))
+            .transform(pomXml);
+            org.assertj.core.api.Assertions.assertThat(pomXml).content(StandardCharsets.UTF_8).isEqualTo(expected);
+        }
+    }
     public IntStream intStream(int count) {
         return IntStream.range(1, count + 1);
     }
