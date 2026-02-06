@@ -118,6 +118,17 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
     }
 
     /**
+     * Choose whether the elements should be removed from under the {@code <project>} and/or from under specific profiles;
+     * use utility methods in {@link ProfileId} to select profiles by name, including or excluding the {@code <project>} pseudo-profile.
+     * <p>
+     * Note that this library handles the {@code <project>} element as a profile with a {@code null} {@code id},
+     * so the given {@link Predicate}'s {@link Predicate#test(Object)} should handle the {@code null} value
+     * as the {@code <project>} element.
+     * <p>
+     * If none of the {@code from*(*)} methods is called,
+     * the default behavior is to remove the matching elements only from under the {@code <project>} element
+     * and do nothing with matching elements under {@code <profile>} elements.
+     *
      * @param  profileSelector the profile selector to set on the resulting {@link RemoveElementsTransformer}
      * @return                 a copy of this {@link RemoveElementsTransformer} instance with the
      *                         {@link #profileSelector} set to the given {@code profileSelector}
@@ -125,7 +136,7 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
      * @see                    ProfileId
      */
     @SuppressWarnings("unchecked")
-    public THIS profiles(Predicate<String> profileSelector) {
+    public THIS from(Predicate<String> profileSelector) {
         return (THIS) new RemoveElementsTransformer<>(
                 profileSelector,
                 profileToRemovedElements,
@@ -135,6 +146,13 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
     }
 
     /**
+     * Choose from under which specific profiles should the matching elements be removed; matching elements under the {@code <project>} element will be removed too.
+     * Use {@link #fromProfilesOnly(String...)} to avoid removing from under the {@code <project>} element.
+     * <p>
+     * If none of the {@code from*(*)} methods is called,
+     * the default behavior is to remove the matching elements only from under the {@code <project>} element
+     * and do nothing with matching elements under {@code <profile>} elements.
+     *
      * @param  profileIds the profile {@code id}s to select on the resulting {@link RemoveElementsTransformer} in addition
      *                    to the {@link ProfileId#main()}
      * @return            a copy of this {@link RemoveElementsTransformer} instance with the
@@ -143,7 +161,7 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
      * @see               ProfileId#ids(String...)
      */
     @SuppressWarnings("unchecked")
-    public THIS profiles(String... profileIds) {
+    public THIS from(String... profileIds) {
         return (THIS) new RemoveElementsTransformer<>(
                 ProfileId.ids(profileIds),
                 profileToRemovedElements,
@@ -153,6 +171,13 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
     }
 
     /**
+     * Choose from under which specific profiles should the matching elements be removed; matching elements under the {@code <project>} element will not be removed.
+     * Use {@link #from(String...)} to remove also the matching elements from under the {@code <project>} element.
+     * <p>
+     * If none of the {@code from*(*)} methods is called,
+     * the default behavior is to remove the matching elements only from under the {@code <project>} element
+     * and do nothing with matching elements under {@code <profile>} elements.
+     *
      * @param  profileIds the profile {@code id}s to select on the resulting {@link RemoveElementsTransformer} (but not the
      *                    {@link ProfileId#main()}
      * @return            a copy of this {@link RemoveElementsTransformer} instance with the
@@ -161,7 +186,7 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
      * @see               ProfileId#idsOnly(String...)
      */
     @SuppressWarnings("unchecked")
-    public THIS profilesOnly(String... profileIds) {
+    public THIS fromProfilesOnly(String... profileIds) {
         return (THIS) new RemoveElementsTransformer<>(
                 ProfileId.idsOnly(profileIds),
                 profileToRemovedElements,

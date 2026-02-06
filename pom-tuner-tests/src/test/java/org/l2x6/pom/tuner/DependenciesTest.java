@@ -523,7 +523,7 @@ public class DependenciesTest {
                 + "</project>\n";
         assertTransformation(source, Collections.singletonList(
 
-                dependencies.remove("org.acme:dep2", "org.acme:dep4").profiles("profile1")
+                dependencies.remove("org.acme:dep2", "org.acme:dep4").from("profile1")
 
         ),
                 expected);
@@ -567,7 +567,7 @@ public class DependenciesTest {
                 + "</project>\n";
         assertTransformation(source, Collections.singletonList(
 
-                dependencies.removeEmptyParent().profiles(ProfileId.all())
+                dependencies.removeEmptyParent().from(ProfileId.all())
 
         ),
                 expected);

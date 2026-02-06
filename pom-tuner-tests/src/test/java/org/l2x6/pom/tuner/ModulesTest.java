@@ -494,7 +494,7 @@ public class ModulesTest {
                 + "</project>\n";
         assertTransformation(source, Collections.singletonList(
 
-                modules.remove("module-2", "module-5").profiles("profile1")
+                modules.remove("module-2", "module-5").from("profile1")
 
         ),
                 expected);
@@ -554,7 +554,7 @@ public class ModulesTest {
                 + "</project>\n";
         assertTransformation(source, Collections.singletonList(
 
-                modules.remove("module-2", "module-5").profilesOnly("profile1")
+                modules.remove("module-2", "module-5").fromProfilesOnly("profile1")
 
         ),
                 expected);
@@ -609,10 +609,181 @@ public class ModulesTest {
                 + "</project>\n";
         assertTransformation(source, Collections.singletonList(
 
-                modules.removeEmptyParent().profiles(ProfileId.all())
+                modules.removeEmptyParent().from(ProfileId.all())
 
         ),
                 expected);
+    }
+
+    @Test
+    void modify() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <modules>\n" //
+                + "        <module>module-1</module>\n" //
+                + "        <!-- foo -->\n" //
+                + "        <module>module-3</module>\n" //
+                + "    </modules>\n" //
+                + "    <profiles>\n" //
+                + "        <profile>\n" //
+                + "            <id>profile1</id>\n" //
+                + "        </profile>\n" //
+                + "        <profile>\n" //
+                + "            <id>profile2</id>\n" //
+                + "            <modules>\n" //
+                + "                <module>bar</module>\n" //
+                + "            </modules>\n" //
+                + "        </profile>\n" //
+                + "    </profiles>\n" //
+                + "</project>\n";
+        {
+            final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                    + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                    + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                    + "    <modelVersion>4.0.0</modelVersion>\n" //
+                    + "    <groupId>org.acme</groupId>\n" //
+                    + "    <artifactId>grand-parent</artifactId>\n" //
+                    + "    <version>0.1-SNAPSHOT</version>\n" //
+                    + "    <packaging>pom</packaging>\n" //
+                    + "\n" //
+                    + "    <modules>\n" //
+                    + "        <module>module-1-mod</module>\n" //
+                    + "        <!-- foo -->\n" //
+                    + "        <module>module-3-mod</module>\n" //
+                    + "    </modules>\n" //
+                    + "    <profiles>\n" //
+                    + "        <profile>\n" //
+                    + "            <id>profile1</id>\n" //
+                    + "        </profile>\n" //
+                    + "        <profile>\n" //
+                    + "            <id>profile2</id>\n" //
+                    + "            <modules>\n" //
+                    + "                <module>bar</module>\n" //
+                    + "            </modules>\n" //
+                    + "        </profile>\n" //
+                    + "    </profiles>\n" //
+                    + "</project>\n";
+            assertTransformation(source, Arrays.asList(
+                    modules.select(p -> true).modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    expected);
+            assertTransformation(source, Arrays.asList(
+                    modules.select(p -> true).modifyTextContent(old -> old + "-mod")),
+                    expected);
+        }
+        {
+            final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                    + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                    + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                    + "    <modelVersion>4.0.0</modelVersion>\n" //
+                    + "    <groupId>org.acme</groupId>\n" //
+                    + "    <artifactId>grand-parent</artifactId>\n" //
+                    + "    <version>0.1-SNAPSHOT</version>\n" //
+                    + "    <packaging>pom</packaging>\n" //
+                    + "\n" //
+                    + "    <modules>\n" //
+                    + "        <module>module-1-mod</module>\n" //
+                    + "        <!-- foo -->\n" //
+                    + "        <module>module-3</module>\n" //
+                    + "    </modules>\n" //
+                    + "    <profiles>\n" //
+                    + "        <profile>\n" //
+                    + "            <id>profile1</id>\n" //
+                    + "        </profile>\n" //
+                    + "        <profile>\n" //
+                    + "            <id>profile2</id>\n" //
+                    + "            <modules>\n" //
+                    + "                <module>bar</module>\n" //
+                    + "            </modules>\n" //
+                    + "        </profile>\n" //
+                    + "    </profiles>\n" //
+                    + "</project>\n";
+            assertTransformation(source, Arrays.asList(
+                    modules.select(p -> p.equals("module-1")).modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    expected);
+            assertTransformation(source, Arrays.asList(
+                    modules.select("module-1").modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    expected);
+        }
+        {
+            final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                    + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                    + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                    + "    <modelVersion>4.0.0</modelVersion>\n" //
+                    + "    <groupId>org.acme</groupId>\n" //
+                    + "    <artifactId>grand-parent</artifactId>\n" //
+                    + "    <version>0.1-SNAPSHOT</version>\n" //
+                    + "    <packaging>pom</packaging>\n" //
+                    + "\n" //
+                    + "    <modules>\n" //
+                    + "        <module>module-1-mod</module>\n" //
+                    + "        <!-- foo -->\n" //
+                    + "        <module>module-3-mod</module>\n" //
+                    + "    </modules>\n" //
+                    + "    <profiles>\n" //
+                    + "        <profile>\n" //
+                    + "            <id>profile1</id>\n" //
+                    + "        </profile>\n" //
+                    + "        <profile>\n" //
+                    + "            <id>profile2</id>\n" //
+                    + "            <modules>\n" //
+                    + "                <module>bar-mod</module>\n" //
+                    + "            </modules>\n" //
+                    + "        </profile>\n" //
+                    + "    </profiles>\n" //
+                    + "</project>\n";
+            assertTransformation(source, Arrays.asList(
+                    modules.selectAll()
+                            .from(ProfileId.all()).modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    expected);
+            assertTransformation(source, Arrays.asList(
+                    modules.select(p -> true)
+                            .from("profile1", "profile2").modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    expected);
+        }
+
+        {
+            final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                    + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                    + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                    + "    <modelVersion>4.0.0</modelVersion>\n" //
+                    + "    <groupId>org.acme</groupId>\n" //
+                    + "    <artifactId>grand-parent</artifactId>\n" //
+                    + "    <version>0.1-SNAPSHOT</version>\n" //
+                    + "    <packaging>pom</packaging>\n" //
+                    + "\n" //
+                    + "    <modules>\n" //
+                    + "        <module>module-1</module>\n" //
+                    + "        <!-- foo -->\n" //
+                    + "        <module>module-3</module>\n" //
+                    + "    </modules>\n" //
+                    + "    <profiles>\n" //
+                    + "        <profile>\n" //
+                    + "            <id>profile1</id>\n" //
+                    + "        </profile>\n" //
+                    + "        <profile>\n" //
+                    + "            <id>profile2</id>\n" //
+                    + "            <modules>\n" //
+                    + "                <!-- <module>bar</module> comment -->\n" //
+                    + "            </modules>\n" //
+                    + "        </profile>\n" //
+                    + "    </profiles>\n" //
+                    + "</project>\n";
+            assertTransformation(source, Arrays.asList(
+                    modules.select(p -> true)
+                            .fromProfilesOnly("profile2").commentOut(t -> "comment")),
+                    expected);
+        }
+    }
+
+    @Test
+    void commentOut() {
     }
 
     static void assertTransformation(String src, Collection<Transformer> transformations, String expected) {

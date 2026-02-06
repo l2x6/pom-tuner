@@ -36,7 +36,7 @@ public class ProfileId {
     }
 
     /**
-     * @return a new {@link Predicate} selecting the {@code <project>} element having {@code id == null}
+     * @return a new {@link Predicate} selecting the {@code <project>} pseudo-profile having {@code id == null}
      * @since  5.0.0
      */
     public static Predicate<String> main() {
@@ -52,8 +52,7 @@ public class ProfileId {
     }
 
     /**
-     * @param  ids the profile {@code id}s to select in addition to the {@code <project>} pseudo-profile that is selected by
-     *             default
+     * @param  ids the profile {@code id}s to select in addition to the {@code <project>} pseudo-profile that is added implicitly
      * @return     a new {@link Predicate} selecting the {@code <project>} element and the specified profiles
      * @since      5.0.0
      */
@@ -62,8 +61,8 @@ public class ProfileId {
     }
 
     /**
-     * @param  ids the profile {@code id}s to select; the {@code <project>} pseudo-profile is not included
-     * @return     a new {@link Predicate} selecting the {@code <project>} element and the specified profiles
+     * @param  ids the profile {@code id}s to select; unlike with {@link #ids(String...)} the {@code <project>} pseudo-profile is not added implicitly
+     * @return     a new {@link Predicate} selecting only the specified profiles
      * @since      5.0.0
      */
     public static Predicate<String> idsOnly(String... ids) {
@@ -71,8 +70,7 @@ public class ProfileId {
     }
 
     /**
-     * @param  ids the profile {@code id}s to select in addition to the {@code <project>} pseudo-profile that is selected by
-     *             default
+     * @param  ids the profile {@code id}s to select in addition to the {@code <project>} pseudo-profile that is added implicitly
      * @return     a new {@link Predicate} selecting the {@code <project>} element and the specified profiles
      * @since      5.0.0
      */
@@ -83,8 +81,8 @@ public class ProfileId {
     }
 
     /**
-     * @param  ids the profile {@code id}s to select; the {@code <project>} pseudo-profile is not included
-     * @return     a new {@link Predicate} selecting the {@code <project>} element and the specified profiles
+     * @param  ids the profile {@code id}s to select; unlike with {@link #ids(Collection)} the {@code <project>} pseudo-profile is not added implicitly
+     * @return     a new {@link Predicate} selecting only the specified profiles
      * @since      5.0.0
      */
     public static Predicate<String> idsOnly(Collection<String> ids) {
