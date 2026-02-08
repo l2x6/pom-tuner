@@ -972,20 +972,25 @@ public class PomTransformer {
         }
 
         /**
-         * Find an {@link Element} under {@link #node} having the given {@code elementName} or create a new one and set
-         * the given {@code value} as its text content.
+         * If {@code textContent} is not {@code null}, find an {@link Element} under {@link #node} having the given
+         * {@code elementName} or create a new one and set the given {@code value} as its text content;
+         * otherwise remove the element if it exists.
          *
-         * @param elementName the name of the {@link Element} to add
-         * @param textContent       the text content of the newly added {@link Element}
+         * @param elementName the name of the {@link Element} to add or set, must not be {@code null}
+         * @param textContent       the text content to set or add {@link Element}, can be {@code null}
          */
         public void addOrSetChildTextElement(String elementName, String textContent) {
             Objects.requireNonNull(elementName, elementName + " must not be null");
-            Objects.requireNonNull(textContent, "Text content of element "+ elementName + " must not be null");
+
             Optional<ContainerElement> existingChild = getChildContainerElement(elementName);
-            if (existingChild.isPresent()) {
-                existingChild.get().node.setTextContent(textContent);
-            } else {
+            if (!existingChild.isPresent() && textContent == null) {
+                /* nothing to do */
+            } else if (!existingChild.isPresent()) {
                 addChildTextElement(elementName, textContent, getOrAddLastIndent());
+            } else if (textContent == null) {
+                existingChild.get().remove(true, true);
+            } else {
+                existingChild.get().getNode().setTextContent(textContent);
             }
         }
 
@@ -1143,28 +1148,6 @@ public class PomTransformer {
                 }
             }
             return new NodeGavtcs(groupId, artifactId, version, type, classifier, scope, exclusions, this);
-        }
-
-        /**
-         * Assuming the current {@link ContainerElement} is a {@code <dependency>}, {@code <plugin>} or similar, set its
-         * {@code <version>} child to the given {@code newVersion} value, adding the {@code <version>} node if necessary
-         * or removing it of {@code newVersion} is {@code null}.
-         *
-         * @param newVersion the version to set or {@code null} if the {@code <version>} node should be removed
-         */
-        public void setVersion(String newVersion) {
-            Optional<ContainerElement> versionNode = childElementsStream()
-                    .filter(ch -> "version".equals(ch.getNode().getLocalName()))
-                    .findFirst();
-            if (!versionNode.isPresent() && newVersion == null) {
-                /* nothing to do */
-            } else if (!versionNode.isPresent()) {
-                addChildTextElement("version", newVersion);
-            } else if (newVersion == null) {
-                versionNode.get().remove(true, true);
-            } else {
-                versionNode.get().getNode().setTextContent(newVersion);
-            }
         }
 
         public ProfileElement asProfileElement() {
@@ -1557,6 +1540,66 @@ public class PomTransformer {
          */
         public Gavtcs getGavtcs() {
             return gavtcs;
+        }
+
+        /**
+         * Set this element's {@code <groupId>} child to the given {@code groupId} value, adding the {@code <groupId>} node if necessary
+         * or removing it if {@code groupId} is {@code null}.
+         *
+         * @param classifier the version to set or {@code null} if the {@code <groupId>} node should be removed
+         * @since 5.0.0
+         */
+        public GavtcsElement setGroupId(String groupId) {
+            addOrSetChildTextElement("groupId", groupId);
+            return this;
+        }
+
+        /**
+         * Set this element's {@code <artifactId>} child to the given {@code artifactId} value, adding the {@code <artifactId>} node if necessary
+         * or removing it if {@code artifactId} is {@code null}.
+         *
+         * @param classifier the version to set or {@code null} if the {@code <artifactId>} node should be removed
+         * @since 5.0.0
+         */
+        public GavtcsElement setArtifactId(String artifactId) {
+            addOrSetChildTextElement("artifactId", artifactId);
+            return this;
+        }
+
+        /**
+         * Set this element's {@code <version>} child to the given {@code version} value, adding the {@code <version>} node if necessary
+         * or removing it if {@code version} is {@code null}.
+         *
+         * @param version the version to set or {@code null} if the {@code <version>} node should be removed
+         * @since 5.0.0
+         */
+        public GavtcsElement setVersion(String version) {
+            addOrSetChildTextElement("version", version);
+            return this;
+        }
+
+        /**
+         * Set this element's {@code <classifier>} child to the given {@code classifier} value, adding the {@code <classifier>} node if necessary
+         * or removing it if {@code classifier} is {@code null}.
+         *
+         * @param classifier the version to set or {@code null} if the {@code <classifier>} node should be removed
+         * @since 5.0.0
+         */
+        public GavtcsElement setClassifier(String classifier) {
+            addOrSetChildTextElement("classifier", classifier);
+            return this;
+        }
+
+        /**
+         * Set this element's {@code <scope>} child to the given {@code scope} value, adding the {@code <scope>} node if necessary
+         * or removing it if {@code scope} is {@code null}.
+         *
+         * @param classifier the version to set or {@code null} if the {@code <scope>} node should be removed
+         * @since 5.0.0
+         */
+        public GavtcsElement setScope(String scope) {
+            addOrSetChildTextElement("scope", scope);
+            return this;
         }
     }
 
@@ -2335,9 +2378,9 @@ public class PomTransformer {
                                         "dependencyManagement/dependencies not found under profile '" + profileId + "' in "
                                                 + context.getPomXmlPath()));
 
-                for (ContainerElement dep : dependencyManagementDeps.childElements()) {
-                    final Ga ga = dep.asGavtcs().toGa();
-                    if (gas.contains(ga)) {
+                for (ContainerElement containerElememt : dependencyManagementDeps.childElements()) {
+                    final GavtcsElement dep = containerElememt.asGavtcsElement();
+                    if (gas.contains(dep.getGavtcs().toGa())) {
                         dep.setVersion(newVersion);
                     }
                 }
@@ -2359,9 +2402,9 @@ public class PomTransformer {
                                         "dependencies not found under profile '" + profileId + "' in "
                                                 + context.getPomXmlPath()));
 
-                for (ContainerElement dep : deps.childElements()) {
-                    final Ga ga = dep.asGavtcs().toGa();
-                    if (gas.contains(ga)) {
+                for (ContainerElement containerElememt : deps.childElements()) {
+                    final GavtcsElement dep = containerElememt.asGavtcsElement();
+                    if (gas.contains(dep.getGavtcs().toGa())) {
                         dep.setVersion(newVersion);
                     }
                 }
