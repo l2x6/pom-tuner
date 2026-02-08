@@ -1,0 +1,104 @@
+package org.l2x6.pom.tuner;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
+import java.util.StringTokenizer;
+import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
+import org.l2x6.pom.tuner.PomTransformer.Transformation;
+import org.l2x6.pom.tuner.PomTransformer.Transformer;
+
+public class PomTransformerTestUtils {
+
+    static void assertTransformation(String src, Collection<Transformation> transformations,
+            SimpleElementWhitespace simpleElementWhitespace, String expected) {
+        PomTransformer.transform(transformations, simpleElementWhitespace, Paths.get("pom.xml"),
+                () -> src, xml -> compareDocuments(xml, expected, ".xml"));
+    }
+
+    static void assertTransformation(String src, Collection<Transformation> transformations, String expected) {
+        PomTransformer.transform(transformations, SimpleElementWhitespace.EMPTY, Paths.get("pom.xml"),
+                () -> src, xml -> compareDocuments(xml, expected, ".xml"));
+    }
+
+    static <T extends Transformer> void assertTransformer(String src, Collection<T> transformations, String expected) {
+        PomTransformer.transform(transformations, SimpleElementWhitespace.EMPTY, Paths.get("pom.xml"),
+                () -> src, xml -> compareDocuments(xml, expected, ".xml"));
+    }
+
+    static void compareDocuments(String actual, String expected, String extension) {
+        if (Objects.equals(actual, expected)) {
+            return;
+        }
+
+        final StringTokenizer stActual = new StringTokenizer(actual, "\n");
+        final StringTokenizer stExpected = new StringTokenizer(expected, "\n");
+        final List<String> equalLines = new ArrayList<>();
+        int line = 1;
+        while (true) {
+            boolean hasNextActual = stActual.hasMoreTokens();
+            boolean hasNextExpected = stExpected.hasMoreTokens();
+            if (!hasNextActual && !hasNextExpected) {
+                break;
+            } else if (hasNextActual && hasNextExpected) {
+                String lineActual = stActual.nextToken();
+                String lineExpectd = stExpected.nextToken();
+                if (lineActual.equals(lineExpectd)) {
+                    equalLines.add(lineExpectd);
+                } else {
+                    int minLength = Math.min(lineActual.length(), lineExpectd.length());
+                    int i = 0;
+                    while (i < minLength && lineActual.charAt(i) == lineExpectd.charAt(i)) {
+                        i++;
+                    }
+                    StringBuilder msg = new StringBuilder("Unexpected " + extension + " content at line ")
+                            .append(line)
+                            .append(" column ")
+                            .append(i + 1)
+                            .append(":\n\n");
+                    equalLines.forEach(l -> msg.append(l).append('\n'));
+
+                    msg.append("actual");
+                    appendDashes(i - "actual".length(), msg);
+                    msg.append("↴\n");
+                    msg.append(lineActual).append('\n');
+                    appendDashes(i, msg);
+                    msg.append("↕\n");
+                    msg.append(lineExpectd).append('\n');
+                    msg.append("expected");
+                    appendDashes(i - "expected".length(), msg);
+                    msg.append("⬏\n");
+                    throw new AssertionError(msg.toString());
+                }
+                line++;
+            }
+        }
+
+    }
+
+    public static void appendDashes(int i, StringBuilder msg) {
+        if (i > 0) {
+            for (int j = 0; j < i; j++) {
+                msg.append('-');
+            }
+        }
+    }
+
+    public static Path write(String kind, String content, String extension, final String uuid, final Path parent) {
+        final Path path = parent.resolve(uuid + "-" + kind + extension);
+        try {
+            Files.write(path, content.getBytes(StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            throw new UncheckedIOException("Could not write to " + path, e);
+        }
+        return path;
+    }
+
+}

@@ -66,9 +66,8 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
      * @since                  5.0.0
      * @see                    ProfileId
      */
-    @SuppressWarnings("unchecked")
     public THIS from(Predicate<String> profileSelector) {
-        return (THIS) new ElementSet<>(profileSelector, getNodes, nodeSelector);
+        return create(profileSelector, getNodes, nodeSelector);
     }
 
     /**
@@ -86,9 +85,8 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
      * @since             5.0.0
      * @see               ProfileId#ids(String...)
      */
-    @SuppressWarnings("unchecked")
     public THIS from(String... profileIds) {
-        return (THIS) new ElementSet<>(ProfileId.ids(profileIds), getNodes, nodeSelector);
+        return create(ProfileId.ids(profileIds), getNodes, nodeSelector);
     }
 
     /**
@@ -106,9 +104,8 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
      * @since             5.0.0
      * @see               ProfileId#idsOnly(String...)
      */
-    @SuppressWarnings("unchecked")
     public THIS fromProfilesOnly(String... profileIds) {
-        return (THIS) new ElementSet<>(ProfileId.idsOnly(profileIds), getNodes, nodeSelector);
+        return create(ProfileId.idsOnly(profileIds), getNodes, nodeSelector);
     }
 
     public Transformer modify(Consumer<T> element) {
@@ -122,12 +119,9 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
         };
     }
 
-    public Transformer modifyTextContent(Function<String, String> modifyTextContent) {
-        return modify(textElement -> textElement.setTextContent(modifyTextContent.apply(textElement.getTextContent())));
-    }
-
-    public Transformer commentOut(Function<TextElement, String> getCommentText) {
-        return modify(textElement -> TransformationContext.commentTextNode(textElement.getNode(), getCommentText.apply(textElement)));
+    @SuppressWarnings("unchecked")
+    protected THIS create(Predicate<String> profileSelector, Function<ProfileElement, Stream<T>> getNodes, Predicate<T> nodeSelector) {
+        return (THIS) new ElementSet<>(profileSelector, getNodes, nodeSelector);
     }
 
 }

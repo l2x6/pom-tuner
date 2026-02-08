@@ -16,7 +16,10 @@
  */
 package org.l2x6.pom.tuner.transform;
 
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.l2x6.pom.tuner.Comparators;
@@ -26,7 +29,9 @@ import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.transform.api.AddElementTransformer;
+import org.l2x6.pom.tuner.transform.api.ElementSet;
 import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
+import org.l2x6.pom.tuner.transform.api.TextElementSet;
 
 /**
  * Operations on {@code pom.xml} properties usable with {@link PomTransformer#transform(Transformer...)}.
@@ -150,5 +155,129 @@ public interface properties {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.containerElementsMapper(ELEMENT_NAME),
                 ((Predicate<ContainerElement>) ContainerElement::hasChildElements).negate());
+    }
+
+    /**
+     * Select some property elements by name for modification.
+     * <p>
+     * The returned {@link TextElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * <p>
+     * If none of the {@code from*(*)} methods of the returned {@link TextElementSet} is called,
+     * the default behavior is to select the matching elements only from under the {@code <project>} element
+     * and ignore any matching elements under {@code <profile>} elements.
+     *
+     * @param propertyNames a {@link Predicate} selecting property nodes by their element names
+     * @return a new {@link TextElementSet} having its node selector set as specified
+     * @since  5.0.0
+     */
+    public static TextElementSet selectByName(Predicate<String> propertyNames) {
+        return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> propertyNames.test(textElement.getElementName()));
+    }
+
+    /**
+     * Select some property elements by name for modification.
+     * <p>
+     * The returned {@link TextElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * <p>
+     * If none of the {@code from*(*)} methods of the returned {@link TextElementSet} is called,
+     * the default behavior is to select the matching elements only from under the {@code <project>} element
+     * and ignore any matching elements under {@code <profile>} elements.
+     *
+     * @param propertyNames property names
+     * @return a new {@link TextElementSet} having its node selector set as specified
+     * @since  5.0.0
+     */
+    public static TextElementSet selectByName(String... propertyNames) {
+        final Set<String> set;
+        if (propertyNames.length == 0) {
+            set = Collections.emptySet();
+        } else if (propertyNames.length == 1) {
+            set = Collections.singleton(propertyNames[0]);
+        } else {
+            set = new HashSet<>();
+            for (int i = 0; i < propertyNames.length; i++) {
+                set.add(propertyNames[i]);
+            }
+        }
+        return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> set.contains(textElement.getElementName()));
+    }
+
+    /**
+     * Select some property elements by value for modification.
+     * <p>
+     * The returned {@link TextElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * <p>
+     * If none of the {@code from*(*)} methods of the returned {@link TextElementSet} is called,
+     * the default behavior is to select the matching elements only from under the {@code <project>} element
+     * and ignore any matching elements under {@code <profile>} elements.
+     *
+     * @param values a {@link Predicate} selecting property nodes by value
+     * @return a new {@link TextElementSet} having its node selector set as specified
+     * @since  5.0.0
+     */
+    public static TextElementSet selectByValue(Predicate<String> values) {
+        return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> values.test(textElement.getTextContent()));
+    }
+
+
+    /**
+     * Select some property elements by value for modification.
+     * <p>
+     * The returned {@link TextElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * <p>
+     * If none of the {@code from*(*)} methods of the returned {@link TextElementSet} is called,
+     * the default behavior is to select the matching elements only from under the {@code <project>} element
+     * and ignore any matching elements under {@code <profile>} elements.
+     *
+     * @param values property values
+     * @return a new {@link TextElementSet} having its node selector set as specified
+     * @since  5.0.0
+     */
+    public static TextElementSet selectByValue(String... values) {
+        final Set<String> set;
+        if (values.length == 0) {
+            set = Collections.emptySet();
+        } else if (values.length == 1) {
+            set = Collections.singleton(values[0]);
+        } else {
+            set = new HashSet<>();
+            for (int i = 0; i < values.length; i++) {
+                set.add(values[i]);
+            }
+        }
+        return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> set.contains(textElement.getTextContent()));
+    }
+
+    /**
+     * Select some property elements modification.
+     * <p>
+     * The returned {@link TextElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * <p>
+     * If none of the {@code from*(*)} methods of the returned {@link TextElementSet} is called,
+     * the default behavior is to select the matching elements only from under the {@code <project>} element
+     * and ignore any matching elements under {@code <profile>} elements.
+     *
+     * @param propertySelector a {@link Predicate} selecting property nodes
+     * @return a new {@link TextElementSet} having its node selector set as specified
+     * @since  5.0.0
+     */
+    public static TextElementSet select(Predicate<TextElement> propertySelector) {
+        return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), propertySelector);
+    }
+
+    /**
+     * Select all property elements for modification.
+     * <p>
+     * The returned {@link TextElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * <p>
+     * If none of the {@code from*(*)} methods of the returned {@link TextElementSet} is called,
+     * the default behavior is to select the matching elements only from under the {@code <project>} element
+     * and ignore any matching elements under {@code <profile>} elements.
+     *
+     * @return a new {@link TextElementSet} having its node selector set as specified
+     * @since  5.0.0
+     */
+    public static TextElementSet selectAll() {
+        return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> true);
     }
 }

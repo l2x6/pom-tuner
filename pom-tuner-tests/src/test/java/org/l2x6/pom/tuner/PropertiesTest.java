@@ -1,15 +1,10 @@
 package org.l2x6.pom.tuner;
 
-import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
-import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.transform.api.ProfileId;
 import org.l2x6.pom.tuner.transform.api.Siblings;
 import org.l2x6.pom.tuner.transform.properties;
@@ -47,7 +42,7 @@ public class PropertiesTest {
                 + "        <p2>v2</p2>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Arrays.asList(
+        PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 properties.set("p2", "v2")), expected);
     }
 
@@ -75,7 +70,7 @@ public class PropertiesTest {
                 + "        <p2>v2</p2>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Arrays.asList(
+        PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 properties.set("p2", "v2")), expected);
     }
 
@@ -110,7 +105,7 @@ public class PropertiesTest {
                 + "        <p2>v2</p2>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Arrays.asList(
+        PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 properties.set("p3", "v3")
                         .at(Comparator.comparing(Map.Entry::getKey, Comparators.after("p1")))),
                 expected);
@@ -147,7 +142,7 @@ public class PropertiesTest {
                 + "        <p2>v2</p2>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Arrays.asList(
+        PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 properties.set("p3", "v3")
                         .afterElement("p1")),
                 expected);
@@ -184,7 +179,7 @@ public class PropertiesTest {
                 + "        <p2>v2</p2>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Arrays.asList(
+        PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 properties.set("p3", "v3")
                         .beforeElement("p2")),
                 expected);
@@ -243,7 +238,7 @@ public class PropertiesTest {
                 + "        </profile>\n" //
                 + "    </profiles>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
                 properties.set("p7", "v7").profile("profile1").afterElement("p4")
 
@@ -283,7 +278,7 @@ public class PropertiesTest {
                 + "        <p3>v3</p3>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Arrays.asList(
+        PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 properties.set("p2", "v4")), expected);
     }
 
@@ -319,7 +314,7 @@ public class PropertiesTest {
                 + "        <!-- bar -->\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Arrays.asList(
+        PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 properties.remove("p2")), expected);
     }
 
@@ -355,7 +350,7 @@ public class PropertiesTest {
                 + "        <!-- foo -->\n" //
                 + "        </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Arrays.asList(
+        PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 properties
                         .remove(te -> te.getTextContent().equals("v2"))
                         .alsoRemoveNone()
@@ -393,7 +388,7 @@ public class PropertiesTest {
                 + "\n" //
                 + "    <properties/>\n" //
                 + "</project>\n";
-        assertTransformation(source, Arrays.asList(
+        PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 properties
                         .remove("p1", "p2")
                         .alsoRemoveNext(Siblings.commentsOrWhitespace())),
@@ -428,7 +423,7 @@ public class PropertiesTest {
                 + "\n" //
                 + "    <!-- foo -->\n" //
                 + "</project>\n";
-        assertTransformation(source, Arrays.asList(
+        PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 properties
                         .removeAll()
                         .alsoRemoveNone()
@@ -486,7 +481,7 @@ public class PropertiesTest {
                 + "        </profile>\n" //
                 + "    </profiles>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
                 properties.remove("p2", "p5").from("profile1")
 
@@ -546,7 +541,7 @@ public class PropertiesTest {
                 + "        </profile>\n" //
                 + "    </profiles>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
                 properties.remove("p2", "p5").fromProfilesOnly("profile1")
 
@@ -601,7 +596,7 @@ public class PropertiesTest {
                 + "        </profile>\n" //
                 + "    </profiles>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
                 properties.removeEmptyParent().from(ProfileId.all())
 
@@ -609,9 +604,173 @@ public class PropertiesTest {
                 expected);
     }
 
-    static void assertTransformation(String src, Collection<Transformer> transformations, String expected) {
-        PomTransformer.transform(transformations, SimpleElementWhitespace.EMPTY, Paths.get("pom.xml"),
-                () -> src, xml -> Assertions.assertThat(xml).isEqualTo(expected));
+    @Test
+    void modify() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>grand-parent</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <prop1>val-1</prop1>\n" //
+                + "        <!-- foo -->\n" //
+                + "        <prop3>val-3</prop3>\n" //
+                + "    </properties>\n" //
+                + "    <profiles>\n" //
+                + "        <profile>\n" //
+                + "            <id>profile1</id>\n" //
+                + "        </profile>\n" //
+                + "        <profile>\n" //
+                + "            <id>profile2</id>\n" //
+                + "            <properties>\n" //
+                + "                <prop4>val-4</prop4>\n" //
+                + "            </properties>\n" //
+                + "        </profile>\n" //
+                + "    </profiles>\n" //
+                + "</project>\n";
+        {
+            final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                    + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                    + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                    + "    <modelVersion>4.0.0</modelVersion>\n" //
+                    + "    <groupId>org.acme</groupId>\n" //
+                    + "    <artifactId>grand-parent</artifactId>\n" //
+                    + "    <version>0.1-SNAPSHOT</version>\n" //
+                    + "    <packaging>pom</packaging>\n" //
+                    + "\n" //
+                    + "    <properties>\n" //
+                    + "        <prop1>val-1-mod</prop1>\n" //
+                    + "        <!-- foo -->\n" //
+                    + "        <prop3>val-3-mod</prop3>\n" //
+                    + "    </properties>\n" //
+                    + "    <profiles>\n" //
+                    + "        <profile>\n" //
+                    + "            <id>profile1</id>\n" //
+                    + "        </profile>\n" //
+                    + "        <profile>\n" //
+                    + "            <id>profile2</id>\n" //
+                    + "            <properties>\n" //
+                    + "                <prop4>val-4</prop4>\n" //
+                    + "            </properties>\n" //
+                    + "        </profile>\n" //
+                    + "    </profiles>\n" //
+                    + "</project>\n";
+            PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
+                    properties.select(p -> true).modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    expected);
+            PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
+                    properties.select(p -> true).modifyTextContent(old -> old + "-mod")),
+                    expected);
+        }
+        {
+            final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                    + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                    + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                    + "    <modelVersion>4.0.0</modelVersion>\n" //
+                    + "    <groupId>org.acme</groupId>\n" //
+                    + "    <artifactId>grand-parent</artifactId>\n" //
+                    + "    <version>0.1-SNAPSHOT</version>\n" //
+                    + "    <packaging>pom</packaging>\n" //
+                    + "\n" //
+                    + "    <properties>\n" //
+                    + "        <prop1>val-1-mod</prop1>\n" //
+                    + "        <!-- foo -->\n" //
+                    + "        <prop3>val-3</prop3>\n" //
+                    + "    </properties>\n" //
+                    + "    <profiles>\n" //
+                    + "        <profile>\n" //
+                    + "            <id>profile1</id>\n" //
+                    + "        </profile>\n" //
+                    + "        <profile>\n" //
+                    + "            <id>profile2</id>\n" //
+                    + "            <properties>\n" //
+                    + "                <prop4>val-4</prop4>\n" //
+                    + "            </properties>\n" //
+                    + "        </profile>\n" //
+                    + "    </profiles>\n" //
+                    + "</project>\n";
+            PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
+                    properties.selectByValue(p -> p.equals("val-1"))
+                            .modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    expected);
+            PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
+                    properties.selectByValue("val-1").modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    expected);
+        }
+        {
+            final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                    + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                    + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                    + "    <modelVersion>4.0.0</modelVersion>\n" //
+                    + "    <groupId>org.acme</groupId>\n" //
+                    + "    <artifactId>grand-parent</artifactId>\n" //
+                    + "    <version>0.1-SNAPSHOT</version>\n" //
+                    + "    <packaging>pom</packaging>\n" //
+                    + "\n" //
+                    + "    <properties>\n" //
+                    + "        <prop1>val-1-mod</prop1>\n" //
+                    + "        <!-- foo -->\n" //
+                    + "        <prop3>val-3-mod</prop3>\n" //
+                    + "    </properties>\n" //
+                    + "    <profiles>\n" //
+                    + "        <profile>\n" //
+                    + "            <id>profile1</id>\n" //
+                    + "        </profile>\n" //
+                    + "        <profile>\n" //
+                    + "            <id>profile2</id>\n" //
+                    + "            <properties>\n" //
+                    + "                <prop4>val-4-mod</prop4>\n" //
+                    + "            </properties>\n" //
+                    + "        </profile>\n" //
+                    + "    </profiles>\n" //
+                    + "</project>\n";
+            PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
+                    properties.selectAll()
+                            .from(ProfileId.all())
+                            .modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    expected);
+            PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
+                    properties.select(p -> true)
+                            .from("profile1", "profile2").modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    expected);
+        }
+
+        {
+            final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                    + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                    + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                    + "    <modelVersion>4.0.0</modelVersion>\n" //
+                    + "    <groupId>org.acme</groupId>\n" //
+                    + "    <artifactId>grand-parent</artifactId>\n" //
+                    + "    <version>0.1-SNAPSHOT</version>\n" //
+                    + "    <packaging>pom</packaging>\n" //
+                    + "\n" //
+                    + "    <properties>\n" //
+                    + "        <prop1>val-1</prop1>\n" //
+                    + "        <!-- foo -->\n" //
+                    + "        <prop3>val-3</prop3>\n" //
+                    + "    </properties>\n" //
+                    + "    <profiles>\n" //
+                    + "        <profile>\n" //
+                    + "            <id>profile1</id>\n" //
+                    + "        </profile>\n" //
+                    + "        <profile>\n" //
+                    + "            <id>profile2</id>\n" //
+                    + "            <properties>\n" //
+                    + "                <!-- <prop4>val-4</prop4> comment -->\n" //
+                    + "            </properties>\n" //
+                    + "        </profile>\n" //
+                    + "    </profiles>\n" //
+                    + "</project>\n";
+            PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
+                    properties.select(p -> true)
+                            .fromProfilesOnly("profile2").commentOut(t -> "comment")),
+                    expected);
+        }
     }
 
 }

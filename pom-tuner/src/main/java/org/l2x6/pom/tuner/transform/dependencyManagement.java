@@ -16,7 +16,10 @@
  */
 package org.l2x6.pom.tuner.transform;
 
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -27,7 +30,9 @@ import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.model.GavtcsPattern;
+import org.l2x6.pom.tuner.model.GavtcsSet;
 import org.l2x6.pom.tuner.transform.api.AddGavtcsTransformer;
+import org.l2x6.pom.tuner.transform.api.ElementSet;
 import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 
 /**
@@ -157,5 +162,92 @@ public interface dependencyManagement {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.containerElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
                 ((Predicate<ContainerElement>) ContainerElement::hasChildElements).negate());
+    }
+
+
+    /**
+     * Select some {@code <dependency>} nodes for modification.
+     * <p>
+     * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * <p>
+     * Tip: {@link GavtcsSet} implements {@code Predicate<Gavtcs>} and can be used as an argument for this method.
+     * <p>
+     * If none of the {@code from*(*)} methods of the returned {@link ElementSet} is called,
+     * the default behavior is to select the matching elements only from under the {@code <project>} element
+     * and ignore any matching elements under {@code <profile>} elements.
+     *
+     * @param <THIS> type of the returned {@link ElementSet}
+     * @param predicate a {@link Predicate} selecting dependencies to modify
+     * @return a new {@link ElementSet} having its node selector set as specified
+     * @since  5.0.0
+     */
+    public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> select(Predicate<Gavtcs> predicate) {
+        return new ElementSet<>(RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES), gavtcsElement -> predicate.test(gavtcsElement.getGavtcs()));
+    }
+
+    /**
+     * Select some {@code <dependency>} nodes for modification by an array of {@code groupId[:artifactId[:version[:type[:classifier[:scope]]]]]} patterns.
+     * In addition to syntax specified in {@link GavtcsPattern#of(String)}, the entries can be prefixed with {@code !} to be interpreted as excludes.
+     * This method is a shorthand for {@link #select(Gavtcs...) select(GavtcsSet.builder().includes(gavtcsPatterns).build())}.
+     * <p>
+     * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * <p>
+     * If none of the {@code from*(*)} methods of the returned {@link ElementSet} is called,
+     * the default behavior is to select the matching elements only from under the {@code <project>} element
+     * and ignore any matching elements under {@code <profile>} elements.
+     *
+     * @param <THIS> type of the returned {@link ElementSet}
+     * @param gavtcsPatterns an array of strings parseable by GavTcs
+     * @return a new {@link ElementSet} having its node selector set as specified
+     * @since  5.0.0
+     */
+    public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> select(String... gavtcsPatterns) {
+        return select(GavtcsSet.builder().includes(gavtcsPatterns).build());
+    }
+
+    /**
+     * Select some {@code <dependency>} nodes for modification.
+     * <p>
+     * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * <p>
+     * If none of the {@code from*(*)} methods of the returned {@link ElementSet} is called,
+     * the default behavior is to select the matching elements only from under the {@code <project>} element
+     * and ignore any matching elements under {@code <profile>} elements.
+     *
+     * @param <THIS> type of the returned {@link ElementSet}
+     * @param dependencies to select for modification
+     * @return a new {@link ElementSet} having its node selector set as specified
+     * @since  5.0.0
+     */
+    public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> select(Gavtcs... dependencies) {
+        final Set<Gavtcs> set;
+        if (dependencies.length == 0) {
+            set = Collections.emptySet();
+        } else if (dependencies.length == 1) {
+            set = Collections.singleton(dependencies[0]);
+        } else {
+            set = new HashSet<>();
+            for (int i = 0; i < dependencies.length; i++) {
+                set.add(dependencies[i]);
+            }
+        }
+        return new ElementSet<>(RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES), gavtcsElement -> set.contains(gavtcsElement.getGavtcs()));
+    }
+
+    /**
+     * Select all {@code <dependency>} nodes for modification.
+     * <p>
+     * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * <p>
+     * If none of the {@code from*(*)} methods of the returned {@link ElementSet} is called,
+     * the default behavior is to select the matching elements only from under the {@code <project>} element
+     * and ignore any matching elements under {@code <profile>} elements.
+     *
+     * @param <THIS> type of the returned {@link ElementSet}
+     * @return a new {@link ElementSet} having its node selector set as specified
+     * @since  5.0.0
+     */
+    public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> selectAll() {
+        return new ElementSet<>(RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES), textElement -> true);
     }
 }

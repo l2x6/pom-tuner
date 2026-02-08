@@ -34,6 +34,7 @@ import org.l2x6.pom.tuner.transform.api.AddElementTransformer;
 import org.l2x6.pom.tuner.transform.api.AddGavtcsTransformer;
 import org.l2x6.pom.tuner.transform.api.ElementSet;
 import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
+import org.l2x6.pom.tuner.transform.api.TextElementSet;
 
 /**
  * Operations on {@code pom.xml} modules usable with {@link PomTransformer#transform(Transformer...)}.
@@ -158,28 +159,34 @@ public interface modules {
     /**
      * Select some {@code <module>} nodes for modification.
      * <p>
-     * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * The returned {@link TextElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * <p>
+     * If none of the {@code from*(*)} methods of the returned {@link TextElementSet} is called,
+     * the default behavior is to select the matching elements only from under the {@code <project>} element
+     * and ignore any matching elements under {@code <profile>} elements.
      *
-     * @param <THIS> type of this {@link ElementSet}
      * @param modulePaths a {@link Predicate} selecting modules by their path as present in {@code <module>path</module>}
-     * @return a new {@link ElementSet} having its node selector set as specified
+     * @return a new {@link TextElementSet} having its node selector set as specified
      * @since  5.0.0
      */
-    public static <THIS extends ElementSet<TextElement, THIS>> ElementSet<TextElement, THIS> select(Predicate<String> modulePaths) {
-        return new ElementSet<>(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> modulePaths.test(textElement.getTextContent()));
+    public static TextElementSet select(Predicate<String> modulePaths) {
+        return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> modulePaths.test(textElement.getTextContent()));
     }
 
     /**
      * Select some {@code <module>} nodes for modification.
      * <p>
-     * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * The returned {@link TextElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * <p>
+     * If none of the {@code from*(*)} methods of the returned {@link TextElementSet} is called,
+     * the default behavior is to select the matching elements only from under the {@code <project>} element
+     * and ignore any matching elements under {@code <profile>} elements.
      *
-     * @param <THIS> type of this {@link ElementSet}
      * @param modulePaths module paths as present in {@code <module>path</module>} to select for modification
-     * @return a new {@link ElementSet} having its node selector set as specified
+     * @return a new {@link TextElementSet} having its node selector set as specified
      * @since  5.0.0
      */
-    public static <THIS extends ElementSet<TextElement, THIS>> ElementSet<TextElement, THIS> select(String... modulePaths) {
+    public static TextElementSet select(String... modulePaths) {
         final Set<String> set;
         if (modulePaths.length == 0) {
             set = Collections.emptySet();
@@ -191,19 +198,22 @@ public interface modules {
                 set.add(modulePaths[i]);
             }
         }
-        return new ElementSet<>(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> set.contains(textElement.getTextContent()));
+        return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> set.contains(textElement.getTextContent()));
     }
 
     /**
      * Select all {@code <module>} nodes for modification.
      * <p>
-     * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * The returned {@link TextElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * <p>
+     * If none of the {@code from*(*)} methods of the returned {@link TextElementSet} is called,
+     * the default behavior is to select the matching elements only from under the {@code <project>} element
+     * and ignore any matching elements under {@code <profile>} elements.
      *
-     * @param <THIS> type of this {@link ElementSet}
-     * @return a new {@link ElementSet} having its node selector set as specified
+     * @return a new {@link TextElementSet} having its node selector set as specified
      * @since  5.0.0
      */
-    public static <THIS extends ElementSet<TextElement, THIS>> ElementSet<TextElement, THIS> selectAll() {
-        return new ElementSet<>(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> true);
+    public static TextElementSet selectAll() {
+        return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> true);
     }
 }

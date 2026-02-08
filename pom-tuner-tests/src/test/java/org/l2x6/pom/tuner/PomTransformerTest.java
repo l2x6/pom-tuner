@@ -23,7 +23,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -48,7 +47,6 @@ import org.l2x6.pom.tuner.PomTransformer.NodeGavtcs;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
-import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.transform.modules;
@@ -70,7 +68,7 @@ public class PomTransformerTest {
                 + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.emptyList(), expected);
+        PomTransformerTestUtils.assertTransformation(source, Collections.emptyList(), expected);
     }
 
     @Test
@@ -97,7 +95,8 @@ public class PomTransformerTest {
                 + "        <relativePath>../../pom.xml</relativePath>\n" //
                 + "    </parent>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.setParent("new-parent", "../../pom.xml")),
+        PomTransformerTestUtils.assertTransformation(source,
+                Collections.singletonList(Transformation.setParent("new-parent", "../../pom.xml")),
                 expected);
     }
 
@@ -124,7 +123,8 @@ public class PomTransformerTest {
                 + "        <relativePath>../../pom.xml</relativePath>\n" //
                 + "    </parent>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.setParent("new-parent", "../../pom.xml")),
+        PomTransformerTestUtils.assertTransformation(source,
+                Collections.singletonList(Transformation.setParent("new-parent", "../../pom.xml")),
                 expected);
     }
 
@@ -150,7 +150,7 @@ public class PomTransformerTest {
                 + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.emptyList(), expected);
+        PomTransformerTestUtils.assertTransformation(source, Collections.emptyList(), expected);
     }
 
     @Test
@@ -165,7 +165,7 @@ public class PomTransformerTest {
                 + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\r\n" //
                 + "    <modelVersion>4.0.0</modelVersion>\r\n" //
                 + "</project>";
-        assertTransformation(source, Collections.emptyList(), expected);
+        PomTransformerTestUtils.assertTransformation(source, Collections.emptyList(), expected);
     }
 
     @Test
@@ -192,7 +192,8 @@ public class PomTransformerTest {
                 + "        <module>new-module</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")),
+                expected);
     }
 
     @Test
@@ -219,7 +220,7 @@ public class PomTransformerTest {
                 + "        <module>new-module</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(Transformation.addModuleIfNeeded("new-module", String::compareTo)), expected);
     }
 
@@ -252,7 +253,7 @@ public class PomTransformerTest {
                 + "        <module>old-module</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(Transformation.addModuleIfNeeded("new-module", String::compareTo)),
                 expected);
     }
@@ -280,7 +281,8 @@ public class PomTransformerTest {
                 + "        <module>new-module</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")),
+                expected);
     }
 
     @Test
@@ -313,7 +315,8 @@ public class PomTransformerTest {
                 + "        <module>new-module</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")),
+                expected);
     }
 
     @Test
@@ -345,7 +348,8 @@ public class PomTransformerTest {
                 + "        <module>new-module</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")),
+                expected);
     }
 
     @Test
@@ -378,7 +382,8 @@ public class PomTransformerTest {
                 + "    <build>\n" //
                 + "    </build>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")),
+                expected);
     }
 
     @Test
@@ -446,7 +451,8 @@ public class PomTransformerTest {
                 + "    <build>\n" //
                 + "    </build>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.addModule("module-2")), expected);
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(Transformation.addModule("module-2")),
+                expected);
     }
 
     @Test
@@ -479,7 +485,8 @@ public class PomTransformerTest {
                 + "        <baz>new</baz>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.addOrSetProperty("baz", "new")), expected);
+        PomTransformerTestUtils.assertTransformation(source,
+                Collections.singletonList(Transformation.addOrSetProperty("baz", "new")), expected);
     }
 
     @Test
@@ -513,7 +520,7 @@ public class PomTransformerTest {
                 + "        <p3>boo</p3>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p2", "new", Comparators.elementName());
@@ -553,7 +560,7 @@ public class PomTransformerTest {
                 + "        <p3>boo</p3>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p2", "new", Comparators.elementName());
@@ -593,12 +600,12 @@ public class PomTransformerTest {
                 + "        <p3>boo</p3>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new", Comparators.elementName());
                 }), expected);
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new", Comparators.beforeFirst());
@@ -635,7 +642,7 @@ public class PomTransformerTest {
                 + "        <p1>new</p1>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p1", "new", Comparators.elementName());
@@ -672,7 +679,7 @@ public class PomTransformerTest {
                 + "        <p1>new</p1>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p1", "new", Comparators.elementName());
@@ -710,12 +717,12 @@ public class PomTransformerTest {
                 + "        <p5>new</p5>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p5", "new", Comparators.elementName());
                 }), expected);
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p5", "new", Comparators.afterLast());
@@ -755,7 +762,7 @@ public class PomTransformerTest {
                 + "        <p3>boo</p3>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p2", "new",
@@ -794,7 +801,7 @@ public class PomTransformerTest {
                 + "        <p3>boo</p3>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new",
@@ -833,7 +840,7 @@ public class PomTransformerTest {
                 + "        <p0>new</p0>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new",
@@ -874,7 +881,7 @@ public class PomTransformerTest {
                 + "        <p3>boo</p3>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p2", "new",
@@ -913,7 +920,7 @@ public class PomTransformerTest {
                 + "        <p3>boo</p3>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new",
@@ -952,7 +959,7 @@ public class PomTransformerTest {
                 + "        <p0>new</p0>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new",
@@ -993,7 +1000,7 @@ public class PomTransformerTest {
                 + "        <p3>boo</p3>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p2", "new", Comparators.elementName());
@@ -1031,7 +1038,7 @@ public class PomTransformerTest {
                 + "        <p3>boo</p3>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p", "new",
@@ -1068,7 +1075,8 @@ public class PomTransformerTest {
                 + "        <baz>new</baz>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.addOrSetProperty("baz", "new")), expected);
+        PomTransformerTestUtils.assertTransformation(source,
+                Collections.singletonList(Transformation.addOrSetProperty("baz", "new")), expected);
     }
 
     @Test
@@ -1099,7 +1107,8 @@ public class PomTransformerTest {
                 + "    <build>\n" //
                 + "    </build>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")), expected);
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(Transformation.addModule("new-module")),
+                expected);
     }
 
     @Test
@@ -1131,7 +1140,7 @@ public class PomTransformerTest {
                 + "        <module>module-1</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertTransformer(source, Arrays.asList(
+        PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 Transformation.removeModule(true, true, "module-2"),
                 modules.removeEmptyParent()), expected);
     }
@@ -1167,19 +1176,19 @@ public class PomTransformerTest {
                 + "    </modules>\n" //
                 + "</project>\n";
 
-        assertTransformation(source, Arrays.asList(
+        PomTransformerTestUtils.assertTransformation(source, Arrays.asList(
                 Transformation.commentModules(Arrays.asList("module-2"), "test comment")),
                 expected);
 
-        assertTransformation(expected, Arrays.asList(
+        PomTransformerTestUtils.assertTransformation(expected, Arrays.asList(
                 Transformation.uncommentModules("test comment")),
                 source);
 
-        assertTransformation(expected, Arrays.asList(
+        PomTransformerTestUtils.assertTransformation(expected, Arrays.asList(
                 Transformation.uncommentModules("test comment", m -> "module-2".equals(m))),
                 source);
 
-        assertTransformation(expected, Arrays.asList(
+        PomTransformerTestUtils.assertTransformation(expected, Arrays.asList(
                 Transformation.uncommentModules("test comment", m -> "foo".equals(m))),
                 expected);
 
@@ -1224,11 +1233,11 @@ public class PomTransformerTest {
                 + "     </profiles>\n"
                 + "</project>\n";
 
-        assertTransformation(source, Arrays.asList(
+        PomTransformerTestUtils.assertTransformation(source, Arrays.asList(
                 Transformation.commentModulesInProfile("profile-1", Arrays.asList("module-1", "module-2"), "test comment")),
                 expected);
 
-        assertTransformation(expected, Arrays.asList(
+        PomTransformerTestUtils.assertTransformation(expected, Arrays.asList(
                 Transformation.uncommentModules("test comment", m -> true, "profile-1")),
                 source);
 
@@ -1259,7 +1268,7 @@ public class PomTransformerTest {
                 + "    <version>0.1-SNAPSHOT</version>\n" //
                 + "    <packaging>pom</packaging>\n" //
                 + "</project>\n";
-        assertTransformer(source, Arrays.asList(
+        PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 Transformation.removeModule(true, true, "module-1"),
                 modules.removeEmptyParent()), expected);
     }
@@ -1294,7 +1303,8 @@ public class PomTransformerTest {
                 + "        <module>module-1</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.removeModule(true, true, "module-2")), expected);
+        PomTransformerTestUtils.assertTransformation(source,
+                Collections.singletonList(Transformation.removeModule(true, true, "module-2")), expected);
     }
 
     @Test
@@ -1328,7 +1338,8 @@ public class PomTransformerTest {
                 + "        <!-- comment -->\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.removeModule(false, true, "module-2")), expected);
+        PomTransformerTestUtils.assertTransformation(source,
+                Collections.singletonList(Transformation.removeModule(false, true, "module-2")), expected);
     }
 
     @Test
@@ -1360,7 +1371,8 @@ public class PomTransformerTest {
                 + "    <modules>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.removeAllModules(null, true, true)), expected);
+        PomTransformerTestUtils.assertTransformation(source,
+                Collections.singletonList(Transformation.removeAllModules(null, true, true)), expected);
     }
 
     @Test
@@ -1392,7 +1404,7 @@ public class PomTransformerTest {
                 + "    <modules>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> context.removeNodes(
                         PomTunerUtils.anyNs("project", "modules", "module"),
                         TransformationContext.removePrecedingCommentsAndWhiteSpace(true, true))),
@@ -1430,7 +1442,7 @@ public class PomTransformerTest {
                 + "        <module>module-2</module>\n" //
                 + "    </modules>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> context.removeNode(
                         PomTunerUtils.anyNs("project", "modules", "module"), true, true, false)),
                 expected);
@@ -1486,7 +1498,8 @@ public class PomTransformerTest {
                 + "        </profile>\n" //
                 + "    </profiles>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.removeAllModules("profile1", true, true)),
+        PomTransformerTestUtils.assertTransformation(source,
+                Collections.singletonList(Transformation.removeAllModules("profile1", true, true)),
                 expected);
     }
 
@@ -1543,7 +1556,8 @@ public class PomTransformerTest {
                 + "        </profile>\n" //
                 + "    </profiles>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.addModules("profile1", "module-6")),
+        PomTransformerTestUtils.assertTransformation(source,
+                Collections.singletonList(Transformation.addModules("profile1", "module-6")),
                 expected);
     }
 
@@ -1588,24 +1602,9 @@ public class PomTransformerTest {
                 + "        </profile>\n" //
                 + "    </profiles>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.singletonList(Transformation.addModules("profile1", "module-6")),
+        PomTransformerTestUtils.assertTransformation(source,
+                Collections.singletonList(Transformation.addModules("profile1", "module-6")),
                 expected);
-    }
-
-    static void assertTransformation(String src, Collection<Transformation> transformations,
-            SimpleElementWhitespace simpleElementWhitespace, String expected) {
-        PomTransformer.transform(transformations, simpleElementWhitespace, Paths.get("pom.xml"),
-                () -> src, xml -> org.assertj.core.api.Assertions.assertThat(xml).isEqualTo(expected));
-    }
-
-    static void assertTransformation(String src, Collection<Transformation> transformations, String expected) {
-        PomTransformer.transform(transformations, SimpleElementWhitespace.EMPTY, Paths.get("pom.xml"),
-                () -> src, xml -> org.assertj.core.api.Assertions.assertThat(xml).isEqualTo(expected));
-    }
-
-    static <T extends Transformer> void assertTransformer(String src, Collection<T> transformations, String expected) {
-        PomTransformer.transform(transformations, SimpleElementWhitespace.EMPTY, Paths.get("pom.xml"),
-                () -> src, xml -> org.assertj.core.api.Assertions.assertThat(xml).isEqualTo(expected));
     }
 
     @Test
@@ -1634,7 +1633,7 @@ public class PomTransformerTest {
                 + "        </dependencies>\n" //
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(Transformation.addContainerElementsIfNeeded("dependencyManagement", "dependencies")),
                 expected);
     }
@@ -1664,7 +1663,7 @@ public class PomTransformerTest {
                 + "        </dependencies>\n" //
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(Transformation.addContainerElementsIfNeeded("dependencyManagement", "dependencies")),
                 expected);
     }
@@ -1698,7 +1697,7 @@ public class PomTransformerTest {
                 + "    <dependencies>\n" //
                 + "    </dependencies>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(Transformation.addContainerElementsIfNeeded("dependencyManagement", "dependencies")),
                 expected);
     }
@@ -1733,7 +1732,7 @@ public class PomTransformerTest {
                 + "    <build>\n" //
                 + "    </build>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(Transformation.addContainerElementsIfNeeded("dependencyManagement", "dependencies")),
                 expected);
     }
@@ -1768,7 +1767,7 @@ public class PomTransformerTest {
                 + "        </dependencies>\n" //
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(
                         Transformation.addManagedDependency(new Gavtcs("org.acme", "my-ext", "${project.version}"))),
                 expected);
@@ -1827,7 +1826,7 @@ public class PomTransformerTest {
                 + "        </plugins>\n" //
                 + "    </build>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(
                         (Document document, TransformationContext context) -> {
                             final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
@@ -1899,7 +1898,7 @@ public class PomTransformerTest {
                 + "        </plugins>\n" //
                 + "    </build>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(
                         (Document document, TransformationContext context) -> {
                             final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
@@ -1961,7 +1960,7 @@ public class PomTransformerTest {
                 + "        </plugins>\n" //
                 + "    </build>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(
                         (Document document, TransformationContext context) -> {
                             final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
@@ -2025,7 +2024,7 @@ public class PomTransformerTest {
                 + "        </plugins>\n" //
                 + "    </build>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(
                         (Document document, TransformationContext context) -> {
                             final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
@@ -2092,7 +2091,7 @@ public class PomTransformerTest {
                 + "        </plugins>\n" //
                 + "    </build>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(
                         (Document document, TransformationContext context) -> {
                             final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
@@ -2155,7 +2154,7 @@ public class PomTransformerTest {
                 + "        </dependencies>\n" //
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(
                         Transformation.addManagedDependencyIfNeeded(
                                 new Gavtcs("${quarkus.platform.group-id}", "${quarkus.platform.artifact-id}",
@@ -2210,7 +2209,7 @@ public class PomTransformerTest {
                 + "        </dependencies>\n" //
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(
                         Transformation.removeManagedDependencies(true, true, gavtcs -> "dep2".equals(gavtcs.getArtifactId()))),
                 expected);
@@ -2261,7 +2260,7 @@ public class PomTransformerTest {
                 + "        </plugins>\n" //
                 + "    </build>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(
                         Transformation.removePlugins(null, true, true, gavtcs -> "org.foo".equals(gavtcs.getGroupId()))),
                 expected);
@@ -2317,7 +2316,7 @@ public class PomTransformerTest {
                 + "        </dependencies>\n" //
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(
                         Transformation.setManagedDependencyVersion("${dep1-new.version}",
                                 Arrays.asList(Ga.of("org.acme:dep1")))),
@@ -2369,7 +2368,7 @@ public class PomTransformerTest {
                 + "        </dependency>\n" //
                 + "    </dependencies>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Arrays.asList(
                         Transformation.setDependencyVersion("${dep1-new.version}",
                                 Arrays.asList(Ga.of("org.acme:dep1"))),
@@ -2500,7 +2499,7 @@ public class PomTransformerTest {
                 + "        </profile>\n" //
                 + "    </profiles>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(
                         Transformation.setManagedDependencyVersion("profile1", "${dep2-new.version}",
                                 Arrays.asList(Ga.of("org.acme:dep2")))),
@@ -2530,7 +2529,7 @@ public class PomTransformerTest {
                 + "    <dependencies>\n" //
                 + "    </dependencies>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(Transformation.addContainerElementsIfNeeded("dependencies")),
                 expected);
     }
@@ -2562,7 +2561,7 @@ public class PomTransformerTest {
                 + "\n" //
                 + "    <build/>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(Transformation.addContainerElementsIfNeeded("dependencies")),
                 expected);
     }
@@ -2593,7 +2592,7 @@ public class PomTransformerTest {
                 + "\n" //
                 + "    <build/>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(Transformation.addContainerElementsIfNeeded("dependencies")),
                 expected);
     }
@@ -2626,7 +2625,7 @@ public class PomTransformerTest {
                 + "\n" //
                 + "    <build/>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(Transformation.addContainerElementsIfNeeded("dependencies")),
                 expected);
     }
@@ -2666,7 +2665,7 @@ public class PomTransformerTest {
                 + "\n" //
                 + "    <build/>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(Transformation.addDependencyIfNeeded(new Gavtcs("org.acme", "a1", "1.2.3"),
                         Gavtcs.scopeAndTypeFirstComparator())),
                 expected);
@@ -2740,7 +2739,7 @@ public class PomTransformerTest {
                 + "\n" //
                 + "    <build/>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(
                         (Document document, TransformationContext context) -> {
                             Set<NodeGavtcs> deps = context.getProject().getDependencies();
@@ -2809,7 +2808,7 @@ public class PomTransformerTest {
                 + "\n" //
                 + "    <build/>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(Transformation.addDependencyIfNeeded(Gavtcs.testJar("org.acme", "a1", "1.2.3"),
                         Gavtcs.scopeAndTypeFirstComparator())),
                 expected);
@@ -2858,7 +2857,7 @@ public class PomTransformerTest {
                 + "\n" //
                 + "    <build/>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(Transformation.addDependencyIfNeeded(Gavtcs.virtual("org.acme", "a1", "1.2.3"),
                         Gavtcs.scopeAndTypeFirstComparator())),
                 expected);
@@ -2896,7 +2895,7 @@ public class PomTransformerTest {
                 + "        </dependencies>\n" //
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(
                         Transformation.addManagedDependency(Gavtcs.importBom("org.acme", "bom", "${bom.version}"))),
                 expected);
@@ -2933,7 +2932,7 @@ public class PomTransformerTest {
                 + "    </properties>\n" //
                 + "\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.emptyList(),
                 SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
                 expected);
@@ -2970,7 +2969,7 @@ public class PomTransformerTest {
                 + "    </properties>\n" //
                 + "\n" //
                 + "</project>\n\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.emptyList(),
                 SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
                 expected);
@@ -3007,7 +3006,7 @@ public class PomTransformerTest {
                 + "    </properties>\n" //
                 + "\n" //
                 + "</project>";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.emptyList(),
                 SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
                 expected);
@@ -3044,7 +3043,7 @@ public class PomTransformerTest {
                 + "    </properties>\n" //
                 + "\n" //
                 + "</project>    ";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.emptyList(),
                 SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
                 expected);
@@ -3081,7 +3080,7 @@ public class PomTransformerTest {
                 + "    </properties>\n" //
                 + "\n" //
                 + "</project><!-- trailing comment -->";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singleton(Transformation.addOrSetProperty("foo", "val")),
                 SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
                 expected);
@@ -3119,7 +3118,7 @@ public class PomTransformerTest {
                 + "    </properties>\n" //
                 + "\n" //
                 + "</project><!-- trailing comment -->";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singleton(Transformation.addOrSetProperty("foo", "val")),
                 SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
                 expected);
@@ -3162,7 +3161,7 @@ public class PomTransformerTest {
                 + "<!--\n"
                 + "Modified by POM Manipulation Extension for Maven 4.5 ( SHA: 698c5e7b )\n"
                 + "-->\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singleton(Transformation.addOrSetProperty("foo", "val")),
                 SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
                 expected);
@@ -3217,7 +3216,7 @@ public class PomTransformerTest {
                 + "<!--\n"
                 + "Modified by POM Manipulation Extension for Maven 4.5 ( SHA: 698c5e7b )\n"
                 + "-->\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singleton(Transformation.uncommentModules("disabled by cq-prod-maven-plugin:prod-excludes")),
                 SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
                 expected);
@@ -3266,7 +3265,7 @@ public class PomTransformerTest {
                 + "<!--\n"
                 + "Modified by POM Manipulation Extension for Maven 4.5 ( SHA: 698c5e7b )\n"
                 + "-->\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singleton(Transformation.addOrSetProperty("foo", "val")),
                 SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
                 expected);
@@ -3304,7 +3303,7 @@ public class PomTransformerTest {
                     + "    </properties>\n" //
                     + "\n" //
                     + "</project>\n";
-            assertTransformation(source,
+            PomTransformerTestUtils.assertTransformation(source,
                     Collections.emptyList(),
                     SimpleElementWhitespace.SPACE,
                     expected);
@@ -3324,7 +3323,7 @@ public class PomTransformerTest {
                     + "    </properties>\n" //
                     + "\n" //
                     + "</project>\n";
-            assertTransformation(source,
+            PomTransformerTestUtils.assertTransformation(source,
                     Collections.emptyList(),
                     SimpleElementWhitespace.EMPTY,
                     expected);
@@ -3364,7 +3363,7 @@ public class PomTransformerTest {
                     + "    </properties>\n" //
                     + "\n" //
                     + "</project>\n";
-            assertTransformation(source,
+            PomTransformerTestUtils.assertTransformation(source,
                     Collections.singletonList((Document document, TransformationContext context) -> {
                         final ContainerElement props = context.getOrAddContainerElement("properties");
                         props.addChildElement("bar", props.getOrAddLastIndent());
@@ -3467,7 +3466,7 @@ public class PomTransformerTest {
                 + "        </dependency>\n" //
                 + "    </dependencies>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(
                         Transformation.keepFirst(
                                 "//comment()[contains(.,' The following dependencies guarantee that this module is built after them. You can update them by running `mvn process-resources -Pformat -N` from the source tree root directory ')]",
@@ -3503,7 +3502,7 @@ public class PomTransformerTest {
                 + "    <dependencyManagement>\n" //
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(
                         Transformation.removeIfEmpty(true, true, "project", "dependencyManagement", "dependencies")),
                 expected);
@@ -3580,7 +3579,7 @@ public class PomTransformerTest {
 
         final String source = String.format(sourceTemplate, sourceReplacement);
         final String expected = String.format(sourceTemplate, expectedReplacement);
-        assertTransformation(source,
+        PomTransformerTestUtils.assertTransformation(source,
                 Collections.singletonList(
                         Transformation.commentModules(commentModules, "test remove")),
                 expected);
@@ -3614,7 +3613,7 @@ public class PomTransformerTest {
                 + "    </scm>\n"
                 + "</project>\n";
         String fullName = "l2x6/pom-tuner";
-        assertTransformation(source, Collections.singletonList(
+        PomTransformerTestUtils.assertTransformation(source, Collections.singletonList(
                 (Document document, TransformationContext context) -> {
                     final ContainerElement scm = context.getOrAddContainerElement("scm");
                     scm.addOrSetChildTextElement("connection", String.format("scm:git:git@github.com:%s.git", fullName));
@@ -3638,7 +3637,7 @@ public class PomTransformerTest {
                 + "        <p0><![CDATA[<crazy<mix>of characters &>]]></p0>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.emptyList(), source);
+        PomTransformerTestUtils.assertTransformation(source, Collections.emptyList(), source);
     }
 
     @Test
@@ -3653,7 +3652,7 @@ public class PomTransformerTest {
                 + "characters &>]]></p0>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.emptyList(), source);
+        PomTransformerTestUtils.assertTransformation(source, Collections.emptyList(), source);
     }
 
     @Test
@@ -3672,7 +3671,7 @@ public class PomTransformerTest {
                 + "        <p0><![CDATA[" + sb.toString() + "]]></p0>\n" //
                 + "    </properties>\n" //
                 + "</project>\n";
-        assertTransformation(source, Collections.emptyList(), source);
+        PomTransformerTestUtils.assertTransformation(source, Collections.emptyList(), source);
     }
 
     @Test
