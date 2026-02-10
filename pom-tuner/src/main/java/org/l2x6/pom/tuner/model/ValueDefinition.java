@@ -16,12 +16,16 @@
  */
 package org.l2x6.pom.tuner.model;
 
+import eu.maveniverse.domtrip.Document;
+import eu.maveniverse.domtrip.Text;
+import java.util.function.Function;
+
 public class ValueDefinition {
     private final Module module;
     private final Expression value;
-    private final String xPath;
+    private final Function<Document, Text> xPath;
 
-    public ValueDefinition(Module module, String xPath, Expression value) {
+    public ValueDefinition(Module module, Function<Document, Text> xPath, Expression value) {
         super();
         this.module = module;
         this.xPath = xPath;
@@ -45,7 +49,7 @@ public class ValueDefinition {
     /**
      * @return an XPath expression pointing at the element where the {@link #value} is defined
      */
-    public String getXPath() {
+    public Function<Document, Text> getXPath() {
         return xPath;
     }
 }

@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
@@ -36,7 +35,8 @@ import org.l2x6.pom.tuner.PomTransformer.Transformer;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
  */
-abstract class AbstractAddTransformer<P extends ContainerElement, T extends TextElement, C, THIS extends AbstractAddTransformer<P, T, C, THIS>> implements Transformer {
+abstract class AbstractAddTransformer<P extends ContainerElement, T extends TextElement, C, THIS extends AbstractAddTransformer<P, T, C, THIS>>
+        implements Transformer {
 
     final Function<TransformationContext, ProfileElement> profileSelector;
     final Function<ProfileElement, P> profileToParentElement;
@@ -111,8 +111,8 @@ abstract class AbstractAddTransformer<P extends ContainerElement, T extends Text
 
     static Function<TransformationContext, ProfileElement> selectProject() {
         return ctx -> ctx.getProfileParent(null)
-        .orElseThrow(() -> new IllegalStateException(
-                "The root element <project> element not found in " + ctx.getPomXmlPath()));
+                .orElseThrow(() -> new IllegalStateException(
+                        "The root element <project> element not found in " + ctx.getPomXmlPath()));
     }
 
     static Function<TransformationContext, ProfileElement> selectProfile(String profileId) {

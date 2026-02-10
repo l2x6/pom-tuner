@@ -16,6 +16,9 @@
  */
 package org.l2x6.pom.tuner;
 
+import eu.maveniverse.domtrip.Document;
+import eu.maveniverse.domtrip.Element;
+import eu.maveniverse.domtrip.Text;
 import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
@@ -31,6 +34,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
@@ -40,19 +44,29 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.l2x6.pom.tuner.ExpressionEvaluator.ConstantOnlyExpressionEvaluator;
+import org.l2x6.pom.tuner.PomTransformer.DomTripUtils;
+import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
+import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.model.Dependency;
 import org.l2x6.pom.tuner.model.Expression;
 import org.l2x6.pom.tuner.model.Expression.NoSuchPropertyException;
 import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.GavExpression;
 import org.l2x6.pom.tuner.model.GavSet;
+import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.model.Module;
 import org.l2x6.pom.tuner.model.Plugin;
 import org.l2x6.pom.tuner.model.Profile;
 import org.l2x6.pom.tuner.model.ValueDefinition;
+import org.l2x6.pom.tuner.transform.dependencies;
+import org.l2x6.pom.tuner.transform.dependencyManagement;
+import org.l2x6.pom.tuner.transform.extensions;
 import org.l2x6.pom.tuner.transform.modules;
+import org.l2x6.pom.tuner.transform.parent;
+import org.l2x6.pom.tuner.transform.pluginManagement;
+import org.l2x6.pom.tuner.transform.plugins;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +78,15 @@ import org.slf4j.LoggerFactory;
  */
 public class MavenSourceTree {
     private static final Pattern PLACE_HOLDER_PATTERN = Pattern.compile("\\$\\{([^\\}]+)\\}");
+    static final Function<Document, Text> PROJECT_ARTIFACT_ID_XPATH = document -> document.root()
+            .child("groupId").orElseThrow(() -> new IllegalStateException("Cannot find /project/artifactId"))
+            .textChild().orElseThrow(() -> new IllegalStateException("/project/artifactId has no text content"));
+    static final Function<Document, Text> PROJECT_GROUP_ID_XPATH = document -> document.root()
+            .child("groupId").orElseThrow(() -> new IllegalStateException("Cannot find /project/groupId"))
+            .textChild().orElseThrow(() -> new IllegalStateException("/project/groupId has no text content"));
+    public static final Function<Document, Text> PROJECT_VERSION_XPATH = document -> document.root()
+            .child("version").orElseThrow(() -> new IllegalStateException("Cannot find /project/version"))
+            .textChild().orElseThrow(() -> new IllegalStateException("/project/version has no text content"));
 
     public static class ActiveProfiles implements Predicate<Profile> {
 
@@ -241,18 +264,14 @@ public class MavenSourceTree {
      * A set of {@link DomEdit}s.
      */
     static class DomEdits {
-        final Map<String, Set<Transformation>> domEditsByPath = new LinkedHashMap<>();
+        final Map<String, Set<Transformer>> domEditsByPath = new LinkedHashMap<>();
 
         /**
          * @param path    a file system path to a {@code pom.xml} file relative to {@link MavenSourceTree#rootDirectory}
          * @param domEdit the operation to add
          */
-        public void add(String path, Transformation domEdit) {
-            Set<Transformation> edits = domEditsByPath.get(path);
-            if (edits == null) {
-                domEditsByPath.put(path, edits = new LinkedHashSet<>());
-            }
-            edits.add(domEdit);
+        public void add(String path, Transformer domEdit) {
+            domEditsByPath.computeIfAbsent(path, k -> new LinkedHashSet<>()).add(domEdit);
         }
 
         /**
@@ -262,11 +281,18 @@ public class MavenSourceTree {
          * @param encoding
          */
         public void perform(Path rootDirectory, Charset encoding, SimpleElementWhitespace simpleElementWhitespace) {
-            for (Entry<String, Set<Transformation>> e : domEditsByPath.entrySet()) {
-                final Path pomXml = rootDirectory.resolve(e.getKey());
-                PomTransformer transformer = new PomTransformer(pomXml, encoding, simpleElementWhitespace);
-                final Set<Transformation> transformations = e.getValue();
-                transformer.transform(transformations);
+            while (!domEditsByPath.isEmpty()) {
+                LinkedHashMap<String, Set<Transformer>> cp = new LinkedHashMap<>(domEditsByPath);
+                domEditsByPath.clear();
+                for (Entry<String, Set<Transformer>> e : cp.entrySet()) {
+                    final Path pomXml = rootDirectory.resolve(e.getKey());
+                    final Set<Transformer> tfs = e.getValue();
+                    PomTransformer.builder()
+                            .charset(encoding)
+                            .simpleElementWhitespace(simpleElementWhitespace)
+                            .transformers(tfs)
+                            .transform(pomXml);
+                }
             }
         }
     }
@@ -298,21 +324,23 @@ public class MavenSourceTree {
             if (valueDefinition.getXPath() == null) {
                 throw new IllegalStateException(String.format("[%s] cannot accept a value without an xPath",
                         SimplePlaceHolderConsumer.class.getSimpleName()));
-            } else if (SourceTreeExpressionEvaluator.PROJECT_VERSION_XPATH.equals(valueDefinition.getXPath())) {
+            } else if (PROJECT_VERSION_XPATH == valueDefinition.getXPath()) {
                 /* ignore */
             } else {
-                edits.add(valueDefinition.getModule().getPomPath(),
-                        Transformation.setTextValue(valueDefinition.getXPath(), newValue));
+                final Transformer edit = context -> {
+                    final Text text = valueDefinition.getXPath().apply(context.getDocument());
+                    text.content(newValue);
+                };
+                final String pomPath = valueDefinition.getModule().getPomPath();
+                edits.add(
+                        pomPath,
+                        edit);
             }
         }
 
     }
 
     class SourceTreeExpressionEvaluator implements ExpressionEvaluator {
-
-        static final String PROJECT_ARTIFACT_ID_XPATH = "/*[local-name()='project']/*[local-name()='artifactId']";
-        static final String PROJECT_GROUP_ID_XPATH = "/*[local-name()='project']/*[local-name()='groupId']";
-        public static final String PROJECT_VERSION_XPATH = "/*[local-name()='project']/*[local-name()='version']";
 
         private final Predicate<Profile> isProfileActive;
         private final Map<Expression, String> cache = new HashMap<>();
@@ -437,21 +465,9 @@ public class MavenSourceTree {
                 .pomXml(rootPomXml).build();
     }
 
-    static String xPathDependency(String dependencyKind, GavExpression gav) {
-        return "/*[local-name()='" + dependencyKind + "' and *[local-name()='groupId' and text()='"
-                + gav.getGroupId().getRawExpression() + "'] and *[local-name()='artifactId' and text()='"
-                + gav.getArtifactId().getRawExpression() + "']]";
-    }
-
-    static String xPathDependencyVersion(String dependencyKind, GavExpression gav) {
-        return xPathDependency(dependencyKind, gav) + "/*[local-name()='version']";
-    }
-
-    public static String xPathProfile(String id, String... elements) {
-        return "/*[local-name()='project']" + (id == null ? ""
-                : "/*[local-name()='profiles']/*[local-name()='profile' and *[local-name()='id' and text()='" + id
-                        + "']]")
-                + PomTunerUtils.anyNs(elements);
+    public static Function<Document, Optional<Element>> xPathProfile(String id, String... elements) {
+        return document -> DomTripUtils.findProfile(document, id)
+                .flatMap(profile -> DomTripUtils.childElement(profile, elements));
     }
 
     private final Charset encoding;
@@ -555,72 +571,6 @@ public class MavenSourceTree {
             }
         }
         return result;
-    }
-
-    void edit(final String newVersion, final Predicate<Profile> isProfileActive, final DomEdits edits, Module module,
-            final Expression moduleVersion, String xPath, ExpressionEvaluator evaluator) {
-        if (!moduleVersion.isConstant()) {
-            ((SourceTreeExpressionEvaluator) evaluator).evaluateExpression(moduleVersion,
-                    new SimplePlaceHolderConsumer(edits, newVersion));
-        } else {
-            edits.add(module.getPomPath(), Transformation.setTextValue(xPath, newVersion));
-        }
-    }
-
-    void editDependencies(String newVersion, final Predicate<Profile> isProfileActive, final DomEdits edits,
-            Module module, String profileId, Set<Dependency> dependencies, ExpressionEvaluator evaluator,
-            String... path) {
-        if (!dependencies.isEmpty()) {
-            final String xPathProfile = xPathProfile(profileId, path);
-            for (GavExpression gav : dependencies) {
-                if (gav.getVersion() != null && modulesByGa.containsKey(evaluator.evaluateGa(gav))) {
-                    final String xPath = xPathProfile + xPathDependencyVersion("dependency", gav);
-                    edit(newVersion, isProfileActive, edits, module, gav.getVersion(), xPath, evaluator);
-                }
-            }
-        }
-    }
-
-    void editExtensions(String newVersion, final Predicate<Profile> isProfileActive, final DomEdits edits,
-            Module module, String profileId, Set<GavExpression> dependencies, ExpressionEvaluator evaluator,
-            String... path) {
-        if (!dependencies.isEmpty()) {
-            final String xPathProfile = xPathProfile(profileId, path);
-            for (GavExpression gav : dependencies) {
-                if (gav.getVersion() != null && modulesByGa.containsKey(evaluator.evaluateGa(gav))) {
-                    final String xPath = xPathProfile + xPathDependencyVersion("extension", gav);
-                    edit(newVersion, isProfileActive, edits, module, gav.getVersion(), xPath, evaluator);
-                }
-            }
-        }
-    }
-
-    void editPlugins(String newVersion, final Predicate<Profile> isProfileActive, final DomEdits edits, Module module,
-            String profileId, Set<Plugin> dependencies, ExpressionEvaluator evaluator, String... path) {
-        if (!dependencies.isEmpty()) {
-            final String xPathProfile = xPathProfile(profileId, path);
-            for (Plugin pluginGav : dependencies) {
-                final boolean editPlugin = pluginGav.getVersion() != null
-                        && modulesByGa.containsKey(evaluator.evaluateGa(pluginGav));
-                if (editPlugin || !pluginGav.getDependencies().isEmpty()) {
-                    if (editPlugin) {
-                        final String xPath = xPathProfile + xPathDependencyVersion("plugin", pluginGav);
-                        edit(newVersion, isProfileActive, edits, module, pluginGav.getVersion(), xPath, evaluator);
-                    }
-                    if (!pluginGav.getDependencies().isEmpty()) {
-                        final String prefix = xPathProfile + xPathDependency("plugin", pluginGav)
-                                + PomTunerUtils.anyNs("dependencies");
-                        for (GavExpression dep : pluginGav.getDependencies()) {
-                            if (dep.getVersion() != null
-                                    && modulesByGa.containsKey(evaluator.evaluateGa(dep))) {
-                                final String xPath = prefix + xPathDependencyVersion("dependency", dep);
-                                edit(newVersion, isProfileActive, edits, module, dep.getVersion(), xPath, evaluator);
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
     /**
@@ -863,38 +813,110 @@ public class MavenSourceTree {
             /* self */
             final GavExpression parentGav = module.getParentGav();
             final Expression moduleVersion = module.getGav().getVersion();
+            final String pomPath = module.getPomPath();
             if (parentGav == null || !moduleVersion.equals(module.getParentGav().getVersion())) {
                 /* explicitly defined version */
-                edit(newVersion, isProfileActive, edits, module, moduleVersion, PomTunerUtils.anyNs("project", "version"),
-                        evaluator);
+                edits.add(pomPath,
+                        context -> context.getProject().getChildContainerElement("version").get().setTextContent(newVersion));
             }
 
             /* parent */
             if (parentGav != null && modulesByGa.containsKey(evaluator.evaluateGa(parentGav))) {
                 final Expression parentVersion = parentGav.getVersion();
-                edit(newVersion, isProfileActive, edits, module, parentVersion,
-                        PomTunerUtils.anyNs("project", "parent", "version"), evaluator);
+                edits.add(pomPath, parent.setVersion(newVersion));
             }
 
+            final Set<String> profileIds = new HashSet<>();
             for (Profile profile : module.getProfiles()) {
-                /* dependencyManagement */
-                final String profileId = profile.getId();
-                editDependencies(newVersion, isProfileActive, edits, module, profileId,
-                        profile.getDependencyManagement(), evaluator, "dependencyManagement", "dependencies");
-                editDependencies(newVersion, isProfileActive, edits, module, profileId, profile.getDependencies(), evaluator,
-                        "dependencies");
-                editPlugins(newVersion, isProfileActive, edits, module, profileId, profile.getPluginManagement(), evaluator,
-                        "build", "pluginManagement", "plugins");
-                editPlugins(newVersion, isProfileActive, edits, module, profileId, profile.getPlugins(), evaluator, "build",
-                        "plugins");
-
-                editExtensions(newVersion, isProfileActive, edits, module, profileId, profile.getExtensions(), evaluator,
-                        "build",
-                        "extensions");
-
+                if (isProfileActive.test(profile)) {
+                    profileIds.add(profile.getId());
+                }
             }
+
+            Ga moduleGa = evaluator.evaluateGa(module.getGav());
+            edits.add(
+                    module.getPomPath(),
+                    dependencyManagement
+                            .select(gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
+                            .from(profileIds::contains)
+                            .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
+                                    edits)));
+            edits.add(
+                    module.getPomPath(),
+                    dependencies
+                            .select(gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
+                            .from(profileIds::contains)
+                            .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
+                                    edits)));
+
+            edits.add(
+                    module.getPomPath(),
+                    plugins
+                            .select(gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
+                            .from(profileIds::contains)
+                            .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
+                                    edits)));
+            edits.add(
+                    module.getPomPath(),
+                    plugins
+                            .selectPluginDependencies(
+                                    gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
+                            .from(profileIds::contains)
+                            .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
+                                    edits)));
+
+            edits.add(
+                    module.getPomPath(),
+                    pluginManagement
+                            .select(gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
+                            .from(profileIds::contains)
+                            .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
+                                    edits)));
+            edits.add(
+                    module.getPomPath(),
+                    pluginManagement
+                            .selectPluginDependencies(
+                                    gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
+                            .from(profileIds::contains)
+                            .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
+                                    edits)));
+
+            edits.add(
+                    module.getPomPath(),
+                    extensions
+                            .select(gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
+                            .from(profileIds::contains)
+                            .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
+                                    edits)));
         }
         edits.perform(rootDirectory, encoding, simpleElementWhitespace);
+    }
+
+    void setVersion(Ga module, String modulePath, GavtcsElement gavtcsElement, String newVersion, ExpressionEvaluator evaluator,
+            DomEdits edits) {
+        GavExpression gavExpresion = toGavExpression(gavtcsElement.getGavtcs(), module);
+        final Expression version = gavExpresion.getVersion();
+        if (!version.isConstant()) {
+            ((SourceTreeExpressionEvaluator) evaluator).evaluateExpression(version,
+                    new SimplePlaceHolderConsumer(edits, newVersion));
+        } else {
+            gavtcsElement.setVersion(newVersion);
+        }
+    }
+
+    boolean isOwnVersionedDepenency(Ga module, Gavtcs gavtcsElement, ExpressionEvaluator evaluator) {
+        if (gavtcsElement.getVersion() == null) {
+            return false;
+        }
+        final GavExpression expr = toGavExpression(gavtcsElement, module);
+        final Ga ga = evaluator.evaluateGa(expr);
+        final boolean result = modulesByGa.containsKey(ga);
+        return result;
+    }
+
+    private GavExpression toGavExpression(Gavtcs gavtcs, Ga module) {
+        return new GavExpression(Expression.of(gavtcs.getGroupId(), module), Expression.of(gavtcs.getArtifactId(), module),
+                Expression.of(gavtcs.getVersion(), module));
     }
 
     Map<String, Set<Path>> unlinkModules(Set<Ga> includes, Module module,
