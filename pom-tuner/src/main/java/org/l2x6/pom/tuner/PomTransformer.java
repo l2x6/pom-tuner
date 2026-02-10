@@ -16,9 +16,15 @@
  */
 package org.l2x6.pom.tuner;
 
+import eu.maveniverse.domtrip.Comment;
+import eu.maveniverse.domtrip.ContainerNode;
+import eu.maveniverse.domtrip.Document;
+import eu.maveniverse.domtrip.Editor;
+import eu.maveniverse.domtrip.Element;
+import eu.maveniverse.domtrip.Node;
+import eu.maveniverse.domtrip.Node.NodeType;
+import eu.maveniverse.domtrip.Text;
 import java.io.IOException;
-import java.io.StringReader;
-import java.io.StringWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -37,7 +43,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -47,37 +52,18 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.TransformerFactoryConfigurationError;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.XPath;
-import javax.xml.xpath.XPathConstants;
-import javax.xml.xpath.XPathExpressionException;
-import javax.xml.xpath.XPathFactory;
-
 import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.Gavtcs;
+import org.l2x6.pom.tuner.transform.api.Siblings;
 import org.l2x6.pom.tuner.transform.dependencies;
 import org.l2x6.pom.tuner.transform.dependencyManagement;
 import org.l2x6.pom.tuner.transform.modules;
+import org.l2x6.pom.tuner.transform.parent;
+import org.l2x6.pom.tuner.transform.pluginManagement;
 import org.l2x6.pom.tuner.transform.plugins;
 import org.l2x6.pom.tuner.transform.properties;
-import org.w3c.dom.Comment;
-import org.w3c.dom.DOMException;
-import org.w3c.dom.Document;
 import org.w3c.dom.DocumentFragment;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.Text;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 /**
  * A utility to programmatically modify a {@code pom.xml} file while keeping the original comments and formatting also
@@ -90,7 +76,9 @@ import org.xml.sax.SAXException;
  * <li>File final whitespace</li>
  * </ul>
  * Typical usage:
- * <pre><code>
+ *
+ * <pre>
+ * <code>
  * import org.l2x6.pom.tuner.transform.*;
  *
  * PomTransformer.of(
@@ -101,7 +89,8 @@ import org.xml.sax.SAXException;
  *     (TransformationContext context) -> context.getProject().addOrSetChildTextElement("version", "0.2-SNAPSHOT")
  * )
    .transform(Path.of("pom.xml"));
- * </code></pre>
+ * </code>
+ * </pre>
  * <p>
  * Use {@link #builder()} if you need to adjust the {@link #charset} or {@link #simpleElementWhitespace}.
  */
@@ -118,8 +107,6 @@ public class PomTransformer {
     static final String EMPTY_LINE_REGEX = "[ \t]*\r?\n\r?\n[ \t\r\n]*";
     static final Pattern EMPTY_LINE_PATTERN = Pattern.compile(EMPTY_LINE_REGEX);
     static final Pattern SIMPLE_ELEM_WS_PATTERN = Pattern.compile("<([^ \t\n\r]+)([ \t\n\r]*)/>");
-    private static final String MODULE_COMMENT_PREFIX = " <module>";
-    private static final String MODULE_COMMENT_INFIX = "</module> ";
 
     private final Path path;
     private final Charset charset;
@@ -127,20 +114,22 @@ public class PomTransformer {
     private final Collection<? extends Transformer> transformers;
 
     /**
-     * @param transformers
-     * @return a new {@link PomTransformer} with {@link #charset} {@link StandardCharsets#UTF_8} and {@link SimpleElementWhitespace#AUTODETECT_PREFER_EMPTY}
+     * @param  transformers
+     * @return              a new {@link PomTransformer} with {@link #charset} {@link StandardCharsets#UTF_8} and
+     *                      {@link SimpleElementWhitespace#AUTODETECT_PREFER_EMPTY}
      *
-     * @since 5.0.0
+     * @since               5.0.0
      */
     public static PomTransformer of(Collection<? extends Transformer> transformers) {
         return builder().transformers(transformers).build();
     }
 
     /**
-     * @param transformers
-     * @return a new {@link PomTransformer} with {@link #charset} {@link StandardCharsets#UTF_8} and {@link SimpleElementWhitespace#AUTODETECT_PREFER_EMPTY}
+     * @param  transformers
+     * @return              a new {@link PomTransformer} with {@link #charset} {@link StandardCharsets#UTF_8} and
+     *                      {@link SimpleElementWhitespace#AUTODETECT_PREFER_EMPTY}
      *
-     * @since 5.0.0
+     * @since               5.0.0
      */
     @SafeVarargs
     public static <T extends Transformer> PomTransformer of(T... transformers) {
@@ -150,7 +139,7 @@ public class PomTransformer {
     /**
      * @return a new {@link Builder}
      *
-     * @since 5.0.0
+     * @since  5.0.0
      */
     public static Builder builder() {
         return new Builder();
@@ -171,7 +160,8 @@ public class PomTransformer {
         this.transformers = Collections.emptyList();
     }
 
-    private PomTransformer(Path path, Charset charset, SimpleElementWhitespace simpleElementWhitespace, Collection<? extends Transformer> transformers) {
+    private PomTransformer(Path path, Charset charset, SimpleElementWhitespace simpleElementWhitespace,
+            Collection<? extends Transformer> transformers) {
         super();
         this.path = path;
         this.charset = charset;
@@ -180,11 +170,12 @@ public class PomTransformer {
     }
 
     /**
-     * Loads the {@code pom.xml} document from the given {@link #path}, applies the {@link #transformers} and stores the document
+     * Loads the {@code pom.xml} document from the given {@link #path}, applies the {@link #transformers} and stores the
+     * document
      * back to the given {@link #path}.
      *
-     * @param      transformations the {@link Transformation}s to apply
-     * @since 5.0.0
+     * @param transformations the {@link Transformation}s to apply
+     * @since                 5.0.0
      */
     public void transform(Path file) {
         LazyWriter lazyWriter = new LazyWriter(file, charset);
@@ -197,7 +188,8 @@ public class PomTransformer {
      *
      * @param      transformations the {@link Transformation}s to apply
      *
-     * @deprecated                 use {@code PomTransformer.of(transformer1, transformer2, ...).transform(Path.of("pom.xml"))}
+     * @deprecated                 use
+     *                             {@code PomTransformer.of(transformer1, transformer2, ...).transform(Path.of("pom.xml"))}
      */
     @Deprecated
     public void transform(Transformation... transformations) {
@@ -208,9 +200,10 @@ public class PomTransformer {
      * Loads the document under {@link #path}, applies the given {@code transformations}, mitigates the formatting
      * issues caused by {@link Transformer} and finally stores the document back to the file under {@link #path}.
      *
-     * @param transformations the {@link Transformation}s to apply
+     * @param      transformations the {@link Transformation}s to apply
      *
-     * @deprecated                 use {@code PomTransformer.of(List.of(transformer1, transformer2, ...)).transform(Path.of("pom.xml"))}
+     * @deprecated                 use
+     *                             {@code PomTransformer.of(List.of(transformer1, transformer2, ...)).transform(Path.of("pom.xml"))}
      */
     @Deprecated
     public void transform(Collection<? extends Transformation> transformations) {
@@ -227,32 +220,13 @@ public class PomTransformer {
         String src = source.get();
         final String eol = detectEol(src);
 
-        final Document document;
-        try {
-            DocumentBuilderFactory f = DocumentBuilderFactory.newInstance();
-            f.setNamespaceAware(true);
-            DocumentBuilder builder = f.newDocumentBuilder();
-            document = builder.parse(new InputSource(new StringReader(src)));
-        } catch (ParserConfigurationException | SAXException | IOException e) {
-            throw new RuntimeException(String.format("Could not read DOM from [%s]", path), e);
-        }
-
-        final XPath xPath = XPathFactory.newInstance().newXPath();
-        final TransformationContext context = new TransformationContext(path, document,
-                detectIndentation(document, xPath), xPath);
+        final Document document = Document.of(src);
+        final Editor editor = new Editor(document);
+        final TransformationContext context = new TransformationContext(path, editor, document, detectIndentation(document));
         for (Transformer edit : edits) {
             edit.perform(context);
         }
-        String result;
-        try {
-            StringWriter out = new StringWriter();
-            TransformerFactory.newInstance().newTransformer().transform(new DOMSource(document), new StreamResult(out));
-            result = out.toString();
-
-        } catch (TransformerException | TransformerFactoryConfigurationError e) {
-            throw new RuntimeException(String.format("Could not write DOM from [%s]", path), e);
-        }
-
+        String result = editor.toXml();
         result = EOL_PATTERN.matcher(result).replaceAll(eol);
         result = postprocess(src, result, simpleElementWhitespace);
         outConsumer.accept(result);
@@ -290,29 +264,26 @@ public class PomTransformer {
         return result;
     }
 
-    static String detectIndentation(Node document, XPath xPath) {
-        try {
-            final String ws = (String) xPath.evaluate(
-                    PomTunerUtils.anyNs("project") + "/*[1]/preceding-sibling::text()[last()]",
-                    document, XPathConstants.STRING);
-            if (ws != null && !ws.isEmpty()) {
-                int i = ws.length() - 1;
-                LOOP: while (i >= 0) {
-                    switch (ws.charAt(i)) {
-                    case ' ':
-                    case '\t':
-                        i--;
-                        break;
-                    default:
-                        break LOOP;
+    static String detectIndentation(Document document) {
+        return document.root().children().findFirst().map(firstElem -> {
+            String ws = firstElem.precedingWhitespace();
+            {
+                final Matcher matcher = INDENT_PATTERN.matcher(ws);
+                if (matcher.find()) {
+                    return matcher.group(2);
+                }
+            }
+            Node current = firstElem;
+            while ((current = DomTripUtils.previousSibling(current)) != null) {
+                if (current.type() == NodeType.TEXT) {
+                    final Matcher matcher = INDENT_PATTERN.matcher(((Text) current).content());
+                    if (matcher.find()) {
+                        return matcher.group(2);
                     }
                 }
-                return ws.substring(i + 1);
             }
             return "    ";
-        } catch (XPathExpressionException e) {
-            throw new RuntimeException(e);
-        }
+        }).orElse("    ");
     }
 
     static String detectEol(String src) {
@@ -434,14 +405,33 @@ public class PomTransformer {
         }
     }
 
+    public static class CommentNode {
+        protected final TransformationContext context;
+        protected final Comment node;
+        protected final int indentLevel;
+
+        public CommentNode(TransformationContext context, Comment node, int indentLevel) {
+            this.context = context;
+            this.node = node;
+            this.indentLevel = indentLevel;
+        }
+
+        /**
+         * @return the associated DOM {@link Node}
+         */
+        public Comment getNode() {
+            return node;
+        }
+
+    }
+
     public static class TextElement implements Map.Entry<String, String> {
         protected final TransformationContext context;
         protected final Element node;
         protected final int indentLevel;
 
         static TextElement dummy(TransformationContext context, String elementName, String textContent) {
-            Element n = context.document.createElementNS(null, elementName);
-            n.setTextContent(textContent);
+            Element n = Element.text(elementName, textContent);
             return new TextElement(context, n, 0);
         }
 
@@ -456,22 +446,25 @@ public class PomTransformer {
          *         {@link ContainerElement}
          */
         public Comment previousSiblingCommentNode() {
-            Node currentNode = this.node;
-            while (true) {
-                Node next = currentNode.getPreviousSibling();
-                if (next == null) {
-                    return null;
-                }
-                switch (next.getNodeType()) {
-                case Node.COMMENT_NODE:
-                    return (Comment) next;
-                case Node.TEXT_NODE:
+            final ContainerNode parent = node.parent();
+            int i = DomTripUtils.indexOf(node);
+            if (i < 0) {
+                throw new IllegalStateException("Could not find " + node + " under parent " + parent);
+            }
+            i--;
+            while (i >= 0) {
+                Node ch = parent.getNode(i);
+                switch (ch.type()) {
+                case COMMENT:
+                    return (Comment) ch;
+                case TEXT:
                     break;
                 default:
                     return null;
                 }
-                currentNode = next;
+                i--;
             }
+            return null;
         }
 
         /**
@@ -482,14 +475,14 @@ public class PomTransformer {
         public Node previousSiblingInsertionRefNode() {
             Node currentNode = this.node;
             while (true) {
-                Node next = currentNode.getPreviousSibling();
+                Node next = DomTripUtils.previousSibling(currentNode);
                 if (next == null) {
                     return currentNode;
                 }
-                switch (next.getNodeType()) {
-                case Node.COMMENT_NODE:
-                    final Node previousNode = next.getPreviousSibling();
-                    if (previousNode != null && previousNode.getNodeType() == Node.ELEMENT_NODE) {
+                switch (next.type()) {
+                case COMMENT:
+                    final Node previousNode = DomTripUtils.previousSibling(next);
+                    if (previousNode != null && previousNode.type() == NodeType.ELEMENT) {
                         /*
                          * A comment following an element with no whitespace in between: such comment belongs to the
                          * previous element
@@ -497,8 +490,8 @@ public class PomTransformer {
                         return currentNode;
                     }
                     break;
-                case Node.TEXT_NODE:
-                    if (EMPTY_LINE_PATTERN.matcher(next.getTextContent()).matches()) {
+                case TEXT:
+                    if (EMPTY_LINE_PATTERN.matcher(((Text) next).content()).matches()) {
                         return next;
                     } else {
                         break;
@@ -511,13 +504,13 @@ public class PomTransformer {
         }
 
         public void remove(Function<Node, List<Node>> siblingsSelector) {
-            Node parent = node.getParentNode();
+            ContainerNode parent = node.parent();
             if (parent != null) {
                 final List<Node> siblings = siblingsSelector.apply(node);
                 if (siblings != null && !siblings.isEmpty()) {
-                    siblings.forEach(parent::removeChild);
+                    siblings.forEach(parent::removeNode);
                 }
-                parent.removeChild(node);
+                parent.removeNode(node);
             }
         }
 
@@ -530,16 +523,16 @@ public class PomTransformer {
         public void remove(boolean removePrecedingComments, boolean removePrecedingWhitespace) {
             if (removePrecedingComments || removePrecedingWhitespace) {
                 Node prevSibling = null;
-                while ((prevSibling = node.getPreviousSibling()) != null
+                while ((prevSibling = DomTripUtils.previousSibling(node)) != null
                         && ((removePrecedingWhitespace && TransformationContext.isWhiteSpaceNode(prevSibling))
-                                || (removePrecedingComments && prevSibling.getNodeType() == Node.COMMENT_NODE))) {
+                                || (removePrecedingComments && prevSibling.type() == NodeType.COMMENT))) {
                     /* remove any preceding whitespace or comments */
-                    prevSibling.getParentNode().removeChild(prevSibling);
+                    prevSibling.parent().removeNode(prevSibling);
                 }
             }
-            Node parent = node.getParentNode();
+            ContainerNode parent = node.parent();
             if (parent != null) {
-                parent.removeChild(node);
+                parent.removeNode(node);
             }
         }
 
@@ -554,9 +547,10 @@ public class PomTransformer {
          */
         public Comment prependComment(String comment) {
             final Node refNode = previousSiblingInsertionRefNode();
-            Comment result = node.getOwnerDocument().createComment(comment);
-            node.getParentNode().insertBefore(context.indent(indentLevel), refNode);
-            node.getParentNode().insertBefore(result, refNode);
+            Comment result = Comment.of(comment);
+            int i = DomTripUtils.indexOf(refNode);
+            node.parent().insertNode(i, context.indent(indentLevel));
+            node.parent().insertNode(i, result);
             return result;
         }
 
@@ -573,7 +567,7 @@ public class PomTransformer {
          */
         public Comment prependCommentIfNeeded(String comment) {
             Comment precedingComment = previousSiblingCommentNode();
-            if (precedingComment == null || !comment.equals(precedingComment.getTextContent())) {
+            if (precedingComment == null || !comment.equals(precedingComment.content())) {
                 return prependComment(comment);
             }
             return precedingComment;
@@ -586,14 +580,14 @@ public class PomTransformer {
         public Comment nextSiblingCommentNode() {
             Node currentNode = this.node;
             while (true) {
-                Node next = currentNode.getNextSibling();
+                Node next = DomTripUtils.nextSibling(currentNode);
                 if (next == null) {
                     return null;
                 }
-                switch (next.getNodeType()) {
-                case Node.COMMENT_NODE:
+                switch (next.type()) {
+                case COMMENT:
                     return (Comment) next;
-                case Node.TEXT_NODE:
+                case TEXT:
                     break;
                 default:
                     return null;
@@ -617,7 +611,7 @@ public class PomTransformer {
         public List<Node> getNodes(Predicate<Node> precedingInclude) {
             final List<Node> result = new ArrayList<>();
             Node prevSibling = node;
-            while ((prevSibling = prevSibling.getPreviousSibling()) != null
+            while ((prevSibling = DomTripUtils.previousSibling(prevSibling)) != null
                     && precedingInclude.test(prevSibling)) {
                 result.add(prevSibling);
             }
@@ -630,18 +624,14 @@ public class PomTransformer {
          *         given
          *         {@link Predicate}
          */
-        public DocumentFragment getFragment(Predicate<Node> precedingInclude) {
-            final DocumentFragment result = node.getOwnerDocument().createDocumentFragment();
-            for (Node node : getNodes(precedingInclude)) {
-                result.appendChild(node);
-            }
-            return result;
+        public List<Node> getFragment(Predicate<Node> precedingInclude) {
+            return getNodes(precedingInclude);
         }
 
         /**
          * @return the associated DOM {@link Node} together with all preceding whitespace and comments
          */
-        public DocumentFragment getFragment() {
+        public List<Node> getFragment() {
             return getFragment(TransformationContext.ALL_WHITESPACE_AND_COMMENTS);
         }
 
@@ -651,7 +641,7 @@ public class PomTransformer {
          * @since  5.0.0
          */
         public String getElementName() {
-            return node.getLocalName();
+            return node.name();
         }
 
         /**
@@ -659,7 +649,7 @@ public class PomTransformer {
          * @since  5.0.0
          */
         public String getTextContent() {
-            return node.getTextContent();
+            return node.textContent();
         }
 
         /**
@@ -669,7 +659,7 @@ public class PomTransformer {
          * @since      5.0.0
          */
         public void setTextContent(String text) {
-            node.setTextContent(text);
+            node.textContent(text);
         }
 
         @Override
@@ -695,50 +685,57 @@ public class PomTransformer {
      * An XML element in a {@code pom.xml} file that possibly has child {@link ContainerElement}s.
      */
     public static class ContainerElement extends TextElement {
-        private final Predicate<Node> ELEMENT_FILTER = n -> n.getNodeType() == Node.ELEMENT_NODE;
-        protected Text lastIndent;
+        private final Predicate<Node> ELEMENT_FILTER = n -> n.type() == NodeType.ELEMENT;
 
         public ContainerElement(TransformationContext context, Element node, int indentLevel) {
             super(context, node, indentLevel);
         }
 
-        public ContainerElement(TransformationContext context, Element containerElement, Text lastIndent, int indentLevel) {
-            this(context, containerElement, indentLevel);
-            this.lastIndent = lastIndent;
-        }
-
         /**
          * @return an {@link Iterable} containing child elements of this {@link ContainerElement}
          */
-        public Iterable<ContainerElement> childElements() {
-            return () -> new NodeIterator<ContainerElement>(
-                    node.getChildNodes(),
-                    ELEMENT_FILTER,
-                    n -> new ContainerElement(context, (Element) n, indentLevel + 1));
+        public List<ContainerElement> childElements() {
+            return childElementsStream().collect(Collectors.toList());
         }
 
         /**
          * @return a {@link Stream} containing child elements of this {@link ContainerElement}
          */
         public Stream<ContainerElement> childElementsStream() {
-            return StreamSupport.stream(childElements().spliterator(), false);
+            return node.children()
+                    .map(n -> new ContainerElement(context, n, indentLevel + 1));
         }
 
         /**
          * @return an {@link Iterable} containing text child elements of this {@link ContainerElement}
          */
-        public Iterable<TextElement> childTextElements() {
-            return () -> new NodeIterator<TextElement>(
-                    node.getChildNodes(),
-                    ELEMENT_FILTER,
-                    n -> new TextElement(context, (Element) n, indentLevel + 1));
+        public List<TextElement> childTextElements() {
+            return childTextElementsStream().collect(Collectors.toList());
         }
 
         /**
          * @return a {@link Stream} containing child text elements of this {@link ContainerElement}
          */
         public Stream<TextElement> childTextElementsStream() {
-            return StreamSupport.stream(childTextElements().spliterator(), false);
+            return node.children()
+                    .map(n -> new TextElement(context, n, indentLevel + 1));
+        }
+
+        /**
+         * @return a {@link Stream} containing child comments of this {@link ContainerElement}
+         */
+        public List<CommentNode> childCommentNodes() {
+            return childCommentNodeStream().collect(Collectors.toList());
+        }
+
+        /**
+         * @return a {@link Stream} containing child comments of this {@link ContainerElement}
+         */
+        public Stream<CommentNode> childCommentNodeStream() {
+            return node.nodes()
+                    .filter(n -> n.type() == NodeType.COMMENT)
+                    .map(n -> (Comment) n)
+                    .map(n -> new CommentNode(context, n, indentLevel + 1));
         }
 
         /**
@@ -746,13 +743,12 @@ public class PomTransformer {
          *         {@code false}
          */
         public boolean hasChildElements() {
-            final NodeList children = node.getChildNodes();
-            if (children.getLength() == 0) {
+            if (node.nodeCount() == 0) {
                 return false;
             }
-            for (int i = 0; i < children.getLength(); i++) {
-                final Node child = children.item(i);
-                if (child.getNodeType() == Node.ELEMENT_NODE) {
+            for (int i = 0; i < node.nodeCount(); i++) {
+                final Node child = node.getNode(i);
+                if (child.type() == NodeType.ELEMENT) {
                     return true;
                 }
             }
@@ -763,16 +759,10 @@ public class PomTransformer {
          * @return an existing whitespace node preceding the closing tag of {@link #node} or a newly added whitespace
          *         node preceding the closing tag of {@link #node}
          */
-        public Node getOrAddLastIndent() {
-            if (lastIndent == null) {
-                Node ws = node.getLastChild();
-                if (ws == null || ws.getNodeType() != Node.TEXT_NODE) {
-                    node.appendChild(lastIndent = context.indent(indentLevel));
-                } else {
-                    lastIndent = (Text) ws;
-                }
+        public void getOrAddLastIndent() {
+            if (node.innerPrecedingWhitespace().isEmpty()) {
+                node.innerPrecedingWhitespace(context.indent(indentLevel).content());
             }
-            return lastIndent;
         }
 
         /**
@@ -801,34 +791,36 @@ public class PomTransformer {
                 boolean emptyLineAfter) {
 
             if (refNode == null) {
-                refNode = getOrAddLastIndent();
+                getOrAddLastIndent();
             }
+
             if (emptyLineBefore) {
                 /*
                  * Add an empty line between the new node and previousProjectChildEntry
                  */
-                node.insertBefore(context.newLine(), refNode);
+                DomTripUtils.insertBefore(node, context.newLine(), refNode);
             }
-            final Element result = node.getOwnerDocument().createElement(elementName);
-            final Text newLastIndent = context.indent(indentLevel + 1);
-            result.appendChild(newLastIndent);
-            node.insertBefore(context.indent(indentLevel + 1), refNode);
-            node.insertBefore(result, refNode);
+
+            String indent = context.indent(indentLevel + 1).content();
+            final Element result = (Element) Element.of(elementName)
+                    .innerPrecedingWhitespace(indent)
+                    .precedingWhitespace(indent);
+            DomTripUtils.insertBefore(node, result, refNode);
 
             if (emptyLineAfter) {
                 /*
                  * Add an empty line between the new node and projectChild
                  * unless there is one already
                  */
-                if (refNode.getNodeType() == Node.ELEMENT_NODE) {
-                    /* no indentation and no empty line there */
-                    node.insertBefore(context.newLine(), refNode);
-                    node.insertBefore(context.indent(indentLevel + 1), refNode);
-                } else if (!TransformationContext.isEmptyLineNode(refNode)) {
-                    node.insertBefore(context.newLine(), refNode);
+                if (refNode != null && refNode.type() == NodeType.ELEMENT) {
+                    if (!TransformationContext.hasEmptyLineBefore(refNode)) {
+                        refNode.precedingWhitespace("\n" + context.indent(indentLevel + 1).content());
+                    }
+                } else if (refNode == null || !TransformationContext.isEmptyLineNode(refNode)) {
+                    DomTripUtils.insertBefore(node, context.newLine(), refNode);
                 }
             }
-            return new ContainerElement(context, result, newLastIndent, indentLevel + 1);
+            return new ContainerElement(context, result, indentLevel + 1);
         }
 
         /**
@@ -838,7 +830,7 @@ public class PomTransformer {
          */
         public Optional<ContainerElement> getChildContainerElement(String elementName) {
             for (ContainerElement child : childElements()) {
-                if (child.node.getNodeName().equals(elementName)) {
+                if (child.node.name().equals(elementName)) {
                     /* No need to insert, return existing */
                     return Optional.of(child);
                 }
@@ -877,7 +869,7 @@ public class PomTransformer {
          */
         public ContainerElement getOrAddChildContainerElement(String elementName) {
             for (ContainerElement child : childElements()) {
-                if (child.node.getNodeName().equals(elementName)) {
+                if (child.node.name().equals(elementName)) {
                     /* No need to insert, return existing */
                     return child;
                 }
@@ -887,17 +879,15 @@ public class PomTransformer {
                 return context.getOrAddContainerElement(elementName);
             }
 
-            final Element result = node.getOwnerDocument().createElement(elementName);
-            final Text newLastIndent = context.indent(indentLevel + 1);
-            result.appendChild(newLastIndent);
-            final Node refNode = getOrAddLastIndent();
-            node.insertBefore(context.indent(indentLevel + 1), refNode);
-            node.insertBefore(result, refNode);
+            final String indent = context.indent(indentLevel + 1).content();
+            final Element result = (Element) Element.of(elementName)
+                    .innerPrecedingWhitespace(indent)
+                    .precedingWhitespace(indent);
+            node.addNode(result);
 
             return new ContainerElement(
                     context,
                     result,
-                    newLastIndent,
                     indentLevel + 1);
         }
 
@@ -908,7 +898,8 @@ public class PomTransformer {
          * @param text        the text content of the newly added {@link Element}
          */
         public TextElement addChildTextElement(String elementName, final String text) {
-            return addChildTextElement(elementName, text, getOrAddLastIndent());
+            getOrAddLastIndent();
+            return addChildTextElement(elementName, text, null);
         }
 
         /**
@@ -921,12 +912,11 @@ public class PomTransformer {
          */
         public TextElement addChildTextElement(String elementName, final String text, Node refNode) {
             if (text != null) {
-                node.insertBefore(context.indent(indentLevel + 1), refNode);
-                final Element result1 = context.document.createElement(elementName);
-                result1.appendChild(context.document.createTextNode(text));
-                final Node result = result1;
-                node.insertBefore(result, refNode);
-                return new TextElement(context, node, indentLevel + 1);
+                DomTripUtils.insertBefore(node, context.indent(indentLevel + 1), refNode);
+                final Element result = Element.of(elementName);
+                result.textContent(text);
+                DomTripUtils.insertBefore(node, result, refNode);
+                return new TextElement(context, result, indentLevel + 1);
             }
             return null;
         }
@@ -935,7 +925,7 @@ public class PomTransformer {
                 Comparator<Map.Entry<String, String>> comparator) {
             Node refNode = null;
             if (comparator == null) {
-                refNode = getOrAddLastIndent();
+                getOrAddLastIndent();
             } else {
                 TextElement newEntry = TextElement.dummy(context, nodeName, nodeValue);
                 for (TextElement child : childTextElements()) {
@@ -943,8 +933,8 @@ public class PomTransformer {
                     int comparison = comparator.compare(newEntry, child);
                     if (comparison == 0) {
                         /* the given child is available, no need to add it */
-                        if (!Objects.equals(node.getTextContent(), nodeValue)) {
-                            node.setTextContent(nodeValue);
+                        if (!Objects.equals(node.textContent(), nodeValue)) {
+                            node.textContent(nodeValue);
                         }
                         return child;
                     }
@@ -953,7 +943,7 @@ public class PomTransformer {
                     }
                 }
                 if (refNode == null) {
-                    refNode = getOrAddLastIndent();
+                    getOrAddLastIndent();
                 }
             }
             return addChildTextElement(nodeName, nodeValue, refNode);
@@ -966,9 +956,9 @@ public class PomTransformer {
          * @param refNode     a {@link Node} before which the new {@link Element} should be added
          */
         public void addChildElement(String elementName, Node refNode) {
-            node.insertBefore(context.indent(indentLevel + 1), refNode);
-            final Element result = context.document.createElement(elementName);
-            node.insertBefore(result, refNode);
+            DomTripUtils.insertBefore(node, context.indent(indentLevel + 1), refNode);
+            final Element result = Element.of(elementName);
+            DomTripUtils.insertBefore(node, result, refNode);
         }
 
         /**
@@ -977,7 +967,7 @@ public class PomTransformer {
          * otherwise remove the element if it exists.
          *
          * @param elementName the name of the {@link Element} to add or set, must not be {@code null}
-         * @param textContent       the text content to set or add {@link Element}, can be {@code null}
+         * @param textContent the text content to set or add {@link Element}, can be {@code null}
          */
         public void addOrSetChildTextElement(String elementName, String textContent) {
             Objects.requireNonNull(elementName, elementName + " must not be null");
@@ -986,11 +976,12 @@ public class PomTransformer {
             if (!existingChild.isPresent() && textContent == null) {
                 /* nothing to do */
             } else if (!existingChild.isPresent()) {
-                addChildTextElement(elementName, textContent, getOrAddLastIndent());
+                getOrAddLastIndent();
+                addChildTextElement(elementName, textContent, null);
             } else if (textContent == null) {
                 existingChild.get().remove(true, true);
             } else {
-                existingChild.get().getNode().setTextContent(textContent);
+                existingChild.get().getNode().textContent(textContent);
             }
         }
 
@@ -999,20 +990,19 @@ public class PomTransformer {
          *
          * @param fragment the {@link DocumentFragment} to add
          */
-        public void addFragment(DocumentFragment fragment) {
-            addFragment(fragment, getOrAddLastIndent());
+        public void addFragment(List<Node> fragment) {
+            getOrAddLastIndent();
+            addFragment(fragment, null);
         }
 
         /**
          * @param fragment the {@link DocumentFragment} to add
          * @param refNode  a {@link Node} before which the {@link DocumentFragment} should be added
          */
-        public void addFragment(DocumentFragment fragment, Node refNode) {
-            final NodeList children = fragment.getChildNodes();
-            for (int i = 0; i < children.getLength(); i++) {
-                final Node child = children.item(i);
-                final Node imported = node.getOwnerDocument().importNode(child, true);
-                node.insertBefore(imported, refNode);
+        public void addFragment(List<Node> fragment, Node refNode) {
+            for (int i = 0; i < fragment.size(); i++) {
+                final Node child = fragment.get(i);
+                DomTripUtils.insertBefore(node, child, refNode);
             }
         }
 
@@ -1023,7 +1013,8 @@ public class PomTransformer {
          * @return        the newly created child node
          */
         public ContainerElement addGavtcs(Gavtcs gavtcs) {
-            return addGavtcs(gavtcs, getOrAddLastIndent());
+            getOrAddLastIndent();
+            return addGavtcs(gavtcs, null);
         }
 
         /**
@@ -1036,7 +1027,7 @@ public class PomTransformer {
          */
         public GavtcsElement addGavtcs(Gavtcs gavtcs, Node refNode) {
 
-            final String parentName = getNode().getNodeName();
+            final String parentName = getNode().name();
             final String childName = parentName.equals("dependencies") ? "dependency"
                     : parentName.substring(0, parentName.length() - 1);
 
@@ -1086,7 +1077,7 @@ public class PomTransformer {
                 }
             }
             if (refNode == null) {
-                refNode = getOrAddLastIndent();
+                getOrAddLastIndent();
             }
             return addGavtcs(gavtcs, refNode);
         }
@@ -1106,24 +1097,24 @@ public class PomTransformer {
             String scope = null;
             List<Ga> exclusions = null;
             for (ContainerElement depChild : childElements()) {
-                switch (depChild.node.getNodeName()) {
+                switch (depChild.node.name()) {
                 case "groupId":
-                    groupId = depChild.node.getTextContent();
+                    groupId = depChild.node.textContent();
                     break;
                 case "artifactId":
-                    artifactId = depChild.node.getTextContent();
+                    artifactId = depChild.node.textContent();
                     break;
                 case "version":
-                    version = depChild.node.getTextContent();
+                    version = depChild.node.textContent();
                     break;
                 case "type":
-                    type = depChild.node.getTextContent();
+                    type = depChild.node.textContent();
                     break;
                 case "classifier":
-                    classifier = depChild.node.getTextContent();
+                    classifier = depChild.node.textContent();
                     break;
                 case "scope":
-                    scope = depChild.node.getTextContent();
+                    scope = depChild.node.textContent();
                     break;
                 case "exclusions":
                     exclusions = new ArrayList<>();
@@ -1131,12 +1122,12 @@ public class PomTransformer {
                         String exclGroupId = null;
                         String exclArtifactId = null;
                         for (ContainerElement exclChild : excl.childElements()) {
-                            switch (exclChild.node.getNodeName()) {
+                            switch (exclChild.node.name()) {
                             case "groupId":
-                                exclGroupId = exclChild.node.getTextContent();
+                                exclGroupId = exclChild.node.textContent();
                                 break;
                             case "artifactId":
-                                exclArtifactId = exclChild.node.getTextContent();
+                                exclArtifactId = exclChild.node.textContent();
                                 break;
                             }
                         }
@@ -1151,7 +1142,7 @@ public class PomTransformer {
         }
 
         public ProfileElement asProfileElement() {
-            return new ProfileElement(context, node, lastIndent, indentLevel);
+            return new ProfileElement(context, node, indentLevel);
         }
 
         public GavtcsElement asGavtcsElement() {
@@ -1163,24 +1154,24 @@ public class PomTransformer {
             String scope = null;
             List<Ga> exclusions = null;
             for (ContainerElement depChild : childElements()) {
-                switch (depChild.node.getNodeName()) {
+                switch (depChild.node.name()) {
                 case "groupId":
-                    groupId = depChild.node.getTextContent();
+                    groupId = depChild.node.textContent();
                     break;
                 case "artifactId":
-                    artifactId = depChild.node.getTextContent();
+                    artifactId = depChild.node.textContent();
                     break;
                 case "version":
-                    version = depChild.node.getTextContent();
+                    version = depChild.node.textContent();
                     break;
                 case "type":
-                    type = depChild.node.getTextContent();
+                    type = depChild.node.textContent();
                     break;
                 case "classifier":
-                    classifier = depChild.node.getTextContent();
+                    classifier = depChild.node.textContent();
                     break;
                 case "scope":
-                    scope = depChild.node.getTextContent();
+                    scope = depChild.node.textContent();
                     break;
                 case "exclusions":
                     exclusions = new ArrayList<>();
@@ -1188,12 +1179,12 @@ public class PomTransformer {
                         String exclGroupId = null;
                         String exclArtifactId = null;
                         for (ContainerElement exclChild : excl.childElements()) {
-                            switch (exclChild.node.getNodeName()) {
+                            switch (exclChild.node.name()) {
                             case "groupId":
-                                exclGroupId = exclChild.node.getTextContent();
+                                exclGroupId = exclChild.node.textContent();
                                 break;
                             case "artifactId":
-                                exclArtifactId = exclChild.node.getTextContent();
+                                exclArtifactId = exclChild.node.textContent();
                                 break;
                             }
                         }
@@ -1204,81 +1195,19 @@ public class PomTransformer {
                     break;
                 }
             }
-            return new GavtcsElement(context, node, lastIndent, indentLevel,
+            return new GavtcsElement(context, node, indentLevel,
                     groupId, artifactId, version, type, classifier, scope, exclusions);
         }
 
-        static class NodeIterator<T> implements Iterator<T> {
-
-            private final NodeList nodes;
-            private final Predicate<Node> filter;
-            private final Function<Node, T> mapper;
-
-            private T current;
-            private int currentIndex = -1;
-            private boolean moveCurrent = true;
-
-            public NodeIterator(NodeList nodes, Predicate<Node> filter, Function<Node, T> mapper) {
-                this.nodes = nodes;
-                this.filter = filter;
-                this.mapper = mapper;
-            }
-
-            @Override
-            public boolean hasNext() {
-                if (moveCurrent) {
-                    current = moveCurrent();
-                    moveCurrent = false;
-                }
-                return current != null;
-            }
-
-            @Override
-            public T next() {
-                if (moveCurrent) {
-                    current = moveCurrent();
-                }
-                if (current == null) {
-                    throw new ArrayIndexOutOfBoundsException();
-                }
-                moveCurrent = true;
-                return current;
-            }
-
-            private T moveCurrent() {
-                while (true) {
-                    currentIndex++;
-                    if (currentIndex >= nodes.getLength()) {
-                        return null;
-                    }
-                    final Node node = nodes.item(currentIndex);
-                    if (filter.test(node)) {
-                        return mapper.apply(node);
-                    }
-                }
-            }
-
-            @Override
-            public void remove() {
-                if (current == null) {
-                    throw new IllegalStateException("current must be set first");
-                }
-                final Node node = nodes.item(currentIndex);
-                node.getParentNode().removeChild(node);
-                currentIndex--;
-            }
-
-        }
     }
 
     public static class ProjectElement extends ContainerElement {
         private static volatile Map<String, ElementOrderEntry> elementOrdering;
         private static final Object elementOrderingLock = new Object();
 
-        private ProjectElement(TransformationContext context, Element containerElement, Text lastIndent, int indentLevel) {
-            super(context, containerElement, lastIndent, indentLevel);
+        private ProjectElement(TransformationContext context, Element containerElement, int indentLevel) {
+            super(context, containerElement, indentLevel);
         }
-
 
         /**
          * First attempts to find an element with the given {@code elementName}.
@@ -1302,7 +1231,7 @@ public class PomTransformer {
             boolean emptyLineBefore = false;
             boolean emptyLineAfter = false;
             for (ContainerElement projectChild : childElements()) {
-                final String projectChildName = projectChild.node.getNodeName();
+                final String projectChildName = projectChild.node.name();
                 if (projectChildName.equals(elementName)) {
                     /* No need to insert, return existing */
                     return projectChild;
@@ -1361,7 +1290,6 @@ public class PomTransformer {
                     .orElse(Collections.emptySet());
         }
 
-
         /**
          * @param  gavtcs the {@link Gavtcs} to find
          * @return        an optional containing the dependency node matching the given {@code gavtcs} or an empty
@@ -1375,7 +1303,6 @@ public class PomTransformer {
                             .findFirst()
                             .orElse(null));
         }
-
 
         /**
          * Removes the given dependency if it exists; otherwise does nothing.
@@ -1422,7 +1349,6 @@ public class PomTransformer {
         public void addDependencyIfNeeded(Gavtcs gavtcs, Comparator<Gavtcs> comparator) {
             getOrAddChildContainerElement("dependencies").addGavtcsIfNeeded(gavtcs, comparator);
         }
-
 
         /**
          * @return POM elements ordered according to
@@ -1496,10 +1422,11 @@ public class PomTransformer {
             }
         }
     }
+
     public static class ProfileElement extends ProjectElement {
 
-        private ProfileElement(TransformationContext context, Element containerElement, Text lastIndent, int indentLevel) {
-            super(context, containerElement, lastIndent, indentLevel);
+        private ProfileElement(TransformationContext context, Element containerElement, int indentLevel) {
+            super(context, containerElement, indentLevel);
         }
 
         /**
@@ -1528,10 +1455,9 @@ public class PomTransformer {
         private final Gavtcs gavtcs;
 
         GavtcsElement(
-                TransformationContext context, Element containerElement, Text lastIndent, int indentLevel,
-                String groupId, String artifactId, String version, String type, String classifier, String scope,
-                Collection<Ga> exclusions) {
-            super(context, containerElement, lastIndent, indentLevel);
+                TransformationContext context, Element containerElement, int indentLevel, String groupId,
+                String artifactId, String version, String type, String classifier, String scope, Collection<Ga> exclusions) {
+            super(context, containerElement, indentLevel);
             this.gavtcs = new Gavtcs(groupId, artifactId, version, type, classifier, scope, exclusions);
         }
 
@@ -1543,11 +1469,12 @@ public class PomTransformer {
         }
 
         /**
-         * Set this element's {@code <groupId>} child to the given {@code groupId} value, adding the {@code <groupId>} node if necessary
+         * Set this element's {@code <groupId>} child to the given {@code groupId} value, adding the {@code <groupId>} node if
+         * necessary
          * or removing it if {@code groupId} is {@code null}.
          *
          * @param classifier the version to set or {@code null} if the {@code <groupId>} node should be removed
-         * @since 5.0.0
+         * @since            5.0.0
          */
         public GavtcsElement setGroupId(String groupId) {
             addOrSetChildTextElement("groupId", groupId);
@@ -1555,11 +1482,12 @@ public class PomTransformer {
         }
 
         /**
-         * Set this element's {@code <artifactId>} child to the given {@code artifactId} value, adding the {@code <artifactId>} node if necessary
+         * Set this element's {@code <artifactId>} child to the given {@code artifactId} value, adding the {@code <artifactId>}
+         * node if necessary
          * or removing it if {@code artifactId} is {@code null}.
          *
          * @param classifier the version to set or {@code null} if the {@code <artifactId>} node should be removed
-         * @since 5.0.0
+         * @since            5.0.0
          */
         public GavtcsElement setArtifactId(String artifactId) {
             addOrSetChildTextElement("artifactId", artifactId);
@@ -1567,11 +1495,12 @@ public class PomTransformer {
         }
 
         /**
-         * Set this element's {@code <version>} child to the given {@code version} value, adding the {@code <version>} node if necessary
+         * Set this element's {@code <version>} child to the given {@code version} value, adding the {@code <version>} node if
+         * necessary
          * or removing it if {@code version} is {@code null}.
          *
          * @param version the version to set or {@code null} if the {@code <version>} node should be removed
-         * @since 5.0.0
+         * @since         5.0.0
          */
         public GavtcsElement setVersion(String version) {
             addOrSetChildTextElement("version", version);
@@ -1579,11 +1508,12 @@ public class PomTransformer {
         }
 
         /**
-         * Set this element's {@code <classifier>} child to the given {@code classifier} value, adding the {@code <classifier>} node if necessary
+         * Set this element's {@code <classifier>} child to the given {@code classifier} value, adding the {@code <classifier>}
+         * node if necessary
          * or removing it if {@code classifier} is {@code null}.
          *
          * @param classifier the version to set or {@code null} if the {@code <classifier>} node should be removed
-         * @since 5.0.0
+         * @since            5.0.0
          */
         public GavtcsElement setClassifier(String classifier) {
             addOrSetChildTextElement("classifier", classifier);
@@ -1591,11 +1521,12 @@ public class PomTransformer {
         }
 
         /**
-         * Set this element's {@code <scope>} child to the given {@code scope} value, adding the {@code <scope>} node if necessary
+         * Set this element's {@code <scope>} child to the given {@code scope} value, adding the {@code <scope>} node if
+         * necessary
          * or removing it if {@code scope} is {@code null}.
          *
          * @param classifier the version to set or {@code null} if the {@code <scope>} node should be removed
-         * @since 5.0.0
+         * @since            5.0.0
          */
         public GavtcsElement setScope(String scope) {
             addOrSetChildTextElement("scope", scope);
@@ -1642,21 +1573,21 @@ public class PomTransformer {
     public static class TransformationContext {
         public static final Predicate<Node> ALL_WHITESPACE_AND_COMMENTS = prevSibling -> TransformationContext
                 .isWhiteSpaceNode(prevSibling)
-                || prevSibling.getNodeType() == Node.COMMENT_NODE;
+                || prevSibling.type() == NodeType.COMMENT;
 
         private final Path pomXmlPath;
         private final Document document;
         private final ProjectElement project;
-        private final XPath xPath;
         private final String indentationString;
+        private final Editor editor;
 
-        TransformationContext(Path pomXmlPath, Document document, String indentationString, XPath xPath) {
+        TransformationContext(Path pomXmlPath, Editor editor, Document document, String indentationString) {
             super();
             this.pomXmlPath = pomXmlPath;
+            this.editor = editor;
             this.document = document;
             this.indentationString = indentationString;
-            this.xPath = xPath;
-            this.project = new ProjectElement(this, document.getDocumentElement(), null, 0);
+            this.project = new ProjectElement(this, document.root(), 0);
         }
 
         /**
@@ -1664,6 +1595,13 @@ public class PomTransformer {
          */
         public Path getPomXmlPath() {
             return pomXmlPath;
+        }
+
+        /**
+         * @return the {@link Document} being transformed
+         */
+        public Document getDocument() {
+            return document;
         }
 
         /**
@@ -1685,14 +1623,14 @@ public class PomTransformer {
             for (int i = 0; i < indentCount; i++) {
                 sb.append(indentationString);
             }
-            return document.createTextNode(sb.toString());
+            return Text.of(sb.toString());
         }
 
         /**
          * @return a newly created text node having single newline {@code \n} as its content.
          */
         public Text newLine() {
-            return document.createTextNode("\n");
+            return Text.of("\n");
         }
 
         /**
@@ -1734,7 +1672,7 @@ public class PomTransformer {
         }
 
         /**
-         * @return           a {@link ContainerElement} pointing at the {@code <project>} element of the current {@code pom.xml} file
+         * @return a {@link ContainerElement} pointing at the {@code <project>} element of the current {@code pom.xml} file
          */
         public ProjectElement getProject() {
             return project;
@@ -1747,18 +1685,11 @@ public class PomTransformer {
          */
         public Optional<ProfileElement> getProfile(String profileId) {
             Objects.requireNonNull(profileId, "profileId");
-            try {
-                final Node node = (Node) xPath.evaluate(
-                        PomTunerUtils.anyNs("project", "profiles", "profile") + "[." + PomTunerUtils.anyNs("id") + "/text() = '"
-                                + profileId + "']",
-                        document, XPathConstants.NODE);
-                if (node != null) {
-                    return Optional.of(new ProfileElement(this, (Element) node, null, 2));
-                }
-                return Optional.empty();
-            } catch (XPathExpressionException e) {
-                throw new RuntimeException(e);
-            }
+            return getContainerElement("project", "profiles").flatMap(profiles -> profiles.childElementsStream()
+                    .map(ContainerElement::asProfileElement)
+                    .filter(profile -> profileId.equals(profile.getId()))
+                    .findFirst());
+
         }
 
         public List<ProfileElement> getProfiles() {
@@ -1783,20 +1714,13 @@ public class PomTransformer {
          */
         public ProfileElement getOrAddProfile(String profileId) {
             Objects.requireNonNull(profileId, "profileId");
-            try {
-                final Node node = (Node) xPath.evaluate(
-                        PomTunerUtils.anyNs("project", "profiles", "profile") + "[." + PomTunerUtils.anyNs("id") + "/text() = '"
-                                + profileId + "']",
-                        document, XPathConstants.NODE);
-                if (node != null) {
-                    return new ProfileElement(this, (Element) node, null, 2);
-                } else {
-                    ContainerElement profile = getOrAddContainerElement("profiles").addChildContainerElement("profile");
-                    profile.addChildTextElement("id", profileId);
-                    return profile.asProfileElement();
-                }
-            } catch (XPathExpressionException e) {
-                throw new RuntimeException(e);
+            Optional<ProfileElement> maybeProfile = getProfile(profileId);
+            if (maybeProfile.isPresent()) {
+                return maybeProfile.get();
+            } else {
+                ContainerElement profile = getOrAddContainerElement("profiles").addChildContainerElement("profile");
+                profile.addChildTextElement("id", profileId);
+                return profile.asProfileElement();
             }
         }
 
@@ -1807,11 +1731,7 @@ public class PomTransformer {
          */
         public Optional<ProfileElement> getProfileParent(String profileId) {
             if (profileId == null) {
-                final Node node = document.getDocumentElement();
-                if (node != null) {
-                    return Optional.of(new ProfileElement(this, (Element) node, null, 0));
-                }
-                return Optional.empty();
+                return Optional.of(project.asProfileElement());
             } else {
                 return getProfile(profileId);
             }
@@ -1824,11 +1744,7 @@ public class PomTransformer {
          */
         public ProfileElement getOrAddProfileParent(String profileId) {
             if (profileId == null) {
-                final Node node = document.getDocumentElement();
-                if (node == null) {
-                    throw new IllegalStateException("No root <project> element in " + pomXmlPath);
-                }
-                return new ProfileElement(this, (Element) node, null, 0);
+                return project.asProfileElement();
             } else {
                 return getOrAddProfile(profileId);
             }
@@ -1847,74 +1763,18 @@ public class PomTransformer {
          * @return      An optional possibly refering to a node under the given {@code path}.
          */
         public Optional<ContainerElement> getContainerElement(String... path) {
-            try {
-                final Node node = (Node) xPath.evaluate(PomTunerUtils.anyNs(path), document, XPathConstants.NODE);
-                if (node != null) {
-                    return Optional.of(new ContainerElement(this, (Element) node, null, path.length - 1));
-                }
-                return Optional.empty();
-            } catch (XPathExpressionException e) {
-                throw new RuntimeException(e);
+            if (path.length == 0) {
+                throw new IllegalArgumentException();
             }
-        }
-
-        /**
-         * Removes the first {@link Node} selected by the given {@code xPathExpression}
-         *
-         * @param xPathExpression           an XPath expression to select {@link Node}s to remove
-         * @param removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
-         *                                  otherwise the preceding comments won't be removed
-         * @param removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
-         *                                  also be removed; otherwise the preceding whitespace nodes won't be removed
-         * @param onlyIfEmpty               if {@code true}, the node is removed only if it has no child nodes or if it has only
-         *                                  comment and
-         *                                  whitespace child nodes; otherwise the node is always removed
-         */
-        public void removeNode(String xPathExpression, boolean removePrecedingComments, boolean removePrecedingWhitespace,
-                boolean onlyIfEmpty) {
-            BiConsumer<Node, Node> precedingNodesConsumer = null;
-            if (removePrecedingComments || removePrecedingWhitespace) {
-                precedingNodesConsumer = removePrecedingCommentsAndWhiteSpace(removePrecedingComments,
-                        removePrecedingWhitespace);
+            if (!"project".equals(path[0])) {
+                throw new IllegalArgumentException();
             }
-            removeNode(xPathExpression, precedingNodesConsumer, onlyIfEmpty);
-        }
-
-        /**
-         * Removes the first {@link Node} selected by the given {@code xPathExpression}
-         *
-         * @param xPathExpression        an XPath expression to select {@link Node}s to remove
-         * @param precedingNodesConsumer a custom handler for e.g. removing the preceding whitespace and commets - see
-         *                               {@link #removePrecedingCommentsAndWhiteSpace(boolean, boolean)}
-         * @param onlyIfEmpty            if {@code true}, the node is removed only if it has no child nodes or if it has only
-         *                               comment and
-         *                               whitespace child nodes; otherwise the node is always removed
-         */
-        public void removeNode(String xPathExpression, BiConsumer<Node, Node> precedingNodesConsumer,
-                boolean onlyIfEmpty) {
-
-            Consumer<Node> nodeRemover = removeNode(precedingNodesConsumer);
-            selectNodes(xPathExpression)
-                    .limit(1)
-                    .filter(deletedNode -> !onlyIfEmpty || !hasElementChildren(deletedNode))
-                    .forEach(nodeRemover);
-
-        }
-
-        /**
-         * Removes all {@link Node}s selected by the given {@code xPathExpression}
-         *
-         * @param xPathExpression        an XPath expression to select {@link Node}s to remove
-         * @param precedingNodesConsumer a custom handler for e.g. removing the preceding whitespace and commets - see
-         *                               {@link #removePrecedingCommentsAndWhiteSpace(boolean, boolean)}
-         *
-         * @since                        4.1.0
-         */
-        public void removeNodes(String xPathExpression, BiConsumer<Node, Node> precedingNodesConsumer) {
-
-            Consumer<Node> nodeRemover = removeNode(precedingNodesConsumer);
-            selectNodes(xPathExpression).forEach(nodeRemover);
-
+            if (path.length == 1) {
+                return Optional.of(this.project);
+            }
+            final String[] rest = new String[path.length - 2];
+            System.arraycopy(path, 2, rest, 0, rest.length);
+            return this.project.getChildContainerElement(path[1], rest);
         }
 
         /**
@@ -1926,21 +1786,23 @@ public class PomTransformer {
          * @param newIndent the new indentation string
          */
         public void reIndent(Node node, String newIndent) {
-            switch (node.getNodeType()) {
-            case Node.TEXT_NODE:
-                final String oldValue = node.getNodeValue();
-                final String newValue = INDENT_PATTERN.matcher(oldValue).replaceAll("$1" + newIndent);
-                if (!oldValue.equals(newValue)) {
-                    node.setNodeValue(newValue);
-                }
+            switch (node.type()) {
+            case TEXT: {
+                Text text = ((Text) node);
+                fixIndent(text::content, text::content, newIndent);
                 break;
-            case Node.ELEMENT_NODE:
-                NodeList children = node.getChildNodes();
+            }
+            case ELEMENT: {
+                Element elem = ((Element) node);
+
+                fixIndent(elem::precedingWhitespace, elem::precedingWhitespace, newIndent);
+                fixIndent(elem::innerPrecedingWhitespace, elem::innerPrecedingWhitespace, newIndent);
+
                 String passIndent = newIndent + indentationString;
-                final int nodeCount = children.getLength();
+                final int nodeCount = elem.nodeCount();
                 for (int i = 0; i < nodeCount; i++) {
-                    final Node child = children.item(i);
-                    if (i + 1 == nodeCount && child.getNodeType() == Node.TEXT_NODE) {
+                    final Node child = elem.getNode(i);
+                    if (i + 1 == nodeCount && child.type() == NodeType.TEXT) {
                         /* the last indent before the closing element */
                         reIndent(child, newIndent);
                     } else {
@@ -1948,8 +1810,17 @@ public class PomTransformer {
                     }
                 }
                 break;
+            }
             default:
                 break;
+            }
+        }
+
+        static void fixIndent(Supplier<String> get, Consumer<String> set,String newIndent) {
+            final String oldValue = get.get();
+            final String newValue = INDENT_PATTERN.matcher(oldValue).replaceAll("$1" + newIndent);
+            if (!oldValue.equals(newValue)) {
+                set.accept(newValue);
             }
         }
 
@@ -1966,42 +1837,13 @@ public class PomTransformer {
         }
 
         /**
-         * Calls {@link #reIndent(Node, String)} for each child of the given {@code fragment}.
-         *
-         * @param fragment  the nodes whose indentation should be reset
-         * @param newIndent the new indentation string
+         * @param  refNode the {@link Node} to decide about
+         * @return         {@code true} if the given {@code node} is a text node and its text matches
+         *                 {@value PomTransformer#EMPTY_LINE_REGEX} or {@code false} otherwise
          */
-        public void reIndent(DocumentFragment fragment, String newIndent) {
-            final NodeList children = fragment.getChildNodes();
-            for (int i = 0; i < children.getLength(); i++) {
-                reIndent(children.item(i), newIndent);
-            }
-        }
-
-        /**
-         * @param  xPathExpression the XPath expression to use for selecting nodes to return
-         * @return                 a {@link Stream} backed by an {@link ArrayList} rather than {@link NodeList} - thus safe to
-         *                         call e.g.
-         *                         {@code node.getParentNode().removeChild(node)} on the elements
-         *
-         * @since                  4.1.0
-         */
-        public Stream<Node> selectNodes(String xPathExpression) {
-            try {
-                final NodeList deletedNodes = (NodeList) xPath.evaluate(xPathExpression, document, XPathConstants.NODESET);
-                final List<Node> deletedNodeList;
-                if (deletedNodes.getLength() > 0) {
-                    deletedNodeList = new ArrayList<>();
-                    for (int i = 0; i < deletedNodes.getLength(); i++) {
-                        deletedNodeList.add(deletedNodes.item(i));
-                    }
-                } else {
-                    deletedNodeList = Collections.emptyList();
-                }
-                return deletedNodeList.stream();
-            } catch (XPathExpressionException | DOMException e) {
-                throw new RuntimeException(e);
-            }
+        public static boolean isEmptyLineNode(Node refNode) {
+            return refNode instanceof Text && ((Text) refNode).content() != null
+                    && EMPTY_LINE_PATTERN.matcher(((Text) refNode).content()).matches();
         }
 
         /**
@@ -2009,10 +1851,8 @@ public class PomTransformer {
          * @return      {@code true} if the given {@code node} is a text node and its text matches
          *              {@value PomTransformer#EMPTY_LINE_REGEX} or {@code false} otherwise
          */
-        public static boolean isEmptyLineNode(Node node) {
-            return node.getNodeType() == Node.TEXT_NODE
-                    && node.getTextContent() != null
-                    && EMPTY_LINE_PATTERN.matcher(node.getTextContent()).matches();
+        public static boolean hasEmptyLineBefore(Node node) {
+            return EMPTY_LINE_PATTERN.matcher(node.precedingWhitespace()).matches();
         }
 
         /**
@@ -2021,20 +1861,23 @@ public class PomTransformer {
          *              {@value PomTransformer#WS_REGEX} or {@code false} otherwise
          */
         public static boolean isWhiteSpaceNode(Node node) {
-            return node.getNodeType() == Node.TEXT_NODE
-                    && node.getTextContent() != null
-                    && WS_PATTERN.matcher(node.getTextContent()).matches();
+            return node.type() == NodeType.TEXT
+                    && ((Text) node).content() != null
+                    && WS_PATTERN.matcher(((Text) node).content()).matches();
         }
 
         public static boolean hasElementChildren(Node node) {
-            final NodeList children = node.getChildNodes();
-            if (children.getLength() == 0) {
-                return false;
-            }
-            for (int i = 0; i < children.getLength(); i++) {
-                final Node child = children.item(i);
-                if (child.getNodeType() != Node.COMMENT_NODE && !isWhiteSpaceNode(child)) {
-                    return true;
+            if (node instanceof ContainerNode) {
+                ContainerNode cn = (ContainerNode) node;
+                int cnt = cn.nodeCount();
+                if (cnt == 0) {
+                    return false;
+                }
+                for (int i = 0; i < cnt; i++) {
+                    final Node child = cn.getNode(i);
+                    if (child.type() != NodeType.COMMENT && !isWhiteSpaceNode(child)) {
+                        return true;
+                    }
                 }
             }
             return false;
@@ -2048,14 +1891,12 @@ public class PomTransformer {
          * @param  commentText an optional comment text to add before the closing mark {@code -->}
          * @return             the new {@link Comment} node
          */
-        public static Comment commentTextNode(Node node, String commentText) {
-            final String moduleText = node.getTextContent();
-            final Node parent = node.getParentNode();
-            final String nodeName = node.getLocalName();
-            final Comment moduleComment = node.getOwnerDocument()
-                    .createComment(" <" + nodeName + ">" + moduleText + "</" + nodeName + ">"
-                            + (commentText != null ? (" " + commentText + " ") : " "));
-            parent.replaceChild(moduleComment, node);
+        public static Comment commentTextNode(Element node, String commentText) {
+            final String moduleText = node.textContent();
+            final String nodeName = node.name();
+            final Comment moduleComment = Comment.of(" <" + nodeName + ">" + moduleText + "</" + nodeName + ">"
+                    + (commentText != null ? (" " + commentText + " ") : " "));
+            DomTripUtils.replace(moduleComment, node);
             return moduleComment;
         }
 
@@ -2070,20 +1911,20 @@ public class PomTransformer {
         public static Consumer<Node> removeNode(BiConsumer<Node, Node> precedingNodesConsumer) {
             return (Node deletedNode) -> {
                 if (precedingNodesConsumer != null) {
-                    Node prevSibling = deletedNode.getPreviousSibling();
+                    Node prevSibling = DomTripUtils.previousSibling(deletedNode);
                     while (prevSibling != null
                             && (TransformationContext.isWhiteSpaceNode(prevSibling)
-                                    || prevSibling.getNodeType() == Node.COMMENT_NODE)) {
+                                    || prevSibling.type() == NodeType.COMMENT)) {
                         /* remove any preceding whitespace or comments */
                         precedingNodesConsumer.accept(deletedNode, prevSibling);
-                        final Node newPrevSibling = deletedNode.getPreviousSibling();
+                        final Node newPrevSibling = DomTripUtils.previousSibling(deletedNode);
                         if (prevSibling == newPrevSibling) {
                             break;
                         }
                         prevSibling = newPrevSibling;
                     }
                 }
-                deletedNode.getParentNode().removeChild(deletedNode);
+                deletedNode.parent().removeNode(deletedNode);
             };
         }
 
@@ -2103,9 +1944,9 @@ public class PomTransformer {
                 boolean removePrecedingWhitespace) {
             return (Node deletedNode, Node whitespaceOrComment) -> {
                 if ((removePrecedingWhitespace && TransformationContext.isWhiteSpaceNode(whitespaceOrComment))
-                        || (removePrecedingComments && whitespaceOrComment.getNodeType() == Node.COMMENT_NODE)) {
+                        || (removePrecedingComments && whitespaceOrComment.type() == NodeType.COMMENT)) {
                     /* remove any preceding whitespace or comments */
-                    whitespaceOrComment.getParentNode().removeChild(whitespaceOrComment);
+                    whitespaceOrComment.parent().removeNode(whitespaceOrComment);
                 }
             };
         }
@@ -2146,6 +1987,237 @@ public class PomTransformer {
 
     }
 
+    public static class RemovableNode {
+        private final Node node;
+        private final Consumer<Node> remove;
+        private final Function<Node, Node> previous;
+        private final Function<Node, Node> next;
+
+        public static RemovableNode of(Node node) {
+            //            Node nxt = DomTripUtils.nextSibling(node);
+            //            if (nxt != null) {
+            //                final String precedingWhitespace = nxt.precedingWhitespace();
+            //                if (!precedingWhitespace.isEmpty()) {
+            //                    return new RemovableNode(new Text(precedingWhitespace), n -> nxt.precedingWhitespace(""),
+            //                            DomTripUtils::previousSibling, n -> nxt);
+            //                }
+            //            }
+            return new RemovableNode(node, DomTripUtils::remove, DomTripUtils::previousSibling,
+                    DomTripUtils::nextSibling);
+
+        }
+
+        RemovableNode(Node node, Consumer<Node> remove, Function<Node, Node> previous, Function<Node, Node> next) {
+            this.node = node;
+            this.remove = remove;
+            this.previous = previous;
+            this.next = next;
+        }
+
+        public RemovableNode previousSibling() {
+            final String precedingWhitespace = node.precedingWhitespace();
+            if (!precedingWhitespace.isEmpty()) {
+                return new RemovableNode(new Text(precedingWhitespace), n -> node.precedingWhitespace(""),
+                        n -> DomTripUtils.previousSibling(node), DomTripUtils::nextSibling);
+            }
+            final Node prev = previous.apply(node);
+            return prev != null ? new RemovableNode(
+                    prev,
+                    DomTripUtils::remove,
+                    DomTripUtils::previousSibling,
+                    DomTripUtils::nextSibling) : null;
+        }
+
+        public void remove() {
+            remove.accept(node);
+        }
+
+        public Node node() {
+            return node;
+        }
+
+        public RemovableNode nextSibling() {
+            Node nxt = next.apply(node);
+            if (nxt == null) {
+                return null;
+            }
+            if (nxt instanceof IgnorePrecedingWsNode) {
+                nxt = ((IgnorePrecedingWsNode) nxt).delegate;
+            } else {
+                final Node localNxt = nxt;
+                final String precedingWhitespace = localNxt.precedingWhitespace();
+                if (!precedingWhitespace.isEmpty()) {
+                    return new RemovableNode(new Text(precedingWhitespace), n -> localNxt.precedingWhitespace(""),
+                            DomTripUtils::previousSibling, n -> new IgnorePrecedingWsNode(localNxt));
+                }
+            }
+            return new RemovableNode(nxt, DomTripUtils::remove, DomTripUtils::previousSibling,
+                    DomTripUtils::nextSibling);
+        }
+
+        @Override
+        public String toString() {
+            return node.toString();
+        }
+
+        static class IgnorePrecedingWsNode extends Node {
+            private final Node delegate;
+
+            private IgnorePrecedingWsNode(Node delegate) {
+                this.delegate = delegate;
+            }
+
+            @Override
+            public NodeType type() {
+                return delegate.type();
+            }
+
+            @Override
+            public String toXml() {
+                return delegate.toXml();
+            }
+
+            @Override
+            public void toXml(StringBuilder sb) {
+                delegate.toXml(sb);
+            }
+
+        }
+    }
+
+    public static class DomTripUtils {
+        static int indexOf(Node child) {
+            if (child == null) {
+                return -1;
+            }
+            final ContainerNode parent = child.parent();
+            final int childCount = parent.nodeCount();
+            for (int i = 0; i < childCount; i++) {
+                if (child == parent.getNode(i)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        public static void insertBefore(ContainerNode parent, Node newNode, Node refNode) {
+            if (refNode == null) {
+                parent.addNode(newNode);
+            } else {
+                int i = DomTripUtils.indexOf(refNode);
+                parent.insertNode(i, newNode);
+            }
+        }
+
+        public static void remove(Node node) {
+            final ContainerNode parent = node.parent();
+            if (parent != null) {
+                parent.removeNode(node);
+            }
+        }
+        public static Node previousSibling(Node node) {
+            final ContainerNode parent = node.parent();
+            if (parent == null) {
+                return null;
+            }
+            int i = indexOf(node);
+            if (i <= 0) {
+                return null;
+            }
+            return parent.getNode(i - 1);
+        }
+
+        public static Node nextSibling(Node node) {
+            final ContainerNode parent = node.parent();
+            if (parent == null) {
+                return null;
+            }
+            int i = indexOf(node);
+            if (i < 0) {
+                return null;
+            }
+            i++;
+            if (i >= parent.nodeCount()) {
+                return null;
+            }
+            return parent.getNode(i);
+        }
+
+        public static Node lastChild(ContainerNode parent) {
+            final int cnt = parent.nodeCount();
+            if (cnt > 0) {
+                return parent.getNode(cnt - 1);
+            }
+            return null;
+        }
+
+        public static void replace(Node newNode, Node oldNode) {
+            final ContainerNode parent = oldNode.parent();
+            int i = DomTripUtils.indexOf(oldNode);
+            parent.removeNode(oldNode);
+            newNode.precedingWhitespace(oldNode.precedingWhitespace());
+            parent.insertNode(i, newNode);
+        }
+
+        public static Optional<Element> childElement(Element parent, String... elements) {
+            Element currentNode = parent;
+            for (int i = 0; i < elements.length; i++) {
+                String elem = elements[i];
+                Optional<Element> maybe = currentNode.nodes()
+                        .filter(child -> child instanceof Element)
+                        .map(child -> (Element) child)
+                        .filter(element -> elem.equals(element.name()))
+                        .findFirst();
+                if (!maybe.isPresent()) {
+                    return Optional.empty();
+                }
+                currentNode = maybe.get();
+            }
+            return Optional.of(currentNode);
+        }
+
+        public static Optional<Element> childElement(Document document, String... elements) {
+            int cnt = elements.length;
+            if (cnt == 0) {
+                return Optional.empty();
+            }
+
+            Element currentNode = document.root();
+            if (!elements[0].equals(currentNode.name())) {
+                return Optional.empty();
+            }
+
+            for (int i = 1; i < elements.length; i++) {
+                String elem = elements[i];
+                Optional<Element> maybe = currentNode.nodes()
+                        .filter(child -> child instanceof Element)
+                        .map(child -> (Element) child)
+                        .filter(element -> elem.equals(element.name()))
+                        .findFirst();
+                if (!maybe.isPresent()) {
+                    return Optional.empty();
+                }
+                currentNode = maybe.get();
+            }
+            return Optional.of(currentNode);
+        }
+
+        public static Optional<Element> findProfile(Document document, String profileId) {
+            if (profileId == null) {
+                return Optional.of(document.root());
+            } else {
+                return document.root()
+                        .child("profiles")
+                        .flatMap(profiles -> profiles.children()
+                                .filter(ch -> "profile".equals(ch.name()))
+                                .filter(profile -> profile.child("id")
+                                        .filter(pid -> profileId.equals(pid.textContent()))
+                                        .isPresent())
+                                .findFirst());
+            }
+        }
+    }
+
     /**
      * A transformation of a DOM
      */
@@ -2162,10 +2234,10 @@ public class PomTransformer {
     public interface Transformation extends Transformer {
 
         /**
-         * @param module
+         * @param      module
          * @return
          *
-         * @deprecated                           use {@link modules#add(String)} instead
+         * @deprecated        use {@link modules#add(String)} instead
          */
         @Deprecated
         public static Transformation addModule(String module) {
@@ -2173,11 +2245,11 @@ public class PomTransformer {
         }
 
         /**
-         * @param profileId
-         * @param modulePaths
+         * @param      profileId
+         * @param      modulePaths
          * @return
          *
-         * @deprecated                           use {@link modules#add(String)} instead
+         * @deprecated             use {@link modules#add(String)} instead
          */
         @Deprecated
         public static Transformation addModules(String profileId, String... modulePaths) {
@@ -2185,11 +2257,11 @@ public class PomTransformer {
         }
 
         /**
-         * @param module
-         * @param comparator
+         * @param      module
+         * @param      comparator
          * @return
          *
-         * @deprecated                           use {@link modules#add(String)} instead
+         * @deprecated            use {@link modules#add(String)} instead
          */
         @Deprecated
         public static Transformation addModuleIfNeeded(String module, Comparator<String> comparator) {
@@ -2200,11 +2272,11 @@ public class PomTransformer {
         }
 
         /**
-         * @param profileId
-         * @param modulePaths
+         * @param      profileId
+         * @param      modulePaths
          * @return
          *
-         * @deprecated                           use {@link modules#add(String)} instead
+         * @deprecated             use {@link modules#add(String)} instead
          */
         @Deprecated
         public static Transformation addModules(String profileId, Collection<String> modulePaths) {
@@ -2212,12 +2284,12 @@ public class PomTransformer {
         }
 
         /**
-         * @param profileId
-         * @param comparator
-         * @param modulePaths
+         * @param      profileId
+         * @param      comparator
+         * @param      modulePaths
          * @return
          *
-         * @deprecated                           use {@link modules#add(String)} instead
+         * @deprecated             use {@link modules#add(String)} instead
          */
         @Deprecated
         public static Transformation addModulesIfNeeded(String profileId, Comparator<String> comparator,
@@ -2236,11 +2308,11 @@ public class PomTransformer {
         }
 
         /**
-         * @param name
-         * @param value
+         * @param      name
+         * @param      value
          * @return
          *
-         * @deprecated                           use {@link properties#set(String, String)} instead
+         * @deprecated       use {@link properties#set(String, String)} instead
          */
         @Deprecated
         public static Transformation addProperty(String name, String value) {
@@ -2250,13 +2322,12 @@ public class PomTransformer {
             };
         }
 
-
         /**
-         * @param name
-         * @param value
+         * @param      name
+         * @param      value
          * @return
          *
-         * @deprecated                           use {@link properties#set(String, String)} instead
+         * @deprecated       use {@link properties#set(String, String)} instead
          */
         @Deprecated
         public static Transformation addOrSetProperty(String name, String value) {
@@ -2271,14 +2342,13 @@ public class PomTransformer {
                     furtherNames);
         }
 
-
         /**
-         * @param groupId
-         * @param artifactId
-         * @param version
+         * @param      groupId
+         * @param      artifactId
+         * @param      version
          * @return
          *
-         * @deprecated                           use {@link dependencyManagement#add(Gavtcs)} instead
+         * @deprecated            use {@link dependencyManagement#add(Gavtcs)} instead
          */
         @Deprecated
         public static Transformation addManagedDependency(String groupId, String artifactId, String version) {
@@ -2286,10 +2356,10 @@ public class PomTransformer {
         }
 
         /**
-         * @param gavtcs
+         * @param      gavtcs
          * @return
          *
-         * @deprecated                           use {@link dependencyManagement#add(Gavtcs)} instead
+         * @deprecated        use {@link dependencyManagement#add(Gavtcs)} instead
          */
         @Deprecated
         public static Transformation addManagedDependency(Gavtcs gavtcs) {
@@ -2301,9 +2371,9 @@ public class PomTransformer {
         }
 
         /**
-         * @param gavtcs
+         * @param      gavtcs
          * @return
-         * @deprecated                           use {@link dependencyManagement#add(Gavtcs)} instead
+         * @deprecated        use {@link dependencyManagement#add(Gavtcs)} instead
          */
         @Deprecated
         public static Transformation addManagedDependencyIfNeeded(Gavtcs gavtcs) {
@@ -2322,12 +2392,7 @@ public class PomTransformer {
 
         public static Transformation commentModules(Collection<String> modulesToComment, String commentText) {
             return (Document document, TransformationContext context) -> {
-
-                for (String m : modulesToComment) {
-                    final String xPathExpr = PomTunerUtils.anyNs("project", "modules", "module") + "[text() = '" + m + "'"
-                            + "]";
-                    context.selectNodes(xPathExpr).forEach(n -> TransformationContext.commentTextNode(n, commentText));
-                }
+                modules.select(modulesToComment::contains).commentOut(textElem -> commentText).perform(context);
             };
         }
 
@@ -2342,16 +2407,8 @@ public class PomTransformer {
         public static Transformation commentModulesInProfile(String profile, Collection<String> modulesToComment,
                 String commentText) {
             return (Document document, TransformationContext context) -> {
-
-                for (String m : modulesToComment) {
-                    final String xPathExpr = PomTunerUtils.anyNs("project", "profiles", "profile", "id") + "[text() = '"
-                            + profile
-                            + "'"
-                            + "]"
-                            + "/following-sibling::"
-                            + PomTunerUtils.anyNs("modules", "module").substring(1) + "[text() = '" + m + "'" + "]";
-                    context.selectNodes(xPathExpr).forEach(n -> TransformationContext.commentTextNode(n, commentText));
-                }
+                modules.select(modulesToComment::contains).fromProfilesOnly(profile).commentOut(textElem -> commentText)
+                        .perform(context);
             };
         }
 
@@ -2412,10 +2469,10 @@ public class PomTransformer {
         }
 
         /**
-         * @param gavtcs
-         * @param comparator
+         * @param      gavtcs
+         * @param      comparator
          * @return
-         * @deprecated                           use {@link dependencies#add(Gavtcs)} instead
+         * @deprecated            use {@link dependencies#add(Gavtcs)} instead
          */
         @Deprecated
         public static Transformation addDependencyIfNeeded(Gavtcs gavtcs, Comparator<Gavtcs> comparator) {
@@ -2435,9 +2492,20 @@ public class PomTransformer {
         public static Transformation removeModule(boolean removePrecedingComments, boolean removePrecedingWhitespace,
                 String module) {
             return (Document document, TransformationContext context) -> {
-                final String xPath = PomTunerUtils.anyNs("project", "modules", "module") + "[text() = '" + module + "']";
-                context.removeNode(xPath, removePrecedingComments, removePrecedingWhitespace, false);
+                modules.remove(module).alsoRemoveNone().alsoRemovePrevious(selector(removePrecedingComments, removePrecedingWhitespace))
+                        .perform(context);
             };
+        }
+
+        static Predicate<Node> selector(boolean removePrecedingComments, boolean removePrecedingWhitespace) {
+            Predicate<Node> result = n -> false;
+            if (removePrecedingComments) {
+                result = result.or(Siblings.comments());
+            }
+            if (removePrecedingWhitespace) {
+                result = result.or(Siblings.whitespace());
+            }
+            return result;
         }
 
         /**
@@ -2450,12 +2518,11 @@ public class PomTransformer {
          */
         @Deprecated
         public static Transformation removeModules(boolean removePrecedingComments, boolean removePrecedingWhitespace,
-                Set<String> modules) {
+                Set<String> modulesToRemove) {
             return (Document document, TransformationContext context) -> {
-                for (String module : modules) {
-                    final String xPath = PomTunerUtils.anyNs("project", "modules", "module") + "[text() = '" + module + "']";
-                    context.removeNode(xPath, removePrecedingComments, removePrecedingWhitespace, false);
-                }
+                modules.remove(te -> modulesToRemove.contains(te.getTextContent()))
+                        .alsoRemoveNone()
+                        .alsoRemovePrevious(selector(removePrecedingComments, removePrecedingWhitespace)).perform(context);
             };
         }
 
@@ -2494,35 +2561,29 @@ public class PomTransformer {
 
         public static Transformation uncommentModules(String commentText, Predicate<String> modulePathFilter,
                 String profileId) {
+            final String expandedCommentText = " " + commentText + " ";
             return (Document document, TransformationContext context) -> {
-                final String xPathExpr;
 
-                if (profileId == null) {
-                    xPathExpr = PomTunerUtils.anyNs("project", "modules") + "/comment()[starts-with(., '"
-                            + MODULE_COMMENT_PREFIX
-                            + "') and substring(., string-length(.) - "
-                            + (MODULE_COMMENT_INFIX.length() + commentText.length()) + ")  = '" + MODULE_COMMENT_INFIX
-                            + commentText + " ']";
-                } else {
-                    xPathExpr = PomTunerUtils.anyNs("project", "profiles", "profile")
-                            + "[." + PomTunerUtils.anyNs("id") + "/text() = '" + profileId + "']"
-                            + PomTunerUtils.anyNs("modules") + "/comment()[starts-with(., '"
-                            + MODULE_COMMENT_PREFIX
-                            + "') and substring(., string-length(.) - "
-                            + (MODULE_COMMENT_INFIX.length() + commentText.length()) + ")  = '" + MODULE_COMMENT_INFIX
-                            + commentText + " ']";
-                }
-                context.selectNodes(xPathExpr).forEach(commentNode -> {
-                    final String wholeText = commentNode.getTextContent();
-                    final String modulePath = wholeText.substring(MODULE_COMMENT_PREFIX.length(),
-                            wholeText.length() - MODULE_COMMENT_INFIX.length() - commentText.length() - 1);
-                    if (modulePathFilter.test(modulePath)) {
-                        final Node parent = commentNode.getParentNode();
-                        final Element newModuleNode = context.document.createElement("module");
-                        newModuleNode.appendChild(context.document.createTextNode(modulePath));
-                        parent.replaceChild(newModuleNode, commentNode);
+                modules.selectComments(comment -> {
+                    final Document doc = comment.getParsedContent();
+
+                    if (doc.nodeCount() != 2) {
+                        return false;
                     }
-                });
+                    Node text = doc.getNode(1);
+                    if (text.type() != NodeType.TEXT || !expandedCommentText.equals(((Text) text).content())) {
+                        return false;
+                    }
+                    Node node = doc.getNode(0);
+                    if (node.type() != NodeType.ELEMENT) {
+                        return false;
+                    }
+                    Element element = (Element) node;
+                    return modulePathFilter.test(element.textContent());
+                })
+                        .fromProfilesOnly(profileId)
+                        .modify(comment -> DomTripUtils.replace(comment.getParsedContent().getNode(0), comment.getSource()))
+                        .perform(context);
             };
         }
 
@@ -2538,8 +2599,10 @@ public class PomTransformer {
         public static Transformation removeProperty(boolean removePrecedingComments, boolean removePrecedingWhitespace,
                 String propertyName) {
             return (Document document, TransformationContext context) -> {
-                final String xPath = PomTunerUtils.anyNs("project", "properties", propertyName);
-                context.removeNode(xPath, removePrecedingComments, removePrecedingWhitespace, false);
+                properties.remove(propertyName)
+                        .alsoRemoveNone()
+                        .alsoRemovePrevious(Transformation.selector(removePrecedingComments, removePrecedingWhitespace))
+                        .perform(context);
             };
         }
 
@@ -2703,49 +2766,16 @@ public class PomTransformer {
             };
         }
 
-        public static Transformation setTextValue(String selector, String newValue) {
-            return new SetTextValueTransformation(selector, newValue);
-        }
-
         public static Transformation addManagedPlugin(String groupId, String artifactId, String version) {
             return (Document document, TransformationContext context) -> {
-                final ContainerElement managedPlugins = context.getOrAddContainerElements("build", "pluginManagement",
-                        "plugins");
-                final ContainerElement pluginElement = managedPlugins.addChildContainerElement("plugin");
-                pluginElement.addChildTextElement("groupId", groupId);
-                pluginElement.addChildTextElement("artifactId", artifactId);
-                pluginElement.addChildTextElement("version", version);
+                pluginManagement.add(new Gavtcs(groupId, artifactId, version)).perform(context);
             };
         }
 
-        public static Transformation addFragment(DocumentFragment fragment, String parentPathFirst, String... parentPathOther) {
+        public static Transformation addFragment(List<Node> fragment, String parentPathFirst, String... parentPathOther) {
             return (Document document, TransformationContext context) -> {
                 final ContainerElement parent = context.getOrAddContainerElements(parentPathFirst, parentPathOther);
                 parent.addFragment(fragment);
-            };
-        }
-
-        public static Transformation keepFirst(String xPath, boolean removePrecedingWhitespace) {
-            return (Document document, TransformationContext context) -> {
-                try {
-                    NodeList nodes = (NodeList) context.xPath.evaluate(xPath, document, XPathConstants.NODESET);
-                    if (nodes.getLength() > 1) {
-                        for (int i = 1; i < nodes.getLength(); i++) {
-                            Node deletedNode = nodes.item(i);
-                            if (removePrecedingWhitespace) {
-                                Node prevSibling = null;
-                                while ((prevSibling = deletedNode.getPreviousSibling()) != null
-                                        && TransformationContext.isWhiteSpaceNode(prevSibling)) {
-                                    /* remove any preceding whitespace or comments */
-                                    prevSibling.getParentNode().removeChild(prevSibling);
-                                }
-                            }
-                            deletedNode.getParentNode().removeChild(deletedNode);
-                        }
-                    }
-                } catch (XPathExpressionException | DOMException e) {
-                    throw new RuntimeException("Could not evaluate " + xPath, e);
-                }
             };
         }
 
@@ -2782,53 +2812,6 @@ public class PomTransformer {
 
         default void perform(TransformationContext context) {
             perform(context.document, context);
-        }
-
-        public static class SetTextValueTransformation implements Transformation {
-
-            private final String selector;
-            private final String newValue;
-
-            public SetTextValueTransformation(String selector, String newValue) {
-                this.selector = selector;
-                this.newValue = newValue;
-            }
-
-            @Override
-            public void perform(Document document, TransformationContext context) {
-                context.selectNodes(selector).forEach(n -> n.setTextContent(newValue));
-            }
-
-            @Override
-            public boolean equals(Object obj) {
-                if (this == obj)
-                    return true;
-                if (obj == null)
-                    return false;
-                if (getClass() != obj.getClass())
-                    return false;
-                SetTextValueTransformation other = (SetTextValueTransformation) obj;
-                if (newValue == null) {
-                    if (other.newValue != null)
-                        return false;
-                } else if (!newValue.equals(other.newValue))
-                    return false;
-                if (selector == null) {
-                    if (other.selector != null)
-                        return false;
-                } else if (!selector.equals(other.selector))
-                    return false;
-                return true;
-            }
-
-            @Override
-            public int hashCode() {
-                final int prime = 31;
-                int result = 1;
-                result = prime * result + ((newValue == null) ? 0 : newValue.hashCode());
-                result = prime * result + ((selector == null) ? 0 : selector.hashCode());
-                return result;
-            }
         }
 
     }

@@ -16,6 +16,8 @@
  */
 package org.l2x6.pom.tuner.transform.api;
 
+import eu.maveniverse.domtrip.Element;
+import eu.maveniverse.domtrip.Node;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,11 +28,10 @@ import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
 import org.l2x6.pom.tuner.PomTransformer.NodeGavtcs;
 import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
+import org.l2x6.pom.tuner.PomTransformer.RemovableNode;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 /**
  * A generic removed of {@code pom.xml} elements such as {@code <properties>}, their child properties,
@@ -44,7 +45,7 @@ public class RemoveTransformer<T extends TextElement, THIS extends RemoveTransfo
     final Predicate<String> profileSelector;
     final Function<ProfileElement, Stream<T>> profileToRemovedElements;
     final Predicate<T> elementSelector;
-    final List<Function<Node, List<Node>>> siblingsSelectors;
+    final List<Function<Node, List<RemovableNode>>> siblingsSelectors;
 
     /**
      * Maps a {@link ProfileElement} to a stream of text elements whose parent is a direct child of the given
@@ -106,7 +107,7 @@ public class RemoveTransformer<T extends TextElement, THIS extends RemoveTransfo
             Predicate<String> profileSelector,
             Function<ProfileElement, Stream<T>> profileToTextElements,
             Predicate<T> elementSelector,
-            List<Function<Node, List<Node>>> siblingsSelectors,
+            List<Function<Node, List<RemovableNode>>> siblingsSelectors,
             boolean immutableSiblingsSelectors) {
         this.profileSelector = profileSelector;
         this.profileToRemovedElements = profileToTextElements;
@@ -143,7 +144,7 @@ public class RemoveTransformer<T extends TextElement, THIS extends RemoveTransfo
      * @see                     Siblings
      */
     @SuppressWarnings("unchecked")
-    public THIS alsoRemove(Function<Node, List<Node>> siblingsSelector) {
+    public THIS alsoRemove(Function<Node, List<RemovableNode>> siblingsSelector) {
         return (THIS) new RemoveTransformer<>(
                 profileSelector,
                 profileToRemovedElements,
@@ -226,23 +227,20 @@ public class RemoveTransformer<T extends TextElement, THIS extends RemoveTransfo
     @Override
     public void perform(TransformationContext context) {
 
-        List<Node> nodesToRemove = new ArrayList<>();
+        List<RemovableNode> nodesToRemove = new ArrayList<>();
         context.getProfilesStream()
                 .filter(profile -> profileSelector.test(profile.getId()))
                 .flatMap(profileToRemovedElements)
                 .filter(elementSelector)
                 .forEach(textNode -> {
                     final Element removedNode = textNode.getNode();
-                    nodesToRemove.add(removedNode);
-                    for (Function<Node, List<Node>> siblingsSelector : siblingsSelectors) {
+                    nodesToRemove.add(RemovableNode.of(removedNode));
+                    for (Function<Node, List<RemovableNode>> siblingsSelector : siblingsSelectors) {
                         nodesToRemove.addAll(siblingsSelector.apply(removedNode));
                     }
                 });
-        for (Node node : nodesToRemove) {
-            final Node parent = node.getParentNode();
-            if (parent != null) {
-                parent.removeChild(node);
-            }
+        for (RemovableNode node : nodesToRemove) {
+            node.remove();
         }
     }
 

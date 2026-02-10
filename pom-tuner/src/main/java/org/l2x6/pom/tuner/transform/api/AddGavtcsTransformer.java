@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
 import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
@@ -37,7 +36,8 @@ import org.l2x6.pom.tuner.model.Gavtcs;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
  */
-public class AddGavtcsTransformer<P extends ContainerElement, T extends GavtcsElement, THIS extends AddGavtcsTransformer<P,T,THIS>> extends AbstractAddTransformer<P, T, Gavtcs, THIS> {
+public class AddGavtcsTransformer<P extends ContainerElement, T extends GavtcsElement, THIS extends AddGavtcsTransformer<P, T, THIS>>
+        extends AbstractAddTransformer<P, T, Gavtcs, THIS> {
 
     AddGavtcsTransformer(
             Function<TransformationContext, ProfileElement> profileSelector,
@@ -59,7 +59,6 @@ public class AddGavtcsTransformer<P extends ContainerElement, T extends GavtcsEl
                 comparator,
                 Collections.<Consumer<T>> emptyList());
     }
-
 
     /**
      * @param  profileSelector a {@link Function} retrieving the profile under which the current operation should be applied
@@ -111,6 +110,7 @@ public class AddGavtcsTransformer<P extends ContainerElement, T extends GavtcsEl
                 position,
                 postprocessors);
     }
+
     /**
      * @param  elementName the name of the XML element after which the new element should be added; if there is no such
      *                     element, the new element is added at the last position

@@ -16,6 +16,9 @@
  */
 package org.l2x6.pom.tuner.model;
 
+import eu.maveniverse.domtrip.Document;
+import eu.maveniverse.domtrip.Element;
+import eu.maveniverse.domtrip.Text;
 import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.Charset;
@@ -26,8 +29,10 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Optional;
 import java.util.Set;
 import java.util.Stack;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -407,7 +412,10 @@ public class Module {
             if (isProfileActive.test(p)) {
                 final Expression result = p.properties.get(propertyName);
                 if (result != null) {
-                    final String xPath = MavenSourceTree.xPathProfile(p.getId(), "properties", propertyName);
+                    final Function<Document, Optional<Element>> getProperty = MavenSourceTree.xPathProfile(p.getId(),
+                            "properties", propertyName);
+                    Function<Document, Text> xPath = document -> getProperty.apply(document)
+                            .flatMap((Element prop) -> prop.textChild()).orElse(null);
                     return new ValueDefinition(this, xPath, result);
                 }
             }

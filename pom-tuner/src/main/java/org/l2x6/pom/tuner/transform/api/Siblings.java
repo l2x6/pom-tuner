@@ -16,50 +16,52 @@
  */
 package org.l2x6.pom.tuner.transform.api;
 
+import eu.maveniverse.domtrip.Node;
+import eu.maveniverse.domtrip.Node.NodeType;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import org.l2x6.pom.tuner.PomTransformer.RemovableNode;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
-import org.w3c.dom.Node;
 
 public interface Siblings {
     static Function<Node, List<Node>> none() {
         return node -> Collections.emptyList();
     }
 
-    static Function<Node, List<Node>> previousOrNext(Predicate<Node> nodeSelector) {
+    static Function<Node, List<RemovableNode>> previousOrNext(Predicate<Node> nodeSelector) {
         return node -> {
-            final List<Node> prev = previous(nodeSelector).apply(node);
-            final List<Node> result = new ArrayList<>(prev);
+            final List<RemovableNode> prev = previous(nodeSelector).apply(node);
+            final List<RemovableNode> result = new ArrayList<>(prev);
             result.addAll(next(nodeSelector).apply(node));
             return Collections.unmodifiableList(result);
         };
     }
 
-    static Function<Node, List<Node>> previousCommentsOrWhitespace() {
+    static Function<Node, List<RemovableNode>> previousCommentsOrWhitespace() {
         return previous(commentsOrWhitespace());
     }
 
-    static Function<Node, List<Node>> previous(Predicate<Node> nodeSelector) {
+    static Function<Node, List<RemovableNode>> previous(Predicate<Node> nodeSelector) {
         return node -> {
-            final List<Node> result = new ArrayList<>();
-            Node prevSibling = node;
-            while ((prevSibling = prevSibling.getPreviousSibling()) != null
-                    && nodeSelector.test(prevSibling)) {
+            final List<RemovableNode> result = new ArrayList<>();
+            RemovableNode prevSibling = RemovableNode.of(node);
+            while ((prevSibling = prevSibling.previousSibling()) != null
+                    && nodeSelector.test(prevSibling.node())) {
                 result.add(prevSibling);
             }
             return Collections.unmodifiableList(result);
         };
     }
 
-    static Function<Node, List<Node>> next(Predicate<Node> nodeSelector) {
+    static Function<Node, List<RemovableNode>> next(Predicate<Node> nodeSelector) {
         return node -> {
-            final List<Node> result = new ArrayList<>();
-            Node nextSibling = node;
-            while ((nextSibling = nextSibling.getNextSibling()) != null
-                    && nodeSelector.test(nextSibling)) {
+            final List<RemovableNode> result = new ArrayList<>();
+            RemovableNode nextSibling = RemovableNode.of(node);
+            while ((nextSibling = nextSibling.nextSibling()) != null
+                    && nodeSelector.test(nextSibling.node())) {
                 result.add(nextSibling);
             }
             return Collections.unmodifiableList(result);
@@ -67,7 +69,7 @@ public interface Siblings {
     }
 
     static Predicate<Node> comments() {
-        return n -> n.getNodeType() == Node.COMMENT_NODE;
+        return n -> n.type() == NodeType.COMMENT;
     }
 
     static Predicate<Node> commentsOrWhitespace() {

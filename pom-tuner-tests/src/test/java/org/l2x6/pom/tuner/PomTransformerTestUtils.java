@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.StringTokenizer;
+import java.util.UUID;
 import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
@@ -68,13 +69,28 @@ public class PomTransformerTestUtils {
                     msg.append("actual");
                     appendDashes(i - "actual".length(), msg);
                     msg.append("↴\n");
-                    msg.append(lineActual).append('\n');
+                    msg.append(lineActual).append("↵\n");
                     appendDashes(i, msg);
                     msg.append("↕\n");
-                    msg.append(lineExpectd).append('\n');
+                    msg.append(lineExpectd).append("↵\n");
                     msg.append("expected");
                     appendDashes(i - "expected".length(), msg);
                     msg.append("⬏\n");
+
+                    String uuid = UUID.randomUUID().toString();
+                    Path aPath = Paths.get("target/" + uuid + "-actual" + extension);
+                    Path ePath = Paths.get("target/" + uuid + "-expected" + extension);
+                    String diff = System.getenv("DIFF");
+                    msg.append("\nCheck the full diff\n\n    ").append(diff == null ? "diff" : diff).append(" ").append(aPath)
+                            .append(" ")
+                            .append(ePath);
+                    try {
+                        Files.createDirectories(aPath.getParent());
+                        Files.write(aPath, actual.getBytes(StandardCharsets.UTF_8));
+                        Files.write(ePath, expected.getBytes(StandardCharsets.UTF_8));
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
                     throw new AssertionError(msg.toString());
                 }
                 line++;

@@ -1,49 +1,47 @@
 package org.l2x6.pom.tuner.transform.api;
 
+import eu.maveniverse.domtrip.Comment;
+import eu.maveniverse.domtrip.Document;
+import eu.maveniverse.domtrip.Node.NodeType;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
-import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
 
-public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>> {
+public class CommentSet {
 
     /**
      * Maps a {@link ProfileElement} to a stream of text elements which are grand children of the given
      * {@link ProfileElement}.
      * Useful for getting children of {@code <properties>}, {@code <modules>}, etc.
      *
-     * @param  name the name of the text element parent, such as {@code properties} or {@code modules}
-     * @return      a {@link Function} mapping a {@link ProfileElement} to a stream of text elements whose parent is a
-     *              direct child of the given {@link ProfileElement}
+     * @param  parentName the name of the text element parent, such as {@code properties} or {@code modules}
+     * @return            a {@link Function} mapping a {@link ProfileElement} to a stream of text elements whose parent is a
+     *                    direct child of the given {@link ProfileElement}
      *
-     * @since       5.0.0
+     * @since             5.0.0
      */
-    public static Function<ProfileElement, Stream<TextElement>> textGrandChildrenMapper(String name) {
+    public static Function<ProfileElement, Stream<Comment>> commentGrandChildrenMapper(String parentName) {
         return profile -> profile.childElementsStream()
-                .filter(ch -> name.equals(ch.getElementName()))
+                .filter(ch -> parentName.equals(ch.getElementName()))
                 .findFirst()
-                .map(parent -> parent.childTextElementsStream())
+                .map(parent -> parent.getNode().nodes()
+                        .filter(node -> node.type() == NodeType.COMMENT)
+                        .map(node -> (Comment) node))
                 .orElse(Stream.empty());
     }
 
-    protected final Predicate<String> profileSelector;
-    protected final Function<ProfileElement, Stream<T>> getNodes;
-    protected final Predicate<T> nodeSelector;
+    private final Predicate<String> profileSelector;
+    private final Function<ProfileElement, Stream<Comment>> getComments;
+    private final Predicate<ParsedComment> nodeSelector;
 
-    public ElementSet(Function<ProfileElement, Stream<T>> getNodes, Predicate<T> nodeSelector) {
-        this.profileSelector = ProfileId.main();
-        this.getNodes = getNodes;
-        this.nodeSelector = nodeSelector;
-    }
-
-    public ElementSet(Predicate<String> profileSelector, Function<ProfileElement, Stream<T>> getNodes,
-            Predicate<T> nodeSelector) {
+    public CommentSet(Predicate<String> profileSelector, Function<ProfileElement, Stream<Comment>> getComments,
+            Predicate<ParsedComment> nodeSelector) {
         this.profileSelector = profileSelector;
-        this.getNodes = getNodes;
+        this.getComments = getComments;
         this.nodeSelector = nodeSelector;
     }
 
@@ -67,8 +65,8 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
      * @since                  5.0.0
      * @see                    ProfileId
      */
-    public THIS from(Predicate<String> profileSelector) {
-        return create(profileSelector, getNodes, nodeSelector);
+    public CommentSet from(Predicate<String> profileSelector) {
+        return new CommentSet(profileSelector, getComments, nodeSelector);
     }
 
     /**
@@ -87,8 +85,8 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
      * @since             5.0.0
      * @see               ProfileId#ids(String...)
      */
-    public THIS from(String... profileIds) {
-        return create(ProfileId.ids(profileIds), getNodes, nodeSelector);
+    public CommentSet from(String... profileIds) {
+        return new CommentSet(ProfileId.ids(profileIds), getComments, nodeSelector);
     }
 
     /**
@@ -107,25 +105,44 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
      * @since             5.0.0
      * @see               ProfileId#idsOnly(String...)
      */
-    public THIS fromProfilesOnly(String... profileIds) {
-        return create(ProfileId.idsOnly(profileIds), getNodes, nodeSelector);
+    public CommentSet fromProfilesOnly(String... profileIds) {
+        return new CommentSet(ProfileId.idsOnly(profileIds), getComments, nodeSelector);
     }
 
-    public Transformer modify(Consumer<T> element) {
+    public Transformer modify(Consumer<ParsedComment> parsedCommentConsumer) {
         return context -> {
             context.getProfilesStream()
                     .filter(profile -> profileSelector.test(profile.getId()))
-                    .flatMap(getNodes)
+                    .flatMap(getComments)
+                    .map(ParsedComment::of)
                     .filter(nodeSelector)
                     .collect(Collectors.toList()) // create a temporary list to allow deletions, etc.
-                    .forEach(element);
+                    .stream()
+                    .forEach(parsedCommentConsumer);
         };
     }
 
-    @SuppressWarnings("unchecked")
-    protected THIS create(Predicate<String> profileSelector, Function<ProfileElement, Stream<T>> getNodes,
-            Predicate<T> nodeSelector) {
-        return (THIS) new ElementSet<>(profileSelector, getNodes, nodeSelector);
+    public static class ParsedComment {
+        private final Comment source;
+        private final Document parsedContent;
+
+        static ParsedComment of(Comment comment) {
+            return new ParsedComment(comment, Document.of(comment.content()));
+        }
+
+        private ParsedComment(Comment source, Document parsedContent) {
+            this.source = source;
+            this.parsedContent = parsedContent;
+        }
+
+        public Comment getSource() {
+            return source;
+        }
+
+        public Document getParsedContent() {
+            return parsedContent;
+        }
+
     }
 
 }

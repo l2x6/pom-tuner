@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
-
 import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
@@ -37,7 +36,8 @@ import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
  */
-public class AddElementTransformer<P extends ContainerElement, T extends TextElement, THIS extends AddElementTransformer<P,T,THIS>> extends AbstractAddTransformer<P, T,Map.Entry<String, String>, THIS> {
+public class AddElementTransformer<P extends ContainerElement, T extends TextElement, THIS extends AddElementTransformer<P, T, THIS>>
+        extends AbstractAddTransformer<P, T, Map.Entry<String, String>, THIS> {
 
     AddElementTransformer(
             Function<TransformationContext, ProfileElement> profileSelector,
@@ -60,8 +60,6 @@ public class AddElementTransformer<P extends ContainerElement, T extends TextEle
                 Collections.<Consumer<T>> emptyList());
     }
 
-
-
     /**
      * @param  profileSelector a {@link Function} retrieving the profile under which the current operation should be applied
      * @return                 a copy of this {@link AddElementTransformer} instance with the
@@ -78,6 +76,7 @@ public class AddElementTransformer<P extends ContainerElement, T extends TextEle
                 comparator,
                 postprocessors);
     }
+
     /**
      * @param  profileId the {@code id} of the {@code pom.xml} profile under which the new element should be applied; if the
      *                   profile does not exist an {@link IllegalStateException} is thrown from

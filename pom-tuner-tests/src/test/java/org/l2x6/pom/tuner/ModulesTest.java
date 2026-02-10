@@ -354,7 +354,7 @@ public class ModulesTest {
                 + "    <modules>\n" //
                 + "        <module>module-1</module>\n" //
                 + "        <!-- foo -->\n" //
-                + "        </modules>\n" //
+                + "    </modules>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 modules
@@ -392,7 +392,8 @@ public class ModulesTest {
                 + "    <version>0.1-SNAPSHOT</version>\n" //
                 + "    <packaging>pom</packaging>\n" //
                 + "\n" //
-                + "    <modules/>\n" //
+                + "    <modules>\n" //
+                + "    </modules>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 modules

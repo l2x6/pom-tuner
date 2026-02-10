@@ -16,8 +16,6 @@
  */
 package org.l2x6.pom.tuner.transform;
 
-import java.util.Objects;
-
 import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
@@ -36,13 +34,13 @@ public interface parent {
     /**
      * Creates the {@code <parent>} element if needed and sets its child elements to the given values.
      *
-     * @param groupId the {@code groupId} to set, must not be {@code null}
-     * @param artifactId the {@code artifactId} to set, must not be {@code null}
-     * @param version the {@code version} to set, must not be {@code null}
-     * @param relativePath the {@code relativePath} to set, must not be {@code null}
-     * @return       a new customizable {@link Transformer}
+     * @param  groupId      the {@code groupId} to set, must not be {@code null}
+     * @param  artifactId   the {@code artifactId} to set, must not be {@code null}
+     * @param  version      the {@code version} to set, must not be {@code null}
+     * @param  relativePath the {@code relativePath} to set, must not be {@code null}
+     * @return              a new customizable {@link Transformer}
      *
-     * @since        5.0.0
+     * @since               5.0.0
      */
     public static Transformer set(
             String groupId,
@@ -63,13 +61,13 @@ public interface parent {
      * Creates the {@code <parent>} element if needed and sets its child elements to the given values.
      * If the {@code <relativePath>} child node exists already, leaves it as is.
      *
-     * @param groupId the {@code groupId} to set, must not be {@code null}
-     * @param artifactId the {@code artifactId} to set, must not be {@code null}
-     * @param version the {@code version} to set, must not be {@code null}
-     * @param relativePath the {@code relativePath} to set, must not be {@code null}
-     * @return       a new customizable {@link Transformer}
+     * @param  groupId      the {@code groupId} to set, must not be {@code null}
+     * @param  artifactId   the {@code artifactId} to set, must not be {@code null}
+     * @param  version      the {@code version} to set, must not be {@code null}
+     * @param  relativePath the {@code relativePath} to set, must not be {@code null}
+     * @return              a new customizable {@link Transformer}
      *
-     * @since        5.0.0
+     * @since               5.0.0
      */
     public static Transformer set(
             String groupId,
@@ -84,14 +82,13 @@ public interface parent {
         };
     }
 
-
     /**
      * Creates the {@code <parent>} element if needed and sets its {@code groupId} to the given value.
      *
-     * @param groupId the {@code groupId} to set, must not be {@code null}
-     * @return       a new customizable {@link Transformer}
+     * @param  groupId the {@code groupId} to set, must not be {@code null}
+     * @return         a new customizable {@link Transformer}
      *
-     * @since        5.0.0
+     * @since          5.0.0
      */
     public static Transformer setGroupId(String groupId) {
 
@@ -104,10 +101,10 @@ public interface parent {
     /**
      * Creates the {@code <parent>} element if needed and sets its {@code artifactId} to the given value.
      *
-     * @param artifactId the {@code artifactId} to set, must not be {@code null}
-     * @return       a new customizable {@link Transformer}
+     * @param  artifactId the {@code artifactId} to set, must not be {@code null}
+     * @return            a new customizable {@link Transformer}
      *
-     * @since        5.0.0
+     * @since             5.0.0
      */
     public static Transformer setArtifactId(String artifactId) {
 
@@ -120,10 +117,10 @@ public interface parent {
     /**
      * Creates the {@code <parent>} element if needed and sets its {@code version} to the given value.
      *
-     * @param version the {@code version} to set, must not be {@code null}
-     * @return       a new customizable {@link Transformer}
+     * @param  version the {@code version} to set, must not be {@code null}
+     * @return         a new customizable {@link Transformer}
      *
-     * @since        5.0.0
+     * @since          5.0.0
      */
     public static Transformer setVersion(String version) {
 
@@ -136,10 +133,10 @@ public interface parent {
     /**
      * Creates the {@code <parent>} element if needed and sets its {@code relativePath} to the given value.
      *
-     * @param relativePath the {@code relativePath} to set, must not be {@code null}
-     * @return       a new customizable {@link Transformer}
+     * @param  relativePath the {@code relativePath} to set, must not be {@code null}
+     * @return              a new customizable {@link Transformer}
      *
-     * @since        5.0.0
+     * @since               5.0.0
      */
     public static Transformer setRelativePath(String relativePath) {
 
@@ -155,11 +152,12 @@ public interface parent {
      * <p>
      * The returned {@link RemoveTransformer} instance can be further customized to remove other kinds of sibling nodes.
      * <p>
-     * If there is no {@code <parent>} element in the given context then the returned {@link RemoveElementsTransformer} exits
+     * If there is no {@code <parent>} element in the given context then the returned {@link RemoveElementsTransformer}
+     * exits
      * quietly rather than throwing an exception.
      *
-     * @return               a new {@link RemoveTransformer} removing properties having the specified names
-     * @since                5.0.0
+     * @return a new {@link RemoveTransformer} removing properties having the specified names
+     * @since  5.0.0
      */
     public static <THIS extends RemoveTransformer<ContainerElement, THIS>> RemoveTransformer<ContainerElement, THIS> remove() {
         return new RemoveTransformer<>(
@@ -167,18 +165,18 @@ public interface parent {
                 containerElement -> true);
     }
 
-
     /**
      * Returns a new {@link RemoveTransformer} removing the {@code <relativePath>} element under {@code <parent>}
      * also removes any previous sibling comments and whitespace.
      * <p>
      * The returned {@link RemoveTransformer} instance can be further customized to remove other kinds of sibling nodes.
      * <p>
-     * If there is no {@code <parent>} element in the given context then the returned {@link RemoveElementsTransformer} exits
+     * If there is no {@code <parent>} element in the given context then the returned {@link RemoveElementsTransformer}
+     * exits
      * quietly rather than throwing an exception.
      *
-     * @return               a new {@link RemoveTransformer} removing properties having the specified names
-     * @since                5.0.0
+     * @return a new {@link RemoveTransformer} removing properties having the specified names
+     * @since  5.0.0
      */
     public static <THIS extends RemoveTransformer<ContainerElement, THIS>> RemoveTransformer<ContainerElement, THIS> removeRelativePath() {
         return new RemoveTransformer<>(

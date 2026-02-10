@@ -16,6 +16,8 @@
  */
 package org.l2x6.pom.tuner.transform.api;
 
+import eu.maveniverse.domtrip.Element;
+import eu.maveniverse.domtrip.Node;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,11 +28,9 @@ import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
 import org.l2x6.pom.tuner.PomTransformer.NodeGavtcs;
 import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
+import org.l2x6.pom.tuner.PomTransformer.RemovableNode;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
-import org.l2x6.pom.tuner.PomTransformer.Transformer;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 
 /**
  * A generic remover of {@code pom.xml} elements such as {@code <properties>}, their child properties,
@@ -39,7 +39,8 @@ import org.w3c.dom.Node;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
  */
-public class RemoveElementsTransformer<T extends TextElement, THIS extends RemoveElementsTransformer<T, THIS>> extends RemoveTransformer<T, THIS> {
+public class RemoveElementsTransformer<T extends TextElement, THIS extends RemoveElementsTransformer<T, THIS>>
+        extends RemoveTransformer<T, THIS> {
 
     /**
      * Maps a {@link ProfileElement} to a stream of text elements whose parent is a direct child of the given
@@ -97,11 +98,33 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
                 .map(ContainerElement::asGavtcsElement);
     }
 
+    /**
+     * Maps a {@link ProfileElement} to a stream of {@link GavtcsElement} which are children of the given
+     * {@link ProfileElement} under the path specified by {@code elementName} and {@code otherElementNames}
+     * Useful for getting children of {@code <dependencies>}, {@code <plugins>}, etc.
+     *
+     * @param  elementName       the first element of the xPath for selecting the target nodes
+     * @param  otherElementNames additional elements of the xPath for selecting the target nodes
+     * @return                   a {@link Function} mapping a {@link ProfileElement} to a stream of {@link NodeGavtcs}s
+     *
+     * @since                    5.0.0
+     */
+    public static Function<ProfileElement, Stream<GavtcsElement>> pluginDependenciesMapper(String elementName,
+            String... otherElementNames) {
+        return profile -> profile.getChildContainerElement(elementName, otherElementNames)
+                .map(ContainerElement::childElementsStream)
+                .orElse(Stream.empty())
+                .flatMap(pluginElement -> pluginElement.getChildContainerElement("dependencies")
+                        .map(ContainerElement::childElementsStream)
+                        .orElse(Stream.empty()))
+                .map(ContainerElement::asGavtcsElement);
+    }
+
     private RemoveElementsTransformer(
             Predicate<String> profileSelector,
             Function<ProfileElement, Stream<T>> profileToTextElements,
             Predicate<T> elementSelector,
-            List<Function<Node, List<Node>>> siblingsSelectors,
+            List<Function<Node, List<RemovableNode>>> siblingsSelectors,
             boolean immutableSiblingsSelectors) {
         super(profileSelector, profileToTextElements, elementSelector, siblingsSelectors, immutableSiblingsSelectors);
     }
@@ -119,7 +142,8 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
 
     /**
      * Choose whether the elements should be removed from under the {@code <project>} and/or from under specific profiles;
-     * use utility methods in {@link ProfileId} to select profiles by name, including or excluding the {@code <project>} pseudo-profile.
+     * use utility methods in {@link ProfileId} to select profiles by name, including or excluding the {@code <project>}
+     * pseudo-profile.
      * <p>
      * Note that this library handles the {@code <project>} element as a profile with a {@code null} {@code id},
      * so the given {@link Predicate}'s {@link Predicate#test(Object)} should handle the {@code null} value
@@ -146,7 +170,8 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
     }
 
     /**
-     * Choose from under which specific profiles should the matching elements be removed; matching elements under the {@code <project>} element will be removed too.
+     * Choose from under which specific profiles should the matching elements be removed; matching elements under the
+     * {@code <project>} element will be removed too.
      * Use {@link #fromProfilesOnly(String...)} to avoid removing from under the {@code <project>} element.
      * <p>
      * If none of the {@code from*(*)} methods is called,
@@ -171,7 +196,8 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
     }
 
     /**
-     * Choose from under which specific profiles should the matching elements be removed; matching elements under the {@code <project>} element will not be removed.
+     * Choose from under which specific profiles should the matching elements be removed; matching elements under the
+     * {@code <project>} element will not be removed.
      * Use {@link #from(String...)} to remove also the matching elements from under the {@code <project>} element.
      * <p>
      * If none of the {@code from*(*)} methods is called,
@@ -211,7 +237,7 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
      * @see                     Siblings
      */
     @SuppressWarnings("unchecked")
-    public THIS alsoRemove(Function<Node, List<Node>> siblingsSelector) {
+    public THIS alsoRemove(Function<Node, List<RemovableNode>> siblingsSelector) {
         return (THIS) new RemoveElementsTransformer<>(
                 profileSelector,
                 profileToRemovedElements,
@@ -294,23 +320,20 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
     @Override
     public void perform(TransformationContext context) {
 
-        List<Node> nodesToRemove = new ArrayList<>();
+        List<RemovableNode> nodesToRemove = new ArrayList<>();
         context.getProfilesStream()
                 .filter(profile -> profileSelector.test(profile.getId()))
                 .flatMap(profileToRemovedElements)
                 .filter(elementSelector)
                 .forEach(textNode -> {
                     final Element removedNode = textNode.getNode();
-                    nodesToRemove.add(removedNode);
-                    for (Function<Node, List<Node>> siblingsSelector : siblingsSelectors) {
+                    nodesToRemove.add(RemovableNode.of(removedNode));
+                    for (Function<Node, List<RemovableNode>> siblingsSelector : siblingsSelectors) {
                         nodesToRemove.addAll(siblingsSelector.apply(removedNode));
                     }
                 });
-        for (Node node : nodesToRemove) {
-            final Node parent = node.getParentNode();
-            if (parent != null) {
-                parent.removeChild(node);
-            }
+        for (RemovableNode node : nodesToRemove) {
+            node.remove();
         }
     }
 

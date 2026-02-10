@@ -348,7 +348,7 @@ public class PropertiesTest {
                 + "    <properties>\n" //
                 + "        <p1>v1</p1>\n" //
                 + "        <!-- foo -->\n" //
-                + "        </properties>\n" //
+                + "    </properties>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 properties
@@ -386,7 +386,8 @@ public class PropertiesTest {
                 + "    <version>0.1-SNAPSHOT</version>\n" //
                 + "    <packaging>pom</packaging>\n" //
                 + "\n" //
-                + "    <properties/>\n" //
+                + "    <properties>\n" //
+                + "    </properties>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 properties

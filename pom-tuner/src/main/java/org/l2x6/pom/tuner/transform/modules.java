@@ -16,23 +16,24 @@
  */
 package org.l2x6.pom.tuner.transform;
 
+import eu.maveniverse.domtrip.Node.NodeType;
+import eu.maveniverse.domtrip.Text;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
-import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
-import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.transform.api.AddElementTransformer;
-import org.l2x6.pom.tuner.transform.api.AddGavtcsTransformer;
+import org.l2x6.pom.tuner.transform.api.CommentSet;
+import org.l2x6.pom.tuner.transform.api.CommentSet.ParsedComment;
 import org.l2x6.pom.tuner.transform.api.ElementSet;
+import org.l2x6.pom.tuner.transform.api.ProfileId;
 import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 import org.l2x6.pom.tuner.transform.api.TextElementSet;
 
@@ -44,6 +45,7 @@ import org.l2x6.pom.tuner.transform.api.TextElementSet;
  */
 public interface modules {
     public static final String ELEMENT_NAME = "modules";
+    public static final String CHILD_ELEMENT_NAME = "module";
 
     /**
      * If the given {@code path} is available already, does nothing; otherwise adds the given module as the last element
@@ -63,7 +65,8 @@ public interface modules {
      *
      * @since       5.0.0
      */
-    public static <THIS extends AddElementTransformer<ContainerElement, TextElement, THIS>> AddElementTransformer<ContainerElement, TextElement, THIS> add(String path) {
+    public static <THIS extends AddElementTransformer<ContainerElement, TextElement, THIS>> AddElementTransformer<ContainerElement, TextElement, THIS> add(
+            String path) {
         return new AddElementTransformer<>(
                 profile -> profile.getOrAddChildContainerElement(ELEMENT_NAME),
                 (parent, comparator) -> parent.addChildTextElementIfNeeded("module", path, comparator),
@@ -85,7 +88,8 @@ public interface modules {
      * @return             a new {@link RemoveElementsTransformer} removing modules having the specified {@code modulePaths}
      * @since              5.0.0
      */
-    public static <THIS extends RemoveElementsTransformer<TextElement, THIS>>  RemoveElementsTransformer<TextElement, THIS> remove(String... modulePaths) {
+    public static <THIS extends RemoveElementsTransformer<TextElement, THIS>> RemoveElementsTransformer<TextElement, THIS> remove(
+            String... modulePaths) {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.textGrandChildrenMapper(ELEMENT_NAME),
                 textElement -> Stream.of(modulePaths).anyMatch(textElement.getTextContent()::equals));
@@ -106,7 +110,8 @@ public interface modules {
      * @return          a new {@link RemoveElementsTransformer} removing modules having the specified {@code modulePaths}
      * @since           5.0.0
      */
-    public static <THIS extends RemoveElementsTransformer<TextElement, THIS>>  RemoveElementsTransformer<TextElement, THIS> remove(Predicate<TextElement> selector) {
+    public static <THIS extends RemoveElementsTransformer<TextElement, THIS>> RemoveElementsTransformer<TextElement, THIS> remove(
+            Predicate<TextElement> selector) {
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.textGrandChildrenMapper(ELEMENT_NAME),
                 selector);
@@ -159,32 +164,35 @@ public interface modules {
     /**
      * Select some {@code <module>} nodes for modification.
      * <p>
-     * The returned {@link TextElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * The returned {@link TextElementSet} instance can be further customized to select profiles and/or specify the actual
+     * modification operation.
      * <p>
      * If none of the {@code from*(*)} methods of the returned {@link TextElementSet} is called,
      * the default behavior is to select the matching elements only from under the {@code <project>} element
      * and ignore any matching elements under {@code <profile>} elements.
      *
-     * @param modulePaths a {@link Predicate} selecting modules by their path as present in {@code <module>path</module>}
-     * @return a new {@link TextElementSet} having its node selector set as specified
-     * @since  5.0.0
+     * @param  modulePaths a {@link Predicate} selecting modules by their path as present in {@code <module>path</module>}
+     * @return             a new {@link TextElementSet} having its node selector set as specified
+     * @since              5.0.0
      */
     public static TextElementSet select(Predicate<String> modulePaths) {
-        return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> modulePaths.test(textElement.getTextContent()));
+        return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME),
+                textElement -> modulePaths.test(textElement.getTextContent()));
     }
 
     /**
      * Select some {@code <module>} nodes for modification.
      * <p>
-     * The returned {@link TextElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * The returned {@link TextElementSet} instance can be further customized to select profiles and/or specify the actual
+     * modification operation.
      * <p>
      * If none of the {@code from*(*)} methods of the returned {@link TextElementSet} is called,
      * the default behavior is to select the matching elements only from under the {@code <project>} element
      * and ignore any matching elements under {@code <profile>} elements.
      *
-     * @param modulePaths module paths as present in {@code <module>path</module>} to select for modification
-     * @return a new {@link TextElementSet} having its node selector set as specified
-     * @since  5.0.0
+     * @param  modulePaths module paths as present in {@code <module>path</module>} to select for modification
+     * @return             a new {@link TextElementSet} having its node selector set as specified
+     * @since              5.0.0
      */
     public static TextElementSet select(String... modulePaths) {
         final Set<String> set;
@@ -198,13 +206,15 @@ public interface modules {
                 set.add(modulePaths[i]);
             }
         }
-        return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> set.contains(textElement.getTextContent()));
+        return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME),
+                textElement -> set.contains(textElement.getTextContent()));
     }
 
     /**
      * Select all {@code <module>} nodes for modification.
      * <p>
-     * The returned {@link TextElementSet} instance can be further customized to select profiles and/or specify the actual modification operation.
+     * The returned {@link TextElementSet} instance can be further customized to select profiles and/or specify the actual
+     * modification operation.
      * <p>
      * If none of the {@code from*(*)} methods of the returned {@link TextElementSet} is called,
      * the default behavior is to select the matching elements only from under the {@code <project>} element
@@ -215,5 +225,30 @@ public interface modules {
      */
     public static TextElementSet selectAll() {
         return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> true);
+    }
+
+    public static CommentSet selectComments(Predicate<ParsedComment> commentSelector) {
+        return new CommentSet(ProfileId.all(), CommentSet.commentGrandChildrenMapper(ELEMENT_NAME), commentSelector);
+    }
+
+    public static CommentSet selectCommentsByTrailingText(Predicate<String> commentTextPredicate) {
+        return new CommentSet(
+                ProfileId.all(),
+                CommentSet.commentGrandChildrenMapper(ELEMENT_NAME),
+                comment -> comment.getParsedContent().nodes()
+                        .reduce((first, second) -> second) // get the last element from the stream
+                        .filter(lastNode -> lastNode.type() == NodeType.TEXT)
+                        .map(lastNode -> (Text) lastNode)
+                        .map(Text::content)
+                        .map(commentTextPredicate::test)
+                        .orElse(false));
+    }
+
+    public static CommentSet selectCommentsByTrailingText(String commentText) {
+        return selectCommentsByTrailingText(commentText::equals);
+    }
+
+    public static CommentSet selectAllComments() {
+        return new CommentSet(ProfileId.all(), CommentSet.commentGrandChildrenMapper(ELEMENT_NAME), c -> true);
     }
 }

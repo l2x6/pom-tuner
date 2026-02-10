@@ -69,7 +69,8 @@
     <properties>
 
         <!-- Dependency versions in alphabectic order -->
-        <slf4j-version>2.0.17</slf4j-version>
+        <domtrip.version>0.2.0</domtrip.version>
+        <slf4j.version>2.0.17</slf4j.version>
         <junit.version>5.13.4</junit.version>
         <assertj.version>3.27.7</assertj.version>
 
@@ -101,8 +102,8 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- maven-compiler-plugin -->
-        <maven.compiler.source>1.8</maven.compiler.source>
-        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
         <maven.compiler.showWarnings>true</maven.compiler.showWarnings>
 
         <!-- license-maven-plugin -->
@@ -125,15 +126,21 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
+                <groupId>eu.maveniverse.maven.domtrip</groupId>
+                <artifactId>domtrip-core</artifactId>
+                <version>${domtrip.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
-                <version>${slf4j-version}</version>
+                <version>${slf4j.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-simple</artifactId>
-                <version>${slf4j-version}</version>
+                <version>${slf4j.version}</version>
             </dependency>
 
             <dependency>
