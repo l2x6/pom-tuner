@@ -1899,41 +1899,6 @@ public class PomTransformer {
     public interface Transformation extends Transformer {
 
         /**
-         * @param      name
-         * @param      value
-         * @return
-         *
-         * @deprecated       use {@link properties#set(String, String)} instead
-         */
-        @Deprecated
-        public static Transformation addProperty(String name, String value) {
-            return (Document document, TransformationContext context) -> {
-                final ContainerElement props = context.getOrAddContainerElement("properties");
-                props.addChildTextElement(name, value);
-            };
-        }
-
-        /**
-         * @param      name
-         * @param      value
-         * @return
-         *
-         * @deprecated       use {@link properties#set(String, String)} instead
-         */
-        @Deprecated
-        public static Transformation addOrSetProperty(String name, String value) {
-            return (Document document, TransformationContext context) -> {
-                final ContainerElement props = context.getOrAddContainerElement("properties");
-                props.addOrSetChildTextElement(name, value);
-            };
-        }
-
-        public static Transformation addContainerElementsIfNeeded(String elementName, String... furtherNames) {
-            return (Document document, TransformationContext context) -> context.getOrAddContainerElements(elementName,
-                    furtherNames);
-        }
-
-        /**
          * @param      groupId
          * @param      artifactId
          * @param      version
