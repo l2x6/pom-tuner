@@ -1898,54 +1898,6 @@ public class PomTransformer {
 
     public interface Transformation extends Transformer {
 
-        /**
-         * @param      groupId
-         * @param      artifactId
-         * @param      version
-         * @return
-         *
-         * @deprecated            use {@link dependencyManagement#add(Gavtcs)} instead
-         */
-        @Deprecated
-        public static Transformation addManagedDependency(String groupId, String artifactId, String version) {
-            return addManagedDependency(new Gavtcs(groupId, artifactId, version, null, null, null));
-        }
-
-        /**
-         * @param      gavtcs
-         * @return
-         *
-         * @deprecated        use {@link dependencyManagement#add(Gavtcs)} instead
-         */
-        @Deprecated
-        public static Transformation addManagedDependency(Gavtcs gavtcs) {
-            return (Document document, TransformationContext context) -> {
-                final ContainerElement dependencyManagementDeps = context.getOrAddContainerElements("dependencyManagement",
-                        "dependencies");
-                dependencyManagementDeps.addGavtcs(gavtcs);
-            };
-        }
-
-        /**
-         * @param      gavtcs
-         * @return
-         * @deprecated        use {@link dependencyManagement#add(Gavtcs)} instead
-         */
-        @Deprecated
-        public static Transformation addManagedDependencyIfNeeded(Gavtcs gavtcs) {
-            return (Document document, TransformationContext context) -> {
-                final ContainerElement dependencyManagementDeps = context.getOrAddContainerElements("dependencyManagement",
-                        "dependencies");
-
-                if (!dependencyManagementDeps.childElementsStream()
-                        .map(ContainerElement::asGavtcs)
-                        .anyMatch(dep -> dep.equals(gavtcs))) {
-                    dependencyManagementDeps.addGavtcs(gavtcs);
-                }
-
-            };
-        }
-
         public static Transformation commentModules(Collection<String> modulesToComment, String commentText) {
             return (Document document, TransformationContext context) -> {
                 modules.select(modulesToComment::contains).commentOut(textElem -> commentText).perform(context);
@@ -1966,74 +1918,6 @@ public class PomTransformer {
                 modules.select(modulesToComment::contains).fromProfilesOnly(profile).commentOut(textElem -> commentText)
                         .perform(context);
             };
-        }
-
-        /**
-         * @param  newVersion the new version to set on the given {@code gas}
-         * @param  gas        the list of {@link Ga} on which the {@code newVersion} should be set
-         * @return            a new {@link Transformation}
-         */
-        public static Transformation setManagedDependencyVersion(String newVersion, Collection<Ga> gas) {
-            return setManagedDependencyVersion(null, newVersion, gas);
-        }
-
-        public static Transformation setManagedDependencyVersion(String profileId, String newVersion, Collection<Ga> gas) {
-            return (Document document, TransformationContext context) -> {
-                final ContainerElement profileParent = context.getProfileParent(profileId)
-                        .orElseThrow(() -> new IllegalStateException(
-                                "No such profile '" + profileId + "' found in " + context.getPomXmlPath()));
-                final ContainerElement dependencyManagementDeps = profileParent
-                        .getChildContainerElement("dependencyManagement").orElseThrow(
-                                () -> new IllegalStateException("dependencyManagement not found under profile '" + profileId
-                                        + "' in " + context.getPomXmlPath()))
-                        .getChildContainerElement("dependencies").orElseThrow(
-                                () -> new IllegalStateException(
-                                        "dependencyManagement/dependencies not found under profile '" + profileId + "' in "
-                                                + context.getPomXmlPath()));
-
-                for (ContainerElement containerElememt : dependencyManagementDeps.childElements()) {
-                    final GavtcsElement dep = containerElememt.asGavtcsElement();
-                    if (gas.contains(dep.getGavtcs().toGa())) {
-                        dep.setVersion(newVersion);
-                    }
-                }
-            };
-        }
-
-        public static Transformation setDependencyVersion(String newVersion, Collection<Ga> gas) {
-            return setDependencyVersion(null, newVersion, gas);
-        }
-
-        public static Transformation setDependencyVersion(String profileId, String newVersion, Collection<Ga> gas) {
-            return (Document document, TransformationContext context) -> {
-                final ContainerElement profileParent = context.getProfileParent(profileId)
-                        .orElseThrow(() -> new IllegalStateException(
-                                "No such profile '" + profileId + "' found in " + context.getPomXmlPath()));
-                final ContainerElement deps = profileParent
-                        .getChildContainerElement("dependencies").orElseThrow(
-                                () -> new IllegalStateException(
-                                        "dependencies not found under profile '" + profileId + "' in "
-                                                + context.getPomXmlPath()));
-
-                for (ContainerElement containerElememt : deps.childElements()) {
-                    final GavtcsElement dep = containerElememt.asGavtcsElement();
-                    if (gas.contains(dep.getGavtcs().toGa())) {
-                        dep.setVersion(newVersion);
-                    }
-                }
-            };
-        }
-
-        /**
-         * @param      gavtcs
-         * @param      comparator
-         * @return
-         * @deprecated            use {@link dependencies#add(Gavtcs)} instead
-         */
-        @Deprecated
-        public static Transformation addDependencyIfNeeded(Gavtcs gavtcs, Comparator<Gavtcs> comparator) {
-            Transformer t = dependencies.add(gavtcs).at(comparator);
-            return (Document document, TransformationContext context) -> t.perform(context);
         }
 
         /**
