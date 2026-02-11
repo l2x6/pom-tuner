@@ -41,9 +41,9 @@ import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.NodeGavtcs;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
-import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.transform.api.Siblings;
+import org.l2x6.pom.tuner.transform.dependencies;
 import org.l2x6.pom.tuner.transform.dependencyManagement;
 import org.l2x6.pom.tuner.transform.modules;
 import org.l2x6.pom.tuner.transform.parent;
@@ -1712,7 +1712,7 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singletonList(
-                        Transformation.addManagedDependency(new Gavtcs("org.acme", "my-ext", "${project.version}"))),
+                        dependencyManagement.add(new Gavtcs("org.acme", "my-ext", "${project.version}"))),
                 expected);
     }
 
@@ -2104,7 +2104,7 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singletonList(
-                        Transformation.addManagedDependencyIfNeeded(
+                        dependencyManagement.add(
                                 new Gavtcs("${quarkus.platform.group-id}", "${quarkus.platform.artifact-id}",
                                         "${quarkus.platform.version}", "pom", null, "import"))),
                 expected);
@@ -2266,8 +2266,7 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singletonList(
-                        Transformation.setManagedDependencyVersion("${dep1-new.version}",
-                                Arrays.asList(Ga.of("org.acme:dep1")))),
+                        dependencyManagement.select("org.acme:dep1").modify(dep -> dep.setVersion("${dep1-new.version}"))),
                 expected);
     }
 
@@ -2318,10 +2317,8 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source,
                 Arrays.asList(
-                        Transformation.setDependencyVersion("${dep1-new.version}",
-                                Arrays.asList(Ga.of("org.acme:dep1"))),
-                        Transformation.setDependencyVersion(null,
-                                Arrays.asList(Ga.of("org.acme:dep2")))),
+                        dependencies.select("org.acme:dep1").modify(dep -> dep.setVersion("${dep1-new.version}")),
+                        dependencies.select("org.acme:dep2").modify(dep -> dep.setVersion(null))),
                 expected);
     }
 
@@ -2449,8 +2446,8 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singletonList(
-                        Transformation.setManagedDependencyVersion("profile1", "${dep2-new.version}",
-                                Arrays.asList(Ga.of("org.acme:dep2")))),
+                        dependencyManagement.select("org.acme:dep2").fromProfilesOnly("profile1")
+                                .modify(dep -> dep.setVersion("${dep2-new.version}"))),
                 expected);
     }
 
@@ -2614,8 +2611,8 @@ public class PomTransformerTest {
                 + "    <build/>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source,
-                Collections.singletonList(Transformation.addDependencyIfNeeded(new Gavtcs("org.acme", "a1", "1.2.3"),
-                        Gavtcs.scopeAndTypeFirstComparator())),
+                Collections.singletonList(
+                        dependencies.add(new Gavtcs("org.acme", "a1", "1.2.3")).at(Gavtcs.scopeAndTypeFirstComparator())),
                 expected);
     }
 
@@ -2758,8 +2755,9 @@ public class PomTransformerTest {
                 + "    <build/>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source,
-                Collections.singletonList(Transformation.addDependencyIfNeeded(Gavtcs.testJar("org.acme", "a1", "1.2.3"),
-                        Gavtcs.scopeAndTypeFirstComparator())),
+                Collections.singletonList(
+                        dependencies.add(Gavtcs.testJar("org.acme", "a1", "1.2.3")).at(
+                                Gavtcs.scopeAndTypeFirstComparator())),
                 expected);
     }
 
@@ -2807,7 +2805,7 @@ public class PomTransformerTest {
                 + "    <build/>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source,
-                Collections.singletonList(Transformation.addDependencyIfNeeded(Gavtcs.virtual("org.acme", "a1", "1.2.3"),
+                Collections.singletonList(dependencies.add(Gavtcs.virtual("org.acme", "a1", "1.2.3")).at(
                         Gavtcs.scopeAndTypeFirstComparator())),
                 expected);
     }
@@ -2846,7 +2844,7 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singletonList(
-                        Transformation.addManagedDependency(Gavtcs.importBom("org.acme", "bom", "${bom.version}"))),
+                        dependencyManagement.add(Gavtcs.importBom("org.acme", "bom", "${bom.version}"))),
                 expected);
     }
 
