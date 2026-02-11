@@ -17,6 +17,7 @@
 package org.l2x6.pom.tuner;
 
 import eu.maveniverse.domtrip.Document;
+import eu.maveniverse.domtrip.Element;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -44,8 +45,10 @@ import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.Gavtcs;
+import org.l2x6.pom.tuner.transform.api.Siblings;
 import org.l2x6.pom.tuner.transform.modules;
 import org.l2x6.pom.tuner.transform.parent;
+import org.l2x6.pom.tuner.transform.properties;
 
 public class PomTransformerTest {
 
@@ -2666,7 +2669,7 @@ public class PomTransformerTest {
                             Iterator<NodeGavtcs> it = deps.iterator();
                             it.next();
                             NodeGavtcs dep2 = it.next();
-                            context.reIndent(dep2.getNode().getNodes(TransformationContext.ALL_WHITESPACE_AND_COMMENTS),
+                            context.reIndent(dep2.getNode().getNodes(Siblings.commentsOrWhitespace()),
                                     "                ");
                         }),
                 expected);
@@ -3219,7 +3222,7 @@ public class PomTransformerTest {
                     + "    <packaging>pom</packaging>\n" //
                     + "\n" //
                     + "    <properties>\n" //
-                    + "        <foo />\n" //
+                    + "        <foo/>\n" //
                     + "    </properties>\n" //
                     + "\n" //
                     + "</project>\n";
@@ -3279,19 +3282,18 @@ public class PomTransformerTest {
                     + "\n" //
                     + "    <properties>\n" //
                     + "        <foo/>\n" //
-                    + "        <bar></bar>\n" //
+                    + "        <bar>baz</bar>\n" //
                     + "    </properties>\n" //
                     + "\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformation(source,
                     Collections.singletonList((Document document, TransformationContext context) -> {
-                        final ContainerElement props = context.getOrAddContainerElement("properties");
-                        props.getOrAddLastIndent();
-                        props.addChildElement("bar", null);
+                        properties.set("bar", "baz").perform(context);
                     }),
                     SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY,
                     expected);
         }
+
     }
 
     @Test
