@@ -282,7 +282,7 @@ public class ModulesTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                modules.add("module-7").profile("profile1").afterTextContent("module-4")
+                modules.add("module-7").intoProfile("profile1").afterTextContent("module-4")
 
         ),
                 expected);

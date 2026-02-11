@@ -68,7 +68,7 @@ public class AddGavtcsTransformer<P extends ContainerElement, T extends GavtcsEl
      * @see                    ProfileId
      */
     @SuppressWarnings("unchecked")
-    public THIS profile(Function<TransformationContext, ProfileElement> profileSelector) {
+    public THIS intoProfile(Function<TransformationContext, ProfileElement> profileSelector) {
         return (THIS) new AddGavtcsTransformer<>(
                 profileSelector,
                 profileToParentElement,
@@ -86,7 +86,7 @@ public class AddGavtcsTransformer<P extends ContainerElement, T extends GavtcsEl
      * @since            5.0.0
      */
     @SuppressWarnings("unchecked")
-    public THIS profile(String profileId) {
+    public THIS intoProfile(String profileId) {
         return (THIS) new AddGavtcsTransformer<P, T, THIS>(
                 AddElementTransformer.selectProfile(profileId),
                 profileToParentElement,

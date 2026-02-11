@@ -46,7 +46,6 @@ import java.util.stream.Collectors;
 import org.l2x6.pom.tuner.ExpressionEvaluator.ConstantOnlyExpressionEvaluator;
 import org.l2x6.pom.tuner.PomTransformer.DomTripUtils;
 import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
-import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.model.Dependency;
@@ -280,7 +279,7 @@ public class MavenSourceTree {
          * @param rootDirectory
          * @param encoding
          */
-        public void perform(Path rootDirectory, Charset encoding, SimpleElementWhitespace simpleElementWhitespace) {
+        public void perform(Path rootDirectory, Charset encoding) {
             while (!domEditsByPath.isEmpty()) {
                 LinkedHashMap<String, Set<Transformer>> cp = new LinkedHashMap<>(domEditsByPath);
                 domEditsByPath.clear();
@@ -289,7 +288,6 @@ public class MavenSourceTree {
                     final Set<Transformer> tfs = e.getValue();
                     PomTransformer.builder()
                             .charset(encoding)
-                            .simpleElementWhitespace(simpleElementWhitespace)
                             .transformers(tfs)
                             .transform(pomXml);
                 }
@@ -802,10 +800,8 @@ public class MavenSourceTree {
      *
      * @param newVersion              the new version to set
      * @param isProfileActive         a {@link Profile} filter, see {@link #from(String...)}
-     * @param simpleElementWhitespace see {@link SimpleElementWhitespace}
      */
-    public void setVersions(final String newVersion, final Predicate<Profile> isProfileActive,
-            SimpleElementWhitespace simpleElementWhitespace) {
+    public void setVersions(final String newVersion, final Predicate<Profile> isProfileActive) {
         final DomEdits edits = new DomEdits();
         final ExpressionEvaluator evaluator = getExpressionEvaluator(isProfileActive);
         for (Module module : modulesByGa.values()) {
@@ -822,7 +818,6 @@ public class MavenSourceTree {
 
             /* parent */
             if (parentGav != null && modulesByGa.containsKey(evaluator.evaluateGa(parentGav))) {
-                final Expression parentVersion = parentGav.getVersion();
                 edits.add(pomPath, parent.setVersion(newVersion));
             }
 
@@ -889,7 +884,7 @@ public class MavenSourceTree {
                             .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
                                     edits)));
         }
-        edits.perform(rootDirectory, encoding, simpleElementWhitespace);
+        edits.perform(rootDirectory, encoding);
     }
 
     void setVersion(Ga module, String modulePath, GavtcsElement gavtcsElement, String newVersion, ExpressionEvaluator evaluator,
@@ -944,19 +939,18 @@ public class MavenSourceTree {
     }
 
     /**
-     * Delegates to {@link #unlinkModules(Set, Predicate, Charset, SimpleElementWhitespace, boolean)} with
+     * Delegates to {@link #unlinkModules(Set, Predicate, Charset, boolean)} with
      * {@code remove} set to {@code false}.
      *
      * @param requiredModules         a list of {@code groupId:artifactId}s
      * @param isProfileActive         a {@link Profile} filter, see {@link #from(String...)}
      * @param encoding                the encoding for reading and writing pom.xml files
-     * @param simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
      * @param commentText             for @{@code commentText} {@code "a comment"} the resulting snippet would look like
      *                                {@code <!-- <module>some-module</module> a comment --> }
      */
     public void unlinkModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
-            SimpleElementWhitespace simpleElementWhitespace, String commentText) {
-        unlinkModules(requiredModules, isProfileActive, encoding, simpleElementWhitespace,
+            String commentText) {
+        unlinkModules(requiredModules, isProfileActive, encoding,
                 (Set<String> modules) -> Transformation.commentModules(modules, commentText));
     }
 
@@ -968,13 +962,11 @@ public class MavenSourceTree {
      * @param requiredModules         a list of {@code groupId:artifactId}s that are required to build
      * @param isProfileActive         a {@link Profile} filter, see {@link #from(String...)}
      * @param encoding                the encoding for reading and writing pom.xml files
-     * @param simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
      * @param remover                 a {@link Function} that takes a {@link Set} of module names (as in
      *                                {@code <module>my-module</module>} elements) and produces a {@link Transformation}
      *                                removing those elements.
      */
-    public void unlinkModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
-            SimpleElementWhitespace simpleElementWhitespace, Function<Set<String>, PomTransformer.Transformation> remover) {
+    public void unlinkModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding, Function<Set<String>, PomTransformer.Transformation> remover) {
         final Module rootModule = modulesByPath.get("pom.xml");
         final ExpressionEvaluator evaluator = getExpressionEvaluator(isProfileActive);
         final Map<String, Set<Path>> removeChildPaths = unlinkModules(requiredModules, rootModule,
@@ -982,7 +974,7 @@ public class MavenSourceTree {
         for (Entry<String, Set<Path>> e : removeChildPaths.entrySet()) {
             final Set<Path> paths = e.getValue();
             if (!paths.isEmpty()) {
-                unlinkModules(rootDirectory.resolve(e.getKey()), paths, encoding, simpleElementWhitespace, remover);
+                unlinkModules(rootDirectory.resolve(e.getKey()), paths, encoding, remover);
             }
         }
     }
@@ -991,7 +983,6 @@ public class MavenSourceTree {
             Path pomXml,
             Set<Path> removeChildPaths,
             Charset encoding,
-            SimpleElementWhitespace simpleElementWhitespace,
             Function<Set<String>, PomTransformer.Transformation> remover) {
 
         final Path parentDir = pomXml.getParent();
@@ -1004,38 +995,34 @@ public class MavenSourceTree {
 
         PomTransformer.builder()
                 .charset(encoding)
-                .simpleElementWhitespace(simpleElementWhitespace)
                 .transformers(remover.apply(relPathsToRemove))
                 .transform(pomXml);
     }
 
     /**
      * Link back any modules anywhere in the source tree previously removed by
-     * {@link #unlinkModules(Set, Predicate, Charset, SimpleElementWhitespace, Function)}.
+     * {@link #unlinkModules(Set, Predicate, Charset, Function)}.
      * This variant handles only module elements that are not under any profile - see
-     * {@link #relinkModules(Charset, SimpleElementWhitespace, String, Predicate)} for a profile-aware alternative.
+     * {@link #relinkModules(Charset, String, Predicate)} for a profile-aware alternative.
      *
      * @param  encoding                the encoding for reading and writing pom.xml files
-     * @param  simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
      * @param  commentText             has to be the same as used in the previous
-     *                                 {@link #unlinkModules(Set, Predicate, Charset, SimpleElementWhitespace, Function)}
+     *                                 {@link #unlinkModules(Set, Predicate, Charset, Function)}
      *                                 invocation
      * @return                         either this {@link MavenSourceTree} if no relinking edits could be performed or a new
      *                                 {@link MavenSourceTree} with all modules relinked
      */
-    public MavenSourceTree relinkModules(Charset encoding, SimpleElementWhitespace simpleElementWhitespace,
-            String commentText) {
-        return relinkModules(encoding, simpleElementWhitespace, commentText, ActiveProfiles.of());
+    public MavenSourceTree relinkModules(Charset encoding, String commentText) {
+        return relinkModules(encoding, commentText, ActiveProfiles.of());
     }
 
     /**
      * Link back any modules anywhere in the source tree previously removed by
-     * {@link #unlinkModules(Set, Predicate, Charset, SimpleElementWhitespace, Function)}.
+     * {@link #unlinkModules(Set, Predicate, Charset, Function)}.
      *
      * @param  encoding                the encoding for reading and writing pom.xml files
-     * @param  simpleElementWhitespace the preference for writing start-end XML elements that have no attributes
      * @param  commentText             has to be the same as used in the previous
-     *                                 {@link #unlinkModules(Set, Predicate, Charset, SimpleElementWhitespace, Function)}
+     *                                 {@link #unlinkModules(Set, Predicate, Charset, Function)}
      *                                 invocation
      * @param  profiles                a predicate selecting profiles whose modules should be transformed; the default
      *                                 profile-less scope is always included
@@ -1044,7 +1031,7 @@ public class MavenSourceTree {
      *
      * @since                          4.6.0
      */
-    public MavenSourceTree relinkModules(Charset encoding, SimpleElementWhitespace simpleElementWhitespace,
+    public MavenSourceTree relinkModules(Charset encoding,
             String commentText, Predicate<Profile> profiles) {
         for (Entry<String, Module> en : modulesByPath.entrySet()) {
             final String relPath = en.getKey();
@@ -1056,7 +1043,6 @@ public class MavenSourceTree {
 
             PomTransformer.builder()
             .charset(encoding)
-            .simpleElementWhitespace(simpleElementWhitespace)
             .transformers(transformations)
             .transform(pomXml);
 
@@ -1065,7 +1051,7 @@ public class MavenSourceTree {
         if (modulesByPath.keySet().equals(newTree.modulesByPath.keySet())) {
             return this;
         } else {
-            return newTree.relinkModules(encoding, simpleElementWhitespace, commentText);
+            return newTree.relinkModules(encoding, commentText);
         }
     }
 

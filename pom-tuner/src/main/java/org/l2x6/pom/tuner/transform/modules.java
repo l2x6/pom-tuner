@@ -52,10 +52,10 @@ public interface modules {
      * under {@code /project/modules}.
      * <p>
      * If the {@code <modules>} element does not exist under {@code <project>} or under the {@code <profile>} specified via
-     * {@link AddElementTransformer#profile(String)}, the it is silently created.
+     * {@link AddElementTransformer#intoProfile(String)}, the it is silently created.
      * <p>
      * The returned {@link AddElementTransformer} instance can be further customized to target a specific profile using
-     * {@link AddElementTransformer#profile(String)}
+     * {@link AddElementTransformer#intoProfile(String)}
      * or to insert the module at some specific position using {@link AddElementTransformer#beforeTextContent(String)},
      * {@link AddElementTransformer#afterTextContent(String)} or {@link AddElementTransformer#at(Comparator)} and
      * compatible {@link Comparators}.

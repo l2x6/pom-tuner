@@ -16,14 +16,6 @@
  */
 package org.l2x6.pom.tuner;
 
-import eu.maveniverse.domtrip.Comment;
-import eu.maveniverse.domtrip.ContainerNode;
-import eu.maveniverse.domtrip.Document;
-import eu.maveniverse.domtrip.Editor;
-import eu.maveniverse.domtrip.Element;
-import eu.maveniverse.domtrip.Node;
-import eu.maveniverse.domtrip.Node.NodeType;
-import eu.maveniverse.domtrip.Text;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -34,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -52,18 +43,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import javax.xml.xpath.XPath;
+
 import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.Gavtcs;
-import org.l2x6.pom.tuner.transform.api.Siblings;
 import org.l2x6.pom.tuner.transform.dependencies;
 import org.l2x6.pom.tuner.transform.dependencyManagement;
 import org.l2x6.pom.tuner.transform.modules;
-import org.l2x6.pom.tuner.transform.parent;
-import org.l2x6.pom.tuner.transform.pluginManagement;
-import org.l2x6.pom.tuner.transform.plugins;
 import org.l2x6.pom.tuner.transform.properties;
+import org.l2x6.pom.tuner.transform.api.Siblings;
 import org.w3c.dom.DocumentFragment;
+
+import eu.maveniverse.domtrip.Comment;
+import eu.maveniverse.domtrip.ContainerNode;
+import eu.maveniverse.domtrip.Document;
+import eu.maveniverse.domtrip.Element;
+import eu.maveniverse.domtrip.Node;
+import eu.maveniverse.domtrip.Node.NodeType;
+import eu.maveniverse.domtrip.Text;
 
 /**
  * A utility to programmatically modify a {@code pom.xml} file while keeping the original comments and formatting also
@@ -104,15 +102,12 @@ public class PomTransformer {
     static final Pattern EMPTY_LINE_PATTERN = Pattern.compile(EMPTY_LINE_REGEX);
     static final Pattern SIMPLE_ELEM_WS_PATTERN = Pattern.compile("<([^ \t\n\r]+)([ \t\n\r]*)/>");
 
-    private final Path path;
     private final Charset charset;
-    private final SimpleElementWhitespace simpleElementWhitespace;
     private final Collection<? extends Transformer> transformers;
 
     /**
      * @param  transformers
-     * @return              a new {@link PomTransformer} with {@link #charset} {@link StandardCharsets#UTF_8} and
-     *                      {@link SimpleElementWhitespace#AUTODETECT_PREFER_EMPTY}
+     * @return              a new {@link PomTransformer} with {@link #charset} {@link StandardCharsets#UTF_8}
      *
      * @since               5.0.0
      */
@@ -122,8 +117,7 @@ public class PomTransformer {
 
     /**
      * @param  transformers
-     * @return              a new {@link PomTransformer} with {@link #charset} {@link StandardCharsets#UTF_8} and
-     *                      {@link SimpleElementWhitespace#AUTODETECT_PREFER_EMPTY}
+     * @return              a new {@link PomTransformer} with {@link #charset} {@link StandardCharsets#UTF_8}
      *
      * @since               5.0.0
      */
@@ -141,12 +135,9 @@ public class PomTransformer {
         return new Builder();
     }
 
-    private PomTransformer(Path path, Charset charset, SimpleElementWhitespace simpleElementWhitespace,
-            Collection<? extends Transformer> transformers) {
+    private PomTransformer(Charset charset, Collection<? extends Transformer> transformers) {
         super();
-        this.path = path;
         this.charset = charset;
-        this.simpleElementWhitespace = simpleElementWhitespace;
         this.transformers = transformers;
     }
 
@@ -160,12 +151,11 @@ public class PomTransformer {
      */
     public void transform(Path file) {
         LazyWriter lazyWriter = new LazyWriter(file, charset);
-        transform(transformers, simpleElementWhitespace, file, lazyWriter::read, lazyWriter::write);
+        transform(transformers, file, lazyWriter::read, lazyWriter::write);
     }
 
     static void transform(
             Collection<? extends Transformer> edits,
-            SimpleElementWhitespace simpleElementWhitespace,
             Path path,
             Supplier<String> source,
             Consumer<String> outConsumer) {
@@ -234,42 +224,16 @@ public class PomTransformer {
         return -1;
     }
 
-    /**
-     * A preference whether new simple elements should be formated with ({@code <foo />} or without ({@code <foo/>}
-     * whitespace.
-     */
-    public enum SimpleElementWhitespace {
-        AUTODETECT_PREFER_SPACE(true, " "),
-        AUTODETECT_PREFER_EMPTY(true, ""),
-        SPACE(false, " "),
-        EMPTY(false, "");
-
-        private final boolean autodetect;
-        private final String value;
-
-        private SimpleElementWhitespace(boolean autodetect, String value) {
-            this.autodetect = autodetect;
-            this.value = value;
-        }
-
-    }
-
     public static class Builder {
         private Collection<Transformer> transformers = new ArrayList<>();
         private Charset charset = StandardCharsets.UTF_8;
-        private SimpleElementWhitespace simpleElementWhitespace = SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY;
 
         public PomTransformer build() {
-            return new PomTransformer(null, charset, simpleElementWhitespace, transformers);
+            return new PomTransformer(charset, transformers);
         }
 
         public <T extends Transformer> Builder charset(Charset charset) {
             this.charset = charset;
-            return this;
-        }
-
-        public <T extends Transformer> Builder simpleElementWhitespace(SimpleElementWhitespace simpleElementWhitespace) {
-            this.simpleElementWhitespace = simpleElementWhitespace;
             return this;
         }
 
@@ -286,7 +250,7 @@ public class PomTransformer {
         }
 
         public void transform(Path pomXml) {
-            new PomTransformer(null, charset, simpleElementWhitespace, transformers).transform(pomXml);
+            new PomTransformer(charset, transformers).transform(pomXml);
         }
     }
 
@@ -311,6 +275,9 @@ public class PomTransformer {
         }
     }
 
+    /**
+     * An XML element having a single text child, such as {@code <version>1.2.3</version>}.
+     */
     public static class TextElement implements Map.Entry<String, String> {
         protected final TransformationContext context;
         protected final Element node;
@@ -389,35 +356,18 @@ public class PomTransformer {
             }
         }
 
-        public void remove(Function<Node, List<Node>> siblingsSelector) {
-            ContainerNode parent = node.parent();
-            if (parent != null) {
-                final List<Node> siblings = siblingsSelector.apply(node);
-                if (siblings != null && !siblings.isEmpty()) {
-                    siblings.forEach(parent::removeNode);
-                }
-                parent.removeNode(node);
-            }
-        }
-
         /**
-         * Remove {@link #node} from the underlying DOM, optionally with preceding comments and preceding whitespace
+         * Remove this {@link TextElement} together with its siblings selected by the given {@code siblingsSelector}
          *
-         * @param removePrecedingComments
-         * @param removePrecedingWhitespace
+         * @param siblingsSelector selects siblings to remove together with this {@link TextElement}, such as indentation whitespace and/or adjacent comments. See {@link Siblings}
          */
-        public void remove(boolean removePrecedingComments, boolean removePrecedingWhitespace) {
-            if (removePrecedingComments || removePrecedingWhitespace) {
-                Node prevSibling = null;
-                while ((prevSibling = DomTripUtils.previousSibling(node)) != null
-                        && ((removePrecedingWhitespace && TransformationContext.isWhiteSpaceNode(prevSibling))
-                                || (removePrecedingComments && prevSibling.type() == NodeType.COMMENT))) {
-                    /* remove any preceding whitespace or comments */
-                    prevSibling.parent().removeNode(prevSibling);
-                }
-            }
+        public void remove(Function<Node, List<RemovableNode>> siblingsSelector) {
             ContainerNode parent = node.parent();
             if (parent != null) {
+                final List<RemovableNode> siblings = siblingsSelector.apply(node);
+                if (siblings != null && !siblings.isEmpty()) {
+                    siblings.forEach(RemovableNode::remove);
+                }
                 parent.removeNode(node);
             }
         }
@@ -425,7 +375,7 @@ public class PomTransformer {
         /**
          * Add a properly indented comment before {@link #node}.
          * Note that this method does not add any whitespace around the specified comment text.
-         * So of you want to add {@code <!-- my comment -->}, you need to call this as
+         * So of you want to add {@code <!-- my comment -->}, you need to call
          * {@code prependComment(" my comment ")}.
          *
          * @param  comment the text of the comment
@@ -435,7 +385,7 @@ public class PomTransformer {
             final Node refNode = previousSiblingInsertionRefNode();
             Comment result = Comment.of(comment);
             int i = DomTripUtils.indexOf(refNode);
-            node.parent().insertNode(i, context.indent(indentLevel));
+            node.parent().insertNode(i, context.indentNode(indentLevel));
             node.parent().insertNode(i, result);
             return result;
         }
@@ -608,12 +558,11 @@ public class PomTransformer {
         }
 
         /**
-         * @return an existing whitespace node preceding the closing tag of {@link #node} or a newly added whitespace
-         *         node preceding the closing tag of {@link #node}
+         * Ensure that the closing tag of this element is properly indented
          */
-        public void getOrAddLastIndent() {
+        public void ensureClosingTagIndented() {
             if (node.innerPrecedingWhitespace().isEmpty()) {
-                node.innerPrecedingWhitespace(context.indent(indentLevel).content());
+                node.innerPrecedingWhitespace(context.indentNode(indentLevel).content());
             }
         }
 
@@ -643,7 +592,7 @@ public class PomTransformer {
                 boolean emptyLineAfter) {
 
             if (refNode == null) {
-                getOrAddLastIndent();
+                ensureClosingTagIndented();
             }
 
             if (emptyLineBefore) {
@@ -653,7 +602,7 @@ public class PomTransformer {
                 DomTripUtils.insertBefore(node, context.newLine(), refNode);
             }
 
-            String indent = context.indent(indentLevel + 1).content();
+            String indent = context.indentNode(indentLevel + 1).content();
             final Element result = (Element) Element.of(elementName)
                     .innerPrecedingWhitespace(indent)
                     .precedingWhitespace(indent);
@@ -666,7 +615,7 @@ public class PomTransformer {
                  */
                 if (refNode != null && refNode.type() == NodeType.ELEMENT) {
                     if (!TransformationContext.hasEmptyLineBefore(refNode)) {
-                        refNode.precedingWhitespace("\n" + context.indent(indentLevel + 1).content());
+                        refNode.precedingWhitespace("\n" + context.indentNode(indentLevel + 1).content());
                     }
                 } else if (refNode == null || !TransformationContext.isEmptyLineNode(refNode)) {
                     DomTripUtils.insertBefore(node, context.newLine(), refNode);
@@ -731,7 +680,7 @@ public class PomTransformer {
                 return context.getOrAddContainerElement(elementName);
             }
 
-            final String indent = context.indent(indentLevel + 1).content();
+            final String indent = context.indentNode(indentLevel + 1).content();
             final Element result = (Element) Element.of(elementName)
                     .innerPrecedingWhitespace(indent)
                     .precedingWhitespace(indent);
@@ -750,7 +699,7 @@ public class PomTransformer {
          * @param text        the text content of the newly added {@link Element}
          */
         public TextElement addChildTextElement(String elementName, final String text) {
-            getOrAddLastIndent();
+            ensureClosingTagIndented();
             return addChildTextElement(elementName, text, null);
         }
 
@@ -764,7 +713,7 @@ public class PomTransformer {
          */
         public TextElement addChildTextElement(String elementName, final String text, Node refNode) {
             if (text != null) {
-                DomTripUtils.insertBefore(node, context.indent(indentLevel + 1), refNode);
+                DomTripUtils.insertBefore(node, context.indentNode(indentLevel + 1), refNode);
                 final Element result = Element.of(elementName);
                 result.textContent(text);
                 DomTripUtils.insertBefore(node, result, refNode);
@@ -777,7 +726,7 @@ public class PomTransformer {
                 Comparator<Map.Entry<String, String>> comparator) {
             Node refNode = null;
             if (comparator == null) {
-                getOrAddLastIndent();
+                ensureClosingTagIndented();
             } else {
                 TextElement newEntry = TextElement.dummy(context, nodeName, nodeValue);
                 for (TextElement child : childTextElements()) {
@@ -795,7 +744,7 @@ public class PomTransformer {
                     }
                 }
                 if (refNode == null) {
-                    getOrAddLastIndent();
+                    ensureClosingTagIndented();
                 }
             }
             return addChildTextElement(nodeName, nodeValue, refNode);
@@ -816,10 +765,10 @@ public class PomTransformer {
             if (!existingChild.isPresent() && textContent == null) {
                 /* nothing to do */
             } else if (!existingChild.isPresent()) {
-                getOrAddLastIndent();
+                ensureClosingTagIndented();
                 addChildTextElement(elementName, textContent, null);
             } else if (textContent == null) {
-                existingChild.get().remove(true, true);
+                existingChild.get().remove(Siblings.previous(Siblings.commentsOrWhitespace()));
             } else {
                 existingChild.get().getNode().textContent(textContent);
             }
@@ -831,7 +780,7 @@ public class PomTransformer {
          * @param fragment the {@link DocumentFragment} to add
          */
         public void addFragment(List<Node> fragment) {
-            getOrAddLastIndent();
+            ensureClosingTagIndented();
             addFragment(fragment, null);
         }
 
@@ -853,7 +802,7 @@ public class PomTransformer {
          * @return        the newly created child node
          */
         public ContainerElement addGavtcs(Gavtcs gavtcs) {
-            getOrAddLastIndent();
+            ensureClosingTagIndented();
             return addGavtcs(gavtcs, null);
         }
 
@@ -917,7 +866,7 @@ public class PomTransformer {
                 }
             }
             if (refNode == null) {
-                getOrAddLastIndent();
+                ensureClosingTagIndented();
             }
             return addGavtcs(gavtcs, refNode);
         }
@@ -1142,52 +1091,6 @@ public class PomTransformer {
                             .filter(depNode -> depNode.getGavtcs().equals(gavtcs))
                             .findFirst()
                             .orElse(null));
-        }
-
-        /**
-         * Removes the given dependency if it exists; otherwise does nothing.
-         *
-         * @param removedDependency         the dependency to remove
-         * @param removePrecedingComments   if {@code true} any preceding comments will be removed
-         * @param removePrecedingWhitespace if {@code true} any preceding whitespace will be removed
-         */
-        public void removeDependency(Gavtcs removedDependency, boolean removePrecedingComments,
-                boolean removePrecedingWhitespace) {
-            getChildContainerElement("dependencies")
-                    .ifPresent(deps -> deps.childElementsStream()
-                            .filter(wrappedDepNode -> wrappedDepNode.asGavtcs().equals(removedDependency))
-                            .findFirst()
-                            .ifPresent(wrappedDepNode -> wrappedDepNode.remove(removePrecedingComments,
-                                    removePrecedingWhitespace)));
-        }
-
-        /**
-         * Removes the given managed dependency if it exists; otherwise does nothing.
-         *
-         * @param removedDependency         the dependency to remove
-         * @param removePrecedingComments   if {@code true} any preceding comments will be removed
-         * @param removePrecedingWhitespace if {@code true} any preceding whitespace will be removed
-         */
-        public void removeManagedDependency(Gavtcs removedDependency, boolean removePrecedingComments,
-                boolean removePrecedingWhitespace) {
-            getChildContainerElement("dependencyManagement", "dependencies")
-                    .ifPresent(deps -> deps.childElementsStream()
-                            .filter(wrappedDepNode -> wrappedDepNode.asGavtcs().equals(removedDependency))
-                            .findFirst()
-                            .ifPresent(wrappedDepNode -> wrappedDepNode.remove(removePrecedingComments,
-                                    removePrecedingWhitespace)));
-        }
-
-        /**
-         * Adds a dependency unless it available already
-         *
-         * @param gavtcs     the dependency to add
-         * @param comparator decides where to add the given dependency amongst the existing dependencies
-         *
-         * @see              Comparators
-         */
-        public void addDependencyIfNeeded(Gavtcs gavtcs, Comparator<Gavtcs> comparator) {
-            getOrAddChildContainerElement("dependencies").addGavtcsIfNeeded(gavtcs, comparator);
         }
 
         /**
@@ -1452,13 +1355,21 @@ public class PomTransformer {
          * @return             a new indentation node containing a newline and {@code indentCount} times concatenated
          *                     {@link #indentationString}
          */
-        public Text indent(int indentCount) {
+        public Text indentNode(int indentCount) {
+            return Text.of(indent(indentCount));
+        }
+        /**
+         * @param  indentCount how many times to concatenate the {@link #indentationString}
+         * @return             a new indentation {@link String} containing a newline and {@code indentCount} times concatenated
+         *                     {@link #indentationString}
+         */
+        public String indent(int indentCount) {
             final StringBuilder sb = new StringBuilder(1 + indentCount * indentationString.length());
             sb.append('\n');
             for (int i = 0; i < indentCount; i++) {
                 sb.append(indentationString);
             }
-            return Text.of(sb.toString());
+            return sb.toString();
         }
 
         /**
@@ -1786,40 +1697,6 @@ public class PomTransformer {
             };
         }
 
-        /**
-         * Remove {@link Gavtcs}-like nodes (such as {@code <dependency>}, {@code <plugin>}, etc.) matching the given
-         * {@code predicate} from the given profile.
-         *
-         * @param profileId                 the {@code id} of the profile under which the changes should happen or {@code null}
-         *                                  if the
-         *                                  changes should happen in the default profile-less area
-         * @param removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
-         *                                  otherwise the preceding comments won't be removed
-         * @param removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
-         *                                  also be removed; otherwise the preceding whitespace nodes won't be removed
-         * @param predicate                 the predicate to select the nodes to remove, such as
-         *                                  {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
-         * @param nodeName                  the first node name of the path to remove
-         * @param otherNodeNames            other optional node names to remove
-         */
-        void removeGavtcs(String profileId, boolean removePrecedingComments, boolean removePrecedingWhitespace,
-                Predicate<Gavtcs> predicate, String nodeName, String... otherNodeNames) {
-            getProfileParent(profileId).ifPresent(profileParent -> {
-                profileParent
-                        .getChildContainerElement(nodeName, otherNodeNames)
-                        .ifPresent(gavtcsNode -> {
-                            List<NodeGavtcs> deletionList = gavtcsNode.childElementsStream()
-                                    .map(dep -> dep.asGavtcs())
-                                    .filter(predicate)
-                                    .collect(Collectors.toList());
-
-                            deletionList
-                                    .forEach(dep -> dep.getNode().remove(removePrecedingComments, removePrecedingWhitespace));
-                        });
-            });
-
-        }
-
     }
 
     public static class RemovableNode {
@@ -2020,80 +1897,6 @@ public class PomTransformer {
     }
 
     public interface Transformation extends Transformer {
-
-        /**
-         * @param      module
-         * @return
-         *
-         * @deprecated        use {@link modules#add(String)} instead
-         */
-        @Deprecated
-        public static Transformation addModule(String module) {
-            return addModules(null, Collections.singleton(module));
-        }
-
-        /**
-         * @param      profileId
-         * @param      modulePaths
-         * @return
-         *
-         * @deprecated             use {@link modules#add(String)} instead
-         */
-        @Deprecated
-        public static Transformation addModules(String profileId, String... modulePaths) {
-            return addModules(profileId, Arrays.asList(modulePaths));
-        }
-
-        /**
-         * @param      module
-         * @param      comparator
-         * @return
-         *
-         * @deprecated            use {@link modules#add(String)} instead
-         */
-        @Deprecated
-        public static Transformation addModuleIfNeeded(String module, Comparator<String> comparator) {
-            return (Document document, TransformationContext context) -> {
-                ContainerElement modules = context.getOrAddContainerElement("modules");
-                modules.addChildTextElementIfNeeded("module", module, Comparators.textContent(comparator));
-            };
-        }
-
-        /**
-         * @param      profileId
-         * @param      modulePaths
-         * @return
-         *
-         * @deprecated             use {@link modules#add(String)} instead
-         */
-        @Deprecated
-        public static Transformation addModules(String profileId, Collection<String> modulePaths) {
-            return addModulesIfNeeded(profileId, null, modulePaths);
-        }
-
-        /**
-         * @param      profileId
-         * @param      comparator
-         * @param      modulePaths
-         * @return
-         *
-         * @deprecated             use {@link modules#add(String)} instead
-         */
-        @Deprecated
-        public static Transformation addModulesIfNeeded(String profileId, Comparator<String> comparator,
-                Collection<String> modulePaths) {
-            return (Document document, TransformationContext context) -> {
-                final ContainerElement profileParent = context.getOrAddProfileParent(profileId);
-                final ContainerElement modules = profileParent.getOrAddChildContainerElement("modules");
-                for (String m : modulePaths) {
-                    if (comparator != null) {
-                        modules.addChildTextElementIfNeeded("module", m, Comparators.textContent(comparator));
-                    } else {
-                        modules.addChildTextElement("module", m);
-                    }
-                }
-            };
-        }
 
         /**
          * @param      name
@@ -2314,31 +2117,6 @@ public class PomTransformer {
             };
         }
 
-        /**
-         * @param      profileId
-         * @param      removePrecedingComments
-         * @param      removePrecedingWhitespace
-         * @return
-         *
-         * @deprecated                           use {@link modules#removeAll()} instead
-         */
-        @Deprecated
-        public static Transformation removeAllModules(String profileId, boolean removePrecedingComments,
-                boolean removePrecedingWhitespace) {
-            return (Document document, TransformationContext context) -> {
-                context.getProfileParent(profileId)
-                        .flatMap(profileParent -> profileParent.getChildContainerElement("modules"))
-                        .ifPresent(modules -> {
-                            Iterator<ContainerElement> children = modules.childElements().iterator();
-                            while (children.hasNext()) {
-                                children.next().remove(removePrecedingComments, removePrecedingWhitespace);
-                                children = modules.childElements().iterator();
-                            }
-                        });
-                ;
-            };
-        }
-
         public static Transformation uncommentModules(String commentText) {
             return uncommentModules(commentText, m -> true);
         }
@@ -2391,202 +2169,6 @@ public class PomTransformer {
                         .alsoRemoveNone()
                         .alsoRemovePrevious(Transformation.selector(removePrecedingComments, removePrecedingWhitespace))
                         .perform(context);
-            };
-        }
-
-        /**
-         * Remove plugins having the given {@code groupId} and {@code artifactId} from the default profile-less area of
-         * the {@code pom.xml} file.
-         *
-         * @param      removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
-         *                                       otherwise the preceding comments won't be removed
-         * @param      removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
-         *                                       also be removed; otherwise the preceding whitespace nodes won't be removed
-         * @param      predicate                 the predicate to select the nodes to remove, such as
-         *                                       {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
-         * @param      groupId                   the {@code groupId} of the plugins to remove
-         * @param      artifactId                the {@code artifactId} of the plugins to remove
-         * @return                               a new {@link Transformation}
-         *
-         * @deprecated                           use
-         *                                       {@code removePlugins(null, removePrecedingComments, removePrecedingWhitespace, Gavtcs.equalGroupIdAndArtifactId(groupId, artifactId))}
-         */
-        public static Transformation removePlugin(boolean removePrecedingComments, boolean removePrecedingWhitespace,
-                String groupId, String artifactId) {
-            return removePlugins(null, removePrecedingComments, removePrecedingWhitespace,
-                    Gavtcs.equalGroupIdAndArtifactId(groupId, artifactId));
-        }
-
-        /**
-         * Remove plugins matching the given {@code predicate} from the given profile.
-         *
-         * @param      profileId                 the {@code id} of the profile under which the changes should happen or
-         *                                       {@code null}
-         *                                       if the
-         *                                       changes should happen in the default profile-less area
-         * @param      removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
-         *                                       otherwise the preceding comments won't be removed
-         * @param      removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
-         *                                       also be removed; otherwise the preceding whitespace nodes won't be removed
-         * @param      predicate                 the predicate to select the nodes to remove, such as
-         *                                       {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
-         * @return                               a new {@link Transformation}
-         * @deprecated                           use {@link plugins#remove(org.l2x6.pom.tuner.model.GavtcsPattern...)}
-         */
-        @Deprecated
-        public static Transformation removePlugins(String profileId, boolean removePrecedingComments,
-                boolean removePrecedingWhitespace,
-                Predicate<Gavtcs> predicate) {
-            return (Document document, TransformationContext context) -> {
-                context.removeGavtcs(profileId, removePrecedingComments, removePrecedingWhitespace, predicate, "build",
-                        "plugins");
-            };
-        }
-
-        /**
-         * Remove dependencies matching the given {@code predicate} from the default profile-less area of the
-         * {@code pom.xml} file.
-         *
-         * @param      removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
-         *                                       otherwise the preceding comments won't be removed
-         * @param      removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
-         *                                       also be removed; otherwise the preceding whitespace nodes won't be removed
-         * @param      predicate                 the predicate to select the nodes to remove, such as
-         *                                       {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
-         * @return                               a new {@link Transformation}
-         *
-         * @deprecated                           use {@link #removeDependencies(String, boolean, boolean, Predicate)}
-         */
-        public static Transformation removeDependency(boolean removePrecedingComments, boolean removePrecedingWhitespace,
-                Predicate<Gavtcs> predicate) {
-            return removeDependencies(null, removePrecedingComments, removePrecedingWhitespace, predicate);
-        }
-
-        /**
-         * Remove dependencies matching the given {@code predicate} from the given profile.
-         *
-         * @param      profileId                 the {@code id} of the profile under which the changes should happen or
-         *                                       {@code null}
-         *                                       if the
-         *                                       changes should happen in the default profile-less area
-         * @param      removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
-         *                                       otherwise the preceding comments won't be removed
-         * @param      removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
-         *                                       also be removed; otherwise the preceding whitespace nodes won't be removed
-         * @param      predicate                 the predicate to select the nodes to remove, such as
-         *                                       {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
-         * @return                               a new {@link Transformation}
-         * @deprecated                           use {@link dependencies#remove(org.l2x6.pom.tuner.model.GavtcsPattern...)}
-         */
-        @Deprecated
-        public static Transformation removeDependencies(String profileId, boolean removePrecedingComments,
-                boolean removePrecedingWhitespace,
-                Predicate<Gavtcs> predicate) {
-            return (Document document, TransformationContext context) -> {
-                context.removeGavtcs(profileId, removePrecedingComments, removePrecedingWhitespace, predicate, "dependencies");
-            };
-        }
-
-        /**
-         * Remove managed dependencies matching the given {@code predicate} from the default profile-less area of the
-         * {@code pom.xml} file.
-         *
-         * @param      removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
-         *                                       otherwise the preceding comments won't be removed
-         * @param      removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
-         *                                       also be removed; otherwise the preceding whitespace nodes won't be removed
-         * @param      predicate                 the predicate to select the nodes to remove, such as
-         *                                       {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
-         * @return                               a new {@link Transformation}
-         *
-         * @deprecated                           use {@link #removeManagedDependencies(String, boolean, boolean, Predicate)}
-         */
-        public static Transformation removeManagedDependencies(boolean removePrecedingComments,
-                boolean removePrecedingWhitespace,
-                Predicate<Gavtcs> predicate) {
-            return removeManagedDependencies(null, removePrecedingComments, removePrecedingWhitespace, predicate);
-        }
-
-        /**
-         * Remove managed dependencies matching the given {@code predicate} from the given profile.
-         *
-         * @param      profileId                 the {@code id} of the profile under which the changes should happen or
-         *                                       {@code null}
-         *                                       if the
-         *                                       changes should happen in the default profile-less area
-         * @param      removePrecedingComments   if {@code true} the comments preceding the removed nodes will be also removed;
-         *                                       otherwise the preceding comments won't be removed
-         * @param      removePrecedingWhitespace if {@code true} the whitespace nodes preceding the removed nodes will be
-         *                                       also be removed; otherwise the preceding whitespace nodes won't be removed
-         * @param      predicate                 the predicate to select the nodes to remove, such as
-         *                                       {@link Gavtcs#equalGroupIdAndArtifactId(String, String)}
-         * @return                               a new {@link Transformation}
-         * @deprecated                           {@link dependencyManagement#remove(org.l2x6.pom.tuner.model.GavtcsPattern...)}
-         */
-        @Deprecated
-        public static Transformation removeManagedDependencies(String profileId, boolean removePrecedingComments,
-                boolean removePrecedingWhitespace,
-                Predicate<Gavtcs> predicate) {
-            return (Document document, TransformationContext context) -> {
-                context.removeGavtcs(profileId, removePrecedingComments, removePrecedingWhitespace, predicate,
-                        "dependencyManagement", "dependencies");
-            };
-        }
-
-        /**
-         * Set the {@code artifactId} and {@code relativePath} in the {@code parent} element. {@code artifactId} cannot
-         * be {@code null}. If {@code relativePath} is {@code null}, the {@code relativePath} element will be removed.
-         *
-         * @param  artifactId   the {@code artifactId} for the {@code parent} element
-         * @param  relativePath a value for the {@code relativePath} element or {@code null} if it should be removed
-         * @return              a new {@link Transformation}
-         */
-        public static Transformation setParent(String artifactId, String relativePath) {
-            return (Document document, TransformationContext context) -> {
-                ContainerElement parent = context.getContainerElement("project", "parent")
-                        .orElseThrow(() -> new IllegalStateException("No parent element in " + context.getPomXmlPath()));
-                parent.addOrSetChildTextElement("artifactId", artifactId);
-                if (relativePath == null) {
-                    parent.getChildContainerElement("relativePath").ifPresent(relPath -> relPath.remove(true, true));
-                } else {
-                    parent.addOrSetChildTextElement("relativePath", relativePath);
-                }
-            };
-        }
-
-        public static Transformation addManagedPlugin(String groupId, String artifactId, String version) {
-            return (Document document, TransformationContext context) -> {
-                pluginManagement.add(new Gavtcs(groupId, artifactId, version)).perform(context);
-            };
-        }
-
-        public static Transformation addFragment(List<Node> fragment, String parentPathFirst, String... parentPathOther) {
-            return (Document document, TransformationContext context) -> {
-                final ContainerElement parent = context.getOrAddContainerElements(parentPathFirst, parentPathOther);
-                parent.addFragment(fragment);
-            };
-        }
-
-        /**
-         * Remove the element specified by the given {@code path} if it has no child elements (child whitespace and
-         * comments do
-         * not matter).
-         * The {@code path} is vararg of element names, e.g. {@code removeIfEmpty(true, true, "project", "properties")}
-         * would remove the {@code <properties>} element if there are no properties defined under it.
-         *
-         * @param  removePrecedingComments
-         * @param  removePrecedingWhitespace
-         * @param  path                      a vararg of element names
-         * @return                           a new {@link Transformation}
-         */
-        public static Transformation removeIfEmpty(boolean removePrecedingComments, boolean removePrecedingWhitespace,
-                String... path) {
-            return (Document document, TransformationContext context) -> {
-                context.getContainerElement(path).ifPresent(element -> {
-                    if (!element.childElements().iterator().hasNext()) {
-                        element.remove(removePrecedingComments, removePrecedingWhitespace);
-                    }
-                });
             };
         }
 

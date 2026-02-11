@@ -51,7 +51,7 @@ public interface pluginManagement {
      * under {@code /project/build/pluginManagement/plugins}.
      * <p>
      * The returned {@link AddGavtcsTransformer} instance can be further customized to target a specific profile using
-     * {@link AddGavtcsTransformer#profile(String)}
+     * {@link AddGavtcsTransformer#intoProfile(String)}
      * or to insert the plugin at some specific position using {@link AddGavtcsTransformer#before(Gavtcs)},
      * {@link AddGavtcsTransformer#after(Gavtcs)} or {@link AddGavtcsTransformer#at(Comparator)} and
      * compatible {@link Comparators}.

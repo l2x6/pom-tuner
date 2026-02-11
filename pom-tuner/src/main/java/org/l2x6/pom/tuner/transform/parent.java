@@ -19,6 +19,7 @@ package org.l2x6.pom.tuner.transform;
 import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.transform.api.ParentTransformer;
 import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 import org.l2x6.pom.tuner.transform.api.RemoveTransformer;
 
@@ -86,64 +87,48 @@ public interface parent {
      * Creates the {@code <parent>} element if needed and sets its {@code groupId} to the given value.
      *
      * @param  groupId the {@code groupId} to set, must not be {@code null}
-     * @return         a new customizable {@link Transformer}
+     * @return         a new customizable {@link ParentTransformer}
      *
      * @since          5.0.0
      */
-    public static Transformer setGroupId(String groupId) {
-
-        return context -> {
-            ContainerElement parent = context.getOrAddContainerElement("parent");
-            parent.addOrSetChildTextElement("groupId", groupId);
-        };
+    public static ParentTransformer setGroupId(String groupId) {
+        return new ParentTransformer().setGroupId(groupId);
     }
 
     /**
      * Creates the {@code <parent>} element if needed and sets its {@code artifactId} to the given value.
      *
      * @param  artifactId the {@code artifactId} to set, must not be {@code null}
-     * @return            a new customizable {@link Transformer}
+     * @return         a new customizable {@link ParentTransformer}
      *
-     * @since             5.0.0
+     * @since          5.0.0
      */
-    public static Transformer setArtifactId(String artifactId) {
-
-        return context -> {
-            ContainerElement parent = context.getOrAddContainerElement("parent");
-            parent.addOrSetChildTextElement("artifactId", artifactId);
-        };
+    public static ParentTransformer setArtifactId(String artifactId) {
+        return new ParentTransformer().setArtifactId(artifactId);
     }
 
     /**
      * Creates the {@code <parent>} element if needed and sets its {@code version} to the given value.
      *
      * @param  version the {@code version} to set, must not be {@code null}
-     * @return         a new customizable {@link Transformer}
+     * @return         a new customizable {@link ParentTransformer}
      *
      * @since          5.0.0
      */
-    public static Transformer setVersion(String version) {
-
-        return context -> {
-            ContainerElement parent = context.getOrAddContainerElement("parent");
-            parent.addOrSetChildTextElement("version", version);
-        };
+    public static ParentTransformer setVersion(String version) {
+        return new ParentTransformer().setVersion(version);
     }
 
     /**
      * Creates the {@code <parent>} element if needed and sets its {@code relativePath} to the given value.
      *
      * @param  relativePath the {@code relativePath} to set, must not be {@code null}
-     * @return              a new customizable {@link Transformer}
+     * @return         a new customizable {@link ParentTransformer}
      *
-     * @since               5.0.0
+     * @since          5.0.0
      */
-    public static Transformer setRelativePath(String relativePath) {
-
-        return context -> {
-            ContainerElement parent = context.getOrAddContainerElement("parent");
-            parent.addOrSetChildTextElement("relativePath", relativePath);
-        };
+    public static ParentTransformer setRelativePath(String relativePath) {
+        return new ParentTransformer().setRelativePath(relativePath);
     }
 
     /**
