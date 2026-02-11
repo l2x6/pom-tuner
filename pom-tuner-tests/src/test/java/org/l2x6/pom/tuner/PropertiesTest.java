@@ -240,7 +240,7 @@ public class PropertiesTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                properties.set("p7", "v7").profile("profile1").afterElement("p4")
+                properties.set("p7", "v7").intoProfile("profile1").afterElement("p4")
 
         ),
                 expected);

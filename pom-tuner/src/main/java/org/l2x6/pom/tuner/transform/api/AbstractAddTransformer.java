@@ -76,7 +76,7 @@ abstract class AbstractAddTransformer<P extends ContainerElement, T extends Text
      * @since                  5.0.0
      * @see                    ProfileId
      */
-    public abstract THIS profile(Function<TransformationContext, ProfileElement> profileSelector);
+    public abstract THIS intoProfile(Function<TransformationContext, ProfileElement> profileSelector);
 
     /**
      * @param  profileId the {@code id} of the {@code pom.xml} profile under which the new element should be applied; if the
@@ -86,7 +86,7 @@ abstract class AbstractAddTransformer<P extends ContainerElement, T extends Text
      *                   {@link #profileSelector} adjusted
      * @since            5.0.0
      */
-    public abstract THIS profile(String profileId);
+    public abstract THIS intoProfile(String profileId);
 
     /**
      * @param  position a {@link Comparator} deciding where among its available siblings the new element should be added

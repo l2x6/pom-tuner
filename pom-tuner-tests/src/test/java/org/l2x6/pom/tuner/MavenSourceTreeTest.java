@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.MavenSourceTree.ActiveProfiles;
 import org.l2x6.pom.tuner.MavenSourceTree.Builder;
-import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
 import org.l2x6.pom.tuner.model.Dependency;
 import org.l2x6.pom.tuner.model.Expression;
 import org.l2x6.pom.tuner.model.Expression.NoSuchPropertyException;
@@ -207,7 +206,7 @@ public class MavenSourceTreeTest {
         final Path root = BASEDIR.resolve("target/test-classes/MavenSourceTree/set-versions");
 
         final MavenSourceTree t = new Builder(root, StandardCharsets.UTF_8).pomXml(root.resolve("pom.xml")).build();
-        t.setVersions("2.2.2", ActiveProfiles.of(), SimpleElementWhitespace.AUTODETECT_PREFER_SPACE);
+        t.setVersions("2.2.2", ActiveProfiles.of());
 
         final Path expectedRoot = BASEDIR.resolve("target/test-classes/MavenSourceTree/set-versions-expected");
 
@@ -451,8 +450,7 @@ public class MavenSourceTreeTest {
                                 .map(root::resolve)
                                 .collect(Collectors.toCollection(LinkedHashSet::new)));
 
-        t.unlinkModules(expandedIncludes, profileSelector, StandardCharsets.UTF_8,
-                SimpleElementWhitespace.AUTODETECT_PREFER_SPACE, "removed by srcdeps");
+        t.unlinkModules(expandedIncludes, profileSelector, StandardCharsets.UTF_8, "removed by srcdeps");
 
         final Path expectedRoot = BASEDIR.resolve("target/test-classes/MavenSourceTree/tree-1-expected");
 

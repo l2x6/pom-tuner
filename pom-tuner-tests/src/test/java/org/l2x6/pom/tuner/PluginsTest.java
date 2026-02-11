@@ -418,7 +418,7 @@ public class PluginsTest {
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
                 plugins.add(new Gavtcs("org.acme", "dep5", "1.2.3"))
-                        .profile("profile1")
+                        .intoProfile("profile1")
                         .after(new Gavtcs("org.acme", "dep3", "1.2.3"))
 
         ),

@@ -68,7 +68,7 @@ public class AddElementTransformer<P extends ContainerElement, T extends TextEle
      * @see                    ProfileId
      */
     @SuppressWarnings("unchecked")
-    public THIS profile(Function<TransformationContext, ProfileElement> profileSelector) {
+    public THIS intoProfile(Function<TransformationContext, ProfileElement> profileSelector) {
         return (THIS) new AddElementTransformer<P, T, THIS>(
                 profileSelector,
                 profileToParentElement,
@@ -86,7 +86,7 @@ public class AddElementTransformer<P extends ContainerElement, T extends TextEle
      * @since            5.0.0
      */
     @SuppressWarnings("unchecked")
-    public THIS profile(String profileId) {
+    public THIS intoProfile(String profileId) {
         return (THIS) new AddElementTransformer<P, T, THIS>(
                 selectProfile(profileId),
                 profileToParentElement,
