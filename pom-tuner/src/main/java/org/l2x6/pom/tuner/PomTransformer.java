@@ -96,10 +96,6 @@ import org.w3c.dom.DocumentFragment;
  */
 public class PomTransformer {
 
-    static final Pattern[] POSTPROCESS_PATTERNS = new Pattern[] {
-            Pattern.compile("(<\\?xml[^>]*\\?>)?(\\s*)<"),
-            Pattern.compile("(\\s*)<project([^>]*)>")
-    };
     static final Pattern EOL_PATTERN = Pattern.compile("\r?\n");
     static final String WS_REGEX = "[ \t\n\r]+";
     static final Pattern WS_PATTERN = Pattern.compile(WS_REGEX);
@@ -145,21 +141,6 @@ public class PomTransformer {
         return new Builder();
     }
 
-    /**
-     *
-     * @param path
-     * @param charset
-     * @param simpleElementWhitespace
-     */
-    @Deprecated
-    public PomTransformer(Path path, Charset charset, SimpleElementWhitespace simpleElementWhitespace) {
-        super();
-        this.path = path;
-        this.charset = charset;
-        this.simpleElementWhitespace = simpleElementWhitespace;
-        this.transformers = Collections.emptyList();
-    }
-
     private PomTransformer(Path path, Charset charset, SimpleElementWhitespace simpleElementWhitespace,
             Collection<? extends Transformer> transformers) {
         super();
@@ -182,35 +163,6 @@ public class PomTransformer {
         transform(transformers, simpleElementWhitespace, file, lazyWriter::read, lazyWriter::write);
     }
 
-    /**
-     * Loads the document under {@link #path}, applies the given {@code transformations}, mitigates the formatting
-     * issues caused by {@link Transformer} and finally stores the document back to the file under {@link #path}.
-     *
-     * @param      transformations the {@link Transformation}s to apply
-     *
-     * @deprecated                 use
-     *                             {@code PomTransformer.of(transformer1, transformer2, ...).transform(Path.of("pom.xml"))}
-     */
-    @Deprecated
-    public void transform(Transformation... transformations) {
-        transform(Arrays.asList(transformations));
-    }
-
-    /**
-     * Loads the document under {@link #path}, applies the given {@code transformations}, mitigates the formatting
-     * issues caused by {@link Transformer} and finally stores the document back to the file under {@link #path}.
-     *
-     * @param      transformations the {@link Transformation}s to apply
-     *
-     * @deprecated                 use
-     *                             {@code PomTransformer.of(List.of(transformer1, transformer2, ...)).transform(Path.of("pom.xml"))}
-     */
-    @Deprecated
-    public void transform(Collection<? extends Transformation> transformations) {
-        LazyWriter lazyWriter = new LazyWriter(path, charset);
-        transform(transformations, simpleElementWhitespace, path, lazyWriter::read, lazyWriter::write);
-    }
-
     static void transform(
             Collection<? extends Transformer> edits,
             SimpleElementWhitespace simpleElementWhitespace,
@@ -218,50 +170,16 @@ public class PomTransformer {
             Supplier<String> source,
             Consumer<String> outConsumer) {
         String src = source.get();
-        final String eol = detectEol(src);
+        //final String eol = detectEol(src);
 
         final Document document = Document.of(src);
-        final Editor editor = new Editor(document);
-        final TransformationContext context = new TransformationContext(path, editor, document, detectIndentation(document));
+        final TransformationContext context = new TransformationContext(path, document, detectIndentation(document));
         for (Transformer edit : edits) {
             edit.perform(context);
         }
-        String result = editor.toXml();
-        result = EOL_PATTERN.matcher(result).replaceAll(eol);
-        result = postprocess(src, result, simpleElementWhitespace);
+        String result = document.toXml();
+        //result = EOL_PATTERN.matcher(result).replaceAll(eol);
         outConsumer.accept(result);
-    }
-
-    static String postprocess(String src, String result, SimpleElementWhitespace simpleElementWhitespace) {
-        for (Pattern p : POSTPROCESS_PATTERNS) {
-            final Matcher srcMatcher = p.matcher(src);
-            if (srcMatcher.find()) {
-                final String replacement = Matcher.quoteReplacement(srcMatcher.group());
-                result = p.matcher(result).replaceFirst(replacement);
-            }
-        }
-        result = fixTrailingContent(src, result);
-        final String ws;
-        if (simpleElementWhitespace.autodetect) {
-            final Matcher srcMatcher = SIMPLE_ELEM_WS_PATTERN.matcher(src);
-            if (srcMatcher.find()) {
-                ws = srcMatcher.group(2);
-            } else {
-                ws = simpleElementWhitespace.value;
-            }
-        } else {
-            ws = simpleElementWhitespace.value;
-        }
-        if (!ws.isEmpty()) {
-            final StringBuffer resultBuffer = new StringBuffer(result.length());
-            final Matcher resultMatcher = SIMPLE_ELEM_WS_PATTERN.matcher(result);
-            while (resultMatcher.find()) {
-                resultMatcher.appendReplacement(resultBuffer, "<$1 />");
-            }
-            resultMatcher.appendTail(resultBuffer);
-            result = resultBuffer.toString();
-        }
-        return result;
     }
 
     static String detectIndentation(Document document) {
@@ -288,18 +206,6 @@ public class PomTransformer {
 
     static String detectEol(String src) {
         return src.indexOf('\r') >= 0 ? "\r\n" : "\n";
-    }
-
-    static String fixTrailingContent(String src, String result) {
-        final int traillingStart = endOfRootElement(src);
-        if (traillingStart >= 0) {
-            final String trailingContent = src.substring(traillingStart);
-            final int traillingStartResult = endOfRootElement(result);
-            if (traillingStartResult >= 0) {
-                return result.substring(0, traillingStartResult) + trailingContent;
-            }
-        }
-        return result;
     }
 
     /**
@@ -329,7 +235,7 @@ public class PomTransformer {
     }
 
     /**
-     * A preference whether simple elements should be formated with ({@code <foo />} or without ({@code <foo/>}
+     * A preference whether new simple elements should be formated with ({@code <foo />} or without ({@code <foo/>}
      * whitespace.
      */
     public enum SimpleElementWhitespace {
@@ -403,26 +309,6 @@ public class PomTransformer {
         public ContainerElement getNode() {
             return node;
         }
-    }
-
-    public static class CommentNode {
-        protected final TransformationContext context;
-        protected final Comment node;
-        protected final int indentLevel;
-
-        public CommentNode(TransformationContext context, Comment node, int indentLevel) {
-            this.context = context;
-            this.node = node;
-            this.indentLevel = indentLevel;
-        }
-
-        /**
-         * @return the associated DOM {@link Node}
-         */
-        public Comment getNode() {
-            return node;
-        }
-
     }
 
     public static class TextElement implements Map.Entry<String, String> {
@@ -620,22 +506,6 @@ public class PomTransformer {
         }
 
         /**
-         * @return the associated DOM {@link Node} together with the preceding whitespace and comments selected by the
-         *         given
-         *         {@link Predicate}
-         */
-        public List<Node> getFragment(Predicate<Node> precedingInclude) {
-            return getNodes(precedingInclude);
-        }
-
-        /**
-         * @return the associated DOM {@link Node} together with all preceding whitespace and comments
-         */
-        public List<Node> getFragment() {
-            return getFragment(TransformationContext.ALL_WHITESPACE_AND_COMMENTS);
-        }
-
-        /**
          * @return the name of the current XML node without the namespace or prefix
          *
          * @since  5.0.0
@@ -685,7 +555,6 @@ public class PomTransformer {
      * An XML element in a {@code pom.xml} file that possibly has child {@link ContainerElement}s.
      */
     public static class ContainerElement extends TextElement {
-        private final Predicate<Node> ELEMENT_FILTER = n -> n.type() == NodeType.ELEMENT;
 
         public ContainerElement(TransformationContext context, Element node, int indentLevel) {
             super(context, node, indentLevel);
@@ -719,23 +588,6 @@ public class PomTransformer {
         public Stream<TextElement> childTextElementsStream() {
             return node.children()
                     .map(n -> new TextElement(context, n, indentLevel + 1));
-        }
-
-        /**
-         * @return a {@link Stream} containing child comments of this {@link ContainerElement}
-         */
-        public List<CommentNode> childCommentNodes() {
-            return childCommentNodeStream().collect(Collectors.toList());
-        }
-
-        /**
-         * @return a {@link Stream} containing child comments of this {@link ContainerElement}
-         */
-        public Stream<CommentNode> childCommentNodeStream() {
-            return node.nodes()
-                    .filter(n -> n.type() == NodeType.COMMENT)
-                    .map(n -> (Comment) n)
-                    .map(n -> new CommentNode(context, n, indentLevel + 1));
         }
 
         /**
@@ -947,18 +799,6 @@ public class PomTransformer {
                 }
             }
             return addChildTextElement(nodeName, nodeValue, refNode);
-        }
-
-        /**
-         * Add a new {@link Element} under {@link #node} and before {@code refNode} with the given {@code elementName}.
-         *
-         * @param elementName the name of the {@link Element} to add
-         * @param refNode     a {@link Node} before which the new {@link Element} should be added
-         */
-        public void addChildElement(String elementName, Node refNode) {
-            DomTripUtils.insertBefore(node, context.indent(indentLevel + 1), refNode);
-            final Element result = Element.of(elementName);
-            DomTripUtils.insertBefore(node, result, refNode);
         }
 
         /**
@@ -1571,20 +1411,15 @@ public class PomTransformer {
      * A context of a set of {@link Transformation} operations.
      */
     public static class TransformationContext {
-        public static final Predicate<Node> ALL_WHITESPACE_AND_COMMENTS = prevSibling -> TransformationContext
-                .isWhiteSpaceNode(prevSibling)
-                || prevSibling.type() == NodeType.COMMENT;
 
         private final Path pomXmlPath;
         private final Document document;
         private final ProjectElement project;
         private final String indentationString;
-        private final Editor editor;
 
-        TransformationContext(Path pomXmlPath, Editor editor, Document document, String indentationString) {
+        TransformationContext(Path pomXmlPath, Document document, String indentationString) {
             super();
             this.pomXmlPath = pomXmlPath;
-            this.editor = editor;
             this.document = document;
             this.indentationString = indentationString;
             this.project = new ProjectElement(this, document.root(), 0);
@@ -2091,6 +1926,9 @@ public class PomTransformer {
                 return -1;
             }
             final ContainerNode parent = child.parent();
+            if (parent == null) {
+                return -1;
+            }
             final int childCount = parent.nodeCount();
             for (int i = 0; i < childCount; i++) {
                 if (child == parent.getNode(i)) {
@@ -2116,27 +1954,20 @@ public class PomTransformer {
             }
         }
         public static Node previousSibling(Node node) {
-            final ContainerNode parent = node.parent();
-            if (parent == null) {
-                return null;
-            }
             int i = indexOf(node);
             if (i <= 0) {
                 return null;
             }
-            return parent.getNode(i - 1);
+            return node.parent().getNode(i - 1);
         }
 
         public static Node nextSibling(Node node) {
-            final ContainerNode parent = node.parent();
-            if (parent == null) {
-                return null;
-            }
             int i = indexOf(node);
             if (i < 0) {
                 return null;
             }
             i++;
+            final ContainerNode parent = node.parent();
             if (i >= parent.nodeCount()) {
                 return null;
             }
@@ -2152,54 +1983,11 @@ public class PomTransformer {
         }
 
         public static void replace(Node newNode, Node oldNode) {
-            final ContainerNode parent = oldNode.parent();
             int i = DomTripUtils.indexOf(oldNode);
+            final ContainerNode parent = oldNode.parent();
             parent.removeNode(oldNode);
             newNode.precedingWhitespace(oldNode.precedingWhitespace());
             parent.insertNode(i, newNode);
-        }
-
-        public static Optional<Element> childElement(Element parent, String... elements) {
-            Element currentNode = parent;
-            for (int i = 0; i < elements.length; i++) {
-                String elem = elements[i];
-                Optional<Element> maybe = currentNode.nodes()
-                        .filter(child -> child instanceof Element)
-                        .map(child -> (Element) child)
-                        .filter(element -> elem.equals(element.name()))
-                        .findFirst();
-                if (!maybe.isPresent()) {
-                    return Optional.empty();
-                }
-                currentNode = maybe.get();
-            }
-            return Optional.of(currentNode);
-        }
-
-        public static Optional<Element> childElement(Document document, String... elements) {
-            int cnt = elements.length;
-            if (cnt == 0) {
-                return Optional.empty();
-            }
-
-            Element currentNode = document.root();
-            if (!elements[0].equals(currentNode.name())) {
-                return Optional.empty();
-            }
-
-            for (int i = 1; i < elements.length; i++) {
-                String elem = elements[i];
-                Optional<Element> maybe = currentNode.nodes()
-                        .filter(child -> child instanceof Element)
-                        .map(child -> (Element) child)
-                        .filter(element -> elem.equals(element.name()))
-                        .findFirst();
-                if (!maybe.isPresent()) {
-                    return Optional.empty();
-                }
-                currentNode = maybe.get();
-            }
-            return Optional.of(currentNode);
         }
 
         public static Optional<Element> findProfile(Document document, String profileId) {

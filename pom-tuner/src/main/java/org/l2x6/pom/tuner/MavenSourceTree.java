@@ -467,7 +467,7 @@ public class MavenSourceTree {
 
     public static Function<Document, Optional<Element>> xPathProfile(String id, String... elements) {
         return document -> DomTripUtils.findProfile(document, id)
-                .flatMap(profile -> DomTripUtils.childElement(profile, elements));
+                .flatMap(profile -> profile.path(elements));
     }
 
     private final Charset encoding;
@@ -1001,8 +1001,12 @@ public class MavenSourceTree {
                 .map(Path::toString)
                 .map(PomTunerUtils::toUnixPath)
                 .collect(Collectors.toSet());
-        final PomTransformer transformer = new PomTransformer(pomXml, encoding, simpleElementWhitespace);
-        transformer.transform(remover.apply(relPathsToRemove));
+
+        PomTransformer.builder()
+                .charset(encoding)
+                .simpleElementWhitespace(simpleElementWhitespace)
+                .transformers(remover.apply(relPathsToRemove))
+                .transform(pomXml);
     }
 
     /**
@@ -1048,9 +1052,14 @@ public class MavenSourceTree {
             for (Profile p : en.getValue().getProfiles()) {
                 transformations.add(Transformation.uncommentModules(commentText, m -> true, p.getId()));
             }
-            final Path pomXmlPath = rootDirectory.resolve(relPath);
-            new PomTransformer(pomXmlPath, encoding, simpleElementWhitespace)
-                    .transform(transformations);
+            final Path pomXml = rootDirectory.resolve(relPath);
+
+            PomTransformer.builder()
+            .charset(encoding)
+            .simpleElementWhitespace(simpleElementWhitespace)
+            .transformers(transformations)
+            .transform(pomXml);
+
         }
         MavenSourceTree newTree = reload();
         if (modulesByPath.keySet().equals(newTree.modulesByPath.keySet())) {
