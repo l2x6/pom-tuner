@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -39,7 +40,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.NodeGavtcs;
-import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.transform.api.Siblings;
@@ -1155,7 +1155,7 @@ public class PomTransformerTest {
                 + "    </modules>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                Transformation.removeModule(true, true, "module-2"),
+                modules.remove("module-2"),
                 modules.removeEmptyParent()), expected);
     }
 
@@ -1190,20 +1190,21 @@ public class PomTransformerTest {
                 + "    </modules>\n" //
                 + "</project>\n";
 
-        //        PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-        //                Transformation.commentModules(Arrays.asList("module-2"), "test comment")),
-        //                expected);
-        //
-        //        PomTransformerTestUtils.assertTransformer(expected, Arrays.asList(
-        //                Transformation.uncommentModules("test comment")),
-        //                source);
-        //
-        //        PomTransformerTestUtils.assertTransformer(expected, Arrays.asList(
-        //                Transformation.uncommentModules("test comment", m -> "module-2".equals(m))),
-        //                source);
+        PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
+                modules.select("module-2"::equals).commentOut(te -> "test comment")),
+                expected);
 
         PomTransformerTestUtils.assertTransformer(expected, Arrays.asList(
-                Transformation.uncommentModules("test comment", m -> "foo".equals(m))),
+                modules.selectComments(comment -> comment.getSource().content().endsWith(" test comment ")).uncomment()),
+                source);
+
+        PomTransformerTestUtils.assertTransformer(expected, Arrays.asList(
+                modules.selectComments(comment -> comment.getParsedContent().root().textContent().equals("module-2")
+                        && comment.getSource().content().endsWith(" test comment ")).uncomment()),
+                source);
+
+        PomTransformerTestUtils.assertTransformer(expected, Arrays.asList(
+                modules.selectComments(comment -> comment.getParsedContent().root().textContent().equals("foo")).uncomment()),
                 expected);
 
     }
@@ -1247,12 +1248,14 @@ public class PomTransformerTest {
                 + "     </profiles>\n"
                 + "</project>\n";
 
+        List<String> moduleNames = Arrays.asList("module-1", "module-2");
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                Transformation.commentModulesInProfile("profile-1", Arrays.asList("module-1", "module-2"), "test comment")),
+                modules.select(moduleNames::contains).fromProfilesOnly("profile-1").commentOut(te -> "test comment")),
                 expected);
 
         PomTransformerTestUtils.assertTransformer(expected, Arrays.asList(
-                Transformation.uncommentModules("test comment", m -> true, "profile-1")),
+                modules.selectComments(comment -> comment.getSource().content().endsWith(" test comment "))
+                        .fromProfilesOnly("profile-1").uncomment()),
                 source);
 
     }
@@ -1283,7 +1286,7 @@ public class PomTransformerTest {
                 + "    <packaging>pom</packaging>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                Transformation.removeModule(true, true, "module-1"),
+                modules.remove("module-1"),
                 modules.removeEmptyParent()), expected);
     }
 
@@ -1318,7 +1321,7 @@ public class PomTransformerTest {
                 + "    </modules>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source,
-                Collections.singletonList(Transformation.removeModule(true, true, "module-2")), expected);
+                Collections.singletonList(modules.remove("module-2")), expected);
     }
 
     @Test
@@ -1353,7 +1356,8 @@ public class PomTransformerTest {
                 + "    </modules>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source,
-                Collections.singletonList(Transformation.removeModule(false, true, "module-2")), expected);
+                Collections.singletonList(modules.remove("module-2").alsoRemoveNone().alsoRemoveNext(Siblings.comments())),
+                expected);
     }
 
     @Test
@@ -3157,7 +3161,9 @@ public class PomTransformerTest {
                 + "Modified by POM Manipulation Extension for Maven 4.5 ( SHA: 698c5e7b )\n"
                 + "-->\n";
         PomTransformerTestUtils.assertTransformer(source,
-                Collections.singleton(Transformation.uncommentModules("disabled by cq-prod-maven-plugin:prod-excludes")),
+                Collections.singleton(
+                        modules.selectComments(comment -> comment.getSource().content()
+                                .endsWith(" disabled by cq-prod-maven-plugin:prod-excludes ")).uncomment()),
                 expected);
     }
 
@@ -3456,7 +3462,7 @@ public class PomTransformerTest {
         final String expected = String.format(sourceTemplate, expectedReplacement);
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singletonList(
-                        Transformation.commentModules(commentModules, "test remove")),
+                        modules.select(commentModules::contains).commentOut(te -> "test remove")),
                 expected);
     }
 
