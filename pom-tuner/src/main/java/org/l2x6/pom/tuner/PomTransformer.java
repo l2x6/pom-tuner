@@ -22,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -48,10 +47,6 @@ import javax.xml.xpath.XPath;
 
 import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.Gavtcs;
-import org.l2x6.pom.tuner.transform.dependencies;
-import org.l2x6.pom.tuner.transform.dependencyManagement;
-import org.l2x6.pom.tuner.transform.modules;
-import org.l2x6.pom.tuner.transform.properties;
 import org.l2x6.pom.tuner.transform.api.Siblings;
 import org.w3c.dom.DocumentFragment;
 
@@ -1893,145 +1888,6 @@ public class PomTransformer {
          * @param context the current {@link TransformationContext}
          */
         void perform(TransformationContext context);
-
-    }
-
-    public interface Transformation extends Transformer {
-
-        public static Transformation commentModules(Collection<String> modulesToComment, String commentText) {
-            return (Document document, TransformationContext context) -> {
-                modules.select(modulesToComment::contains).commentOut(textElem -> commentText).perform(context);
-            };
-        }
-
-        /**
-         * Comments modules which are present in a profile definition (with the specified profile id).
-         *
-         * @param  profile          Name of the profile, whose modules are commented
-         * @param  modulesToComment Collection of modules to be commented.
-         * @param  commentText      Explanation for the comment
-         * @return                  Transformation.
-         */
-        public static Transformation commentModulesInProfile(String profile, Collection<String> modulesToComment,
-                String commentText) {
-            return (Document document, TransformationContext context) -> {
-                modules.select(modulesToComment::contains).fromProfilesOnly(profile).commentOut(textElem -> commentText)
-                        .perform(context);
-            };
-        }
-
-        /**
-         * @param      removePrecedingComments
-         * @param      removePrecedingWhitespace
-         * @param      module
-         * @return
-         *
-         * @deprecated                           use {@link modules#remove(String...)} instead
-         */
-        @Deprecated
-        public static Transformation removeModule(boolean removePrecedingComments, boolean removePrecedingWhitespace,
-                String module) {
-            return (Document document, TransformationContext context) -> {
-                modules.remove(module).alsoRemoveNone().alsoRemovePrevious(selector(removePrecedingComments, removePrecedingWhitespace))
-                        .perform(context);
-            };
-        }
-
-        static Predicate<Node> selector(boolean removePrecedingComments, boolean removePrecedingWhitespace) {
-            Predicate<Node> result = n -> false;
-            if (removePrecedingComments) {
-                result = result.or(Siblings.comments());
-            }
-            if (removePrecedingWhitespace) {
-                result = result.or(Siblings.whitespace());
-            }
-            return result;
-        }
-
-        /**
-         * @param      removePrecedingComments
-         * @param      removePrecedingWhitespace
-         * @param      modules
-         * @return
-         *
-         * @deprecated                           use {@link modules#remove(String...)} instead
-         */
-        @Deprecated
-        public static Transformation removeModules(boolean removePrecedingComments, boolean removePrecedingWhitespace,
-                Set<String> modulesToRemove) {
-            return (Document document, TransformationContext context) -> {
-                modules.remove(te -> modulesToRemove.contains(te.getTextContent()))
-                        .alsoRemoveNone()
-                        .alsoRemovePrevious(selector(removePrecedingComments, removePrecedingWhitespace)).perform(context);
-            };
-        }
-
-        public static Transformation uncommentModules(String commentText) {
-            return uncommentModules(commentText, m -> true);
-        }
-
-        public static Transformation uncommentModules(String commentText, Predicate<String> modulePathFilter) {
-            return uncommentModules(commentText, modulePathFilter, null);
-        }
-
-        public static Transformation uncommentModules(String commentText, Predicate<String> modulePathFilter,
-                String profileId) {
-            final String expandedCommentText = " " + commentText + " ";
-            return (Document document, TransformationContext context) -> {
-
-                modules.selectComments(comment -> {
-                    final Document doc = comment.getParsedContent();
-
-                    if (doc.nodeCount() != 2) {
-                        return false;
-                    }
-                    Node text = doc.getNode(1);
-                    if (text.type() != NodeType.TEXT || !expandedCommentText.equals(((Text) text).content())) {
-                        return false;
-                    }
-                    Node node = doc.getNode(0);
-                    if (node.type() != NodeType.ELEMENT) {
-                        return false;
-                    }
-                    Element element = (Element) node;
-                    return modulePathFilter.test(element.textContent());
-                })
-                        .fromProfilesOnly(profileId)
-                        .modify(comment -> DomTripUtils.replace(comment.getParsedContent().getNode(0), comment.getSource()))
-                        .perform(context);
-            };
-        }
-
-        /**
-         * @param      removePrecedingComments
-         * @param      removePrecedingWhitespace
-         * @param      propertyName
-         * @return
-         *
-         * @deprecated                           use {@link properties#remove(String...)} instead
-         */
-        @Deprecated
-        public static Transformation removeProperty(boolean removePrecedingComments, boolean removePrecedingWhitespace,
-                String propertyName) {
-            return (Document document, TransformationContext context) -> {
-                properties.remove(propertyName)
-                        .alsoRemoveNone()
-                        .alsoRemovePrevious(Transformation.selector(removePrecedingComments, removePrecedingWhitespace))
-                        .perform(context);
-            };
-        }
-
-        /**
-         * Perform this {@link Transformation} on the given {@code document}
-         *
-         * @param document the {@link Document} to transform
-         * @param context  the current {@link TransformationContext}
-         */
-        void perform(Document document, TransformationContext context);
-
-        default void perform(TransformationContext context) {
-            perform(context.document, context);
-        }
 
     }
 

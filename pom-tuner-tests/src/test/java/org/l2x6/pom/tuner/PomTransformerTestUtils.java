@@ -12,15 +12,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.StringTokenizer;
 import java.util.UUID;
-import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
 
 public class PomTransformerTestUtils {
-
-    static void assertTransformation(String src, Collection<Transformation> transformations, String expected) {
-        PomTransformer.transform(transformations, Paths.get("pom.xml"),
-                () -> src, xml -> compareDocuments(xml, expected, ".xml"));
-    }
 
     static <T extends Transformer> void assertTransformer(String src, Collection<T> transformations, String expected) {
         PomTransformer.transform(transformations, Paths.get("pom.xml"),

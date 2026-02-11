@@ -46,7 +46,6 @@ import java.util.stream.Collectors;
 import org.l2x6.pom.tuner.ExpressionEvaluator.ConstantOnlyExpressionEvaluator;
 import org.l2x6.pom.tuner.PomTransformer.DomTripUtils;
 import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
-import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.model.Dependency;
 import org.l2x6.pom.tuner.model.Expression;
@@ -951,7 +950,7 @@ public class MavenSourceTree {
     public void unlinkModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
             String commentText) {
         unlinkModules(requiredModules, isProfileActive, encoding,
-                (Set<String> modules) -> Transformation.commentModules(modules, commentText));
+                (Set<String> modulePaths) -> modules.select(modulePaths::contains).commentOut(te -> commentText));
     }
 
     /**
@@ -966,7 +965,7 @@ public class MavenSourceTree {
      *                                {@code <module>my-module</module>} elements) and produces a {@link Transformation}
      *                                removing those elements.
      */
-    public void unlinkModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding, Function<Set<String>, PomTransformer.Transformation> remover) {
+    public void unlinkModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding, Function<Set<String>, PomTransformer.Transformer> remover) {
         final Module rootModule = modulesByPath.get("pom.xml");
         final ExpressionEvaluator evaluator = getExpressionEvaluator(isProfileActive);
         final Map<String, Set<Path>> removeChildPaths = unlinkModules(requiredModules, rootModule,
@@ -983,7 +982,7 @@ public class MavenSourceTree {
             Path pomXml,
             Set<Path> removeChildPaths,
             Charset encoding,
-            Function<Set<String>, PomTransformer.Transformation> remover) {
+            Function<Set<String>, PomTransformer.Transformer> remover) {
 
         final Path parentDir = pomXml.getParent();
         final Set<String> relPathsToRemove = removeChildPaths.stream()
@@ -1035,10 +1034,9 @@ public class MavenSourceTree {
             String commentText, Predicate<Profile> profiles) {
         for (Entry<String, Module> en : modulesByPath.entrySet()) {
             final String relPath = en.getKey();
-            final List<Transformation> transformations = new ArrayList<>();
-            for (Profile p : en.getValue().getProfiles()) {
-                transformations.add(Transformation.uncommentModules(commentText, m -> true, p.getId()));
-            }
+            final List<Transformer> transformations = new ArrayList<>();
+            final Set<String> profileIds = activeProfileIds(profiles, en);
+            transformations.add(modules.selectComments(comment -> comment.getSource().content().endsWith(" " + commentText +" ")).from(profileIds::contains).uncomment());
             final Path pomXml = rootDirectory.resolve(relPath);
 
             PomTransformer.builder()
@@ -1053,6 +1051,16 @@ public class MavenSourceTree {
         } else {
             return newTree.relinkModules(encoding, commentText);
         }
+    }
+
+    static Set<String> activeProfileIds(Predicate<Profile> profiles, Entry<String, Module> en) {
+        final Set<String> profileIds = new HashSet<>();
+        for (Profile p : en.getValue().getProfiles()) {
+            if (profiles.test(p)) {
+                profileIds.add(p.getId());
+            }
+        }
+        return profileIds;
     }
 
     /**
