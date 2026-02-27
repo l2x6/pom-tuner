@@ -77,13 +77,13 @@ import org.slf4j.LoggerFactory;
 public class MavenSourceTree {
     private static final Pattern PLACE_HOLDER_PATTERN = Pattern.compile("\\$\\{([^\\}]+)\\}");
     static final Function<Document, Text> PROJECT_ARTIFACT_ID_XPATH = document -> document.root()
-            .child("groupId").orElseThrow(() -> new IllegalStateException("Cannot find /project/artifactId"))
+            .childElement("groupId").orElseThrow(() -> new IllegalStateException("Cannot find /project/artifactId"))
             .textChild().orElseThrow(() -> new IllegalStateException("/project/artifactId has no text content"));
     static final Function<Document, Text> PROJECT_GROUP_ID_XPATH = document -> document.root()
-            .child("groupId").orElseThrow(() -> new IllegalStateException("Cannot find /project/groupId"))
+            .childElement("groupId").orElseThrow(() -> new IllegalStateException("Cannot find /project/groupId"))
             .textChild().orElseThrow(() -> new IllegalStateException("/project/groupId has no text content"));
     public static final Function<Document, Text> PROJECT_VERSION_XPATH = document -> document.root()
-            .child("version").orElseThrow(() -> new IllegalStateException("Cannot find /project/version"))
+            .childElement("version").orElseThrow(() -> new IllegalStateException("Cannot find /project/version"))
             .textChild().orElseThrow(() -> new IllegalStateException("/project/version has no text content"));
 
     public static class ActiveProfiles implements Predicate<Profile> {

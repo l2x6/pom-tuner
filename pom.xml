@@ -69,7 +69,7 @@
     <properties>
 
         <!-- Dependency versions in alphabectic order -->
-        <domtrip.version>0.2.0</domtrip.version>
+        <domtrip.version>1.5.2</domtrip.version>
         <slf4j.version>2.0.17</slf4j.version>
         <junit.version>5.13.4</junit.version>
         <assertj.version>3.27.7</assertj.version>
@@ -102,8 +102,8 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- maven-compiler-plugin -->
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
         <maven.compiler.showWarnings>true</maven.compiler.showWarnings>
 
         <!-- license-maven-plugin -->
