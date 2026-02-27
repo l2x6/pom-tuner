@@ -53,6 +53,8 @@ import org.w3c.dom.DocumentFragment;
 import eu.maveniverse.domtrip.Comment;
 import eu.maveniverse.domtrip.ContainerNode;
 import eu.maveniverse.domtrip.Document;
+import eu.maveniverse.domtrip.DomTripVisitor;
+import eu.maveniverse.domtrip.DomTripVisitor.Action;
 import eu.maveniverse.domtrip.Element;
 import eu.maveniverse.domtrip.Node;
 import eu.maveniverse.domtrip.Node.NodeType;
@@ -176,10 +178,10 @@ public class PomTransformer {
                     return matcher.group(2);
                 }
             }
-            Node current = firstElem;
-            while ((current = DomTripUtils.previousSibling(current)) != null) {
-                if (current.type() == NodeType.TEXT) {
-                    final Matcher matcher = INDENT_PATTERN.matcher(((Text) current).content());
+            Optional<Node> current = Optional.ofNullable(firstElem);
+            while ((current = current.get().previousSibling()).isPresent()) {
+                if (current.get().type() == NodeType.TEXT) {
+                    final Matcher matcher = INDENT_PATTERN.matcher(((Text) current.get()).content());
                     if (matcher.find()) {
                         return matcher.group(2);
                     }
@@ -295,7 +297,7 @@ public class PomTransformer {
          */
         public Comment previousSiblingCommentNode() {
             final ContainerNode parent = node.parent();
-            int i = DomTripUtils.indexOf(node);
+            int i = node.siblingIndex();
             if (i < 0) {
                 throw new IllegalStateException("Could not find " + node + " under parent " + parent);
             }
@@ -323,14 +325,14 @@ public class PomTransformer {
         public Node previousSiblingInsertionRefNode() {
             Node currentNode = this.node;
             while (true) {
-                Node next = DomTripUtils.previousSibling(currentNode);
-                if (next == null) {
+                Optional<Node> next = currentNode.previousSibling();
+                if (!next.isPresent()) {
                     return currentNode;
                 }
-                switch (next.type()) {
+                switch (next.get().type()) {
                 case COMMENT:
-                    final Node previousNode = DomTripUtils.previousSibling(next);
-                    if (previousNode != null && previousNode.type() == NodeType.ELEMENT) {
+                    final Optional<Node> previousNode = next.get().previousSibling();
+                    if (next.get().precedingWhitespace().length() == 0 && previousNode.isPresent() && previousNode.get().type() == NodeType.ELEMENT) {
                         /*
                          * A comment following an element with no whitespace in between: such comment belongs to the
                          * previous element
@@ -339,15 +341,15 @@ public class PomTransformer {
                     }
                     break;
                 case TEXT:
-                    if (EMPTY_LINE_PATTERN.matcher(((Text) next).content()).matches()) {
-                        return next;
+                    if (EMPTY_LINE_PATTERN.matcher(((Text) next.get()).content()).matches()) {
+                        return next.get();
                     } else {
                         break;
                     }
                 default:
                     return currentNode;
                 }
-                currentNode = next;
+                currentNode = next.get();
             }
         }
 
@@ -363,7 +365,7 @@ public class PomTransformer {
                 if (siblings != null && !siblings.isEmpty()) {
                     siblings.forEach(RemovableNode::remove);
                 }
-                parent.removeNode(node);
+                parent.removeChild(node);
             }
         }
 
@@ -379,9 +381,9 @@ public class PomTransformer {
         public Comment prependComment(String comment) {
             final Node refNode = previousSiblingInsertionRefNode();
             Comment result = Comment.of(comment);
-            int i = DomTripUtils.indexOf(refNode);
-            node.parent().insertNode(i, context.indentNode(indentLevel));
-            node.parent().insertNode(i, result);
+            int i = refNode.siblingIndex();
+            node.parent().insertChild(i, context.indentNode(indentLevel));
+            node.parent().insertChild(i, result);
             return result;
         }
 
@@ -411,19 +413,19 @@ public class PomTransformer {
         public Comment nextSiblingCommentNode() {
             Node currentNode = this.node;
             while (true) {
-                Node next = DomTripUtils.nextSibling(currentNode);
-                if (next == null) {
+                Optional<Node> next = currentNode.nextSibling();
+                if (!next.isPresent()) {
                     return null;
                 }
-                switch (next.type()) {
+                switch (next.get().type()) {
                 case COMMENT:
-                    return (Comment) next;
+                    return (Comment) next.get();
                 case TEXT:
                     break;
                 default:
                     return null;
                 }
-                currentNode = next;
+                currentNode = next.get();
             }
         }
 
@@ -441,10 +443,10 @@ public class PomTransformer {
          */
         public List<Node> getNodes(Predicate<Node> precedingInclude) {
             final List<Node> result = new ArrayList<>();
-            Node prevSibling = node;
-            while ((prevSibling = DomTripUtils.previousSibling(prevSibling)) != null
-                    && precedingInclude.test(prevSibling)) {
-                result.add(prevSibling);
+            Optional<Node> prevSibling = Optional.of(node);
+            while ((prevSibling = prevSibling.get().previousSibling()).isPresent()
+                    && precedingInclude.test(prevSibling.get())) {
+                result.add(prevSibling.get());
             }
             result.add(node);
             return result;
@@ -516,7 +518,7 @@ public class PomTransformer {
          * @return a {@link Stream} containing child elements of this {@link ContainerElement}
          */
         public Stream<ContainerElement> childElementsStream() {
-            return node.children()
+            return node.childElements()
                     .map(n -> new ContainerElement(context, n, indentLevel + 1));
         }
 
@@ -531,7 +533,7 @@ public class PomTransformer {
          * @return a {@link Stream} containing child text elements of this {@link ContainerElement}
          */
         public Stream<TextElement> childTextElementsStream() {
-            return node.children()
+            return node.childElements()
                     .map(n -> new TextElement(context, n, indentLevel + 1));
         }
 
@@ -540,11 +542,11 @@ public class PomTransformer {
          *         {@code false}
          */
         public boolean hasChildElements() {
-            if (node.nodeCount() == 0) {
+            if (node.childCount() == 0) {
                 return false;
             }
-            for (int i = 0; i < node.nodeCount(); i++) {
-                final Node child = node.getNode(i);
+            for (int i = 0; i < node.childCount(); i++) {
+                final Node child = node.child(i);
                 if (child.type() == NodeType.ELEMENT) {
                     return true;
                 }
@@ -594,14 +596,14 @@ public class PomTransformer {
                 /*
                  * Add an empty line between the new node and previousProjectChildEntry
                  */
-                DomTripUtils.insertBefore(node, context.newLine(), refNode);
+                node.insertChildBefore(refNode, context.newLine());
             }
 
             String indent = context.indentNode(indentLevel + 1).content();
             final Element result = (Element) Element.of(elementName)
                     .innerPrecedingWhitespace(indent)
                     .precedingWhitespace(indent);
-            DomTripUtils.insertBefore(node, result, refNode);
+            node.insertChildBefore(refNode, result);
 
             if (emptyLineAfter) {
                 /*
@@ -613,7 +615,7 @@ public class PomTransformer {
                         refNode.precedingWhitespace("\n" + context.indentNode(indentLevel + 1).content());
                     }
                 } else if (refNode == null || !TransformationContext.isEmptyLineNode(refNode)) {
-                    DomTripUtils.insertBefore(node, context.newLine(), refNode);
+                    node.insertChildBefore(refNode, context.newLine());
                 }
             }
             return new ContainerElement(context, result, indentLevel + 1);
@@ -679,7 +681,7 @@ public class PomTransformer {
             final Element result = (Element) Element.of(elementName)
                     .innerPrecedingWhitespace(indent)
                     .precedingWhitespace(indent);
-            node.addNode(result);
+            node.addChild(result);
 
             return new ContainerElement(
                     context,
@@ -708,10 +710,10 @@ public class PomTransformer {
          */
         public TextElement addChildTextElement(String elementName, final String text, Node refNode) {
             if (text != null) {
-                DomTripUtils.insertBefore(node, context.indentNode(indentLevel + 1), refNode);
+                node.insertChildBefore(refNode, context.indentNode(indentLevel + 1));
                 final Element result = Element.of(elementName);
                 result.textContent(text);
-                DomTripUtils.insertBefore(node, result, refNode);
+                node.insertChildBefore(refNode, result);
                 return new TextElement(context, result, indentLevel + 1);
             }
             return null;
@@ -786,7 +788,7 @@ public class PomTransformer {
         public void addFragment(List<Node> fragment, Node refNode) {
             for (int i = 0; i < fragment.size(); i++) {
                 final Node child = fragment.get(i);
-                DomTripUtils.insertBefore(node, child, refNode);
+                node.insertChildBefore(refNode, child);
             }
         }
 
@@ -1533,6 +1535,11 @@ public class PomTransformer {
                 fixIndent(text::content, text::content, newIndent);
                 break;
             }
+            case COMMENT:
+            case PROCESSING_INSTRUCTION: {
+                fixIndent(node::precedingWhitespace, node::precedingWhitespace, newIndent);
+                break;
+            }
             case ELEMENT: {
                 Element elem = ((Element) node);
 
@@ -1540,9 +1547,9 @@ public class PomTransformer {
                 fixIndent(elem::innerPrecedingWhitespace, elem::innerPrecedingWhitespace, newIndent);
 
                 String passIndent = newIndent + indentationString;
-                final int nodeCount = elem.nodeCount();
+                final int nodeCount = elem.childCount();
                 for (int i = 0; i < nodeCount; i++) {
-                    final Node child = elem.getNode(i);
+                    final Node child = elem.child(i);
                     if (i + 1 == nodeCount && child.type() == NodeType.TEXT) {
                         /* the last indent before the closing element */
                         reIndent(child, newIndent);
@@ -1610,7 +1617,7 @@ public class PomTransformer {
         public static boolean hasElementChildren(Node node) {
             if (node instanceof ContainerNode) {
                 ContainerNode cn = (ContainerNode) node;
-                int cnt = cn.nodeCount();
+                int cnt = cn.childCount();
                 if (cnt == 0) {
                     return false;
                 }
@@ -1637,7 +1644,8 @@ public class PomTransformer {
             final String nodeName = node.name();
             final Comment moduleComment = Comment.of(" <" + nodeName + ">" + moduleText + "</" + nodeName + ">"
                     + (commentText != null ? (" " + commentText + " ") : " "));
-            DomTripUtils.replace(moduleComment, node);
+            moduleComment.precedingWhitespace(node.precedingWhitespace());
+            node.parent().replaceChild(node, moduleComment);
             return moduleComment;
         }
 
@@ -1652,20 +1660,20 @@ public class PomTransformer {
         public static Consumer<Node> removeNode(BiConsumer<Node, Node> precedingNodesConsumer) {
             return (Node deletedNode) -> {
                 if (precedingNodesConsumer != null) {
-                    Node prevSibling = DomTripUtils.previousSibling(deletedNode);
-                    while (prevSibling != null
-                            && (TransformationContext.isWhiteSpaceNode(prevSibling)
-                                    || prevSibling.type() == NodeType.COMMENT)) {
+                    Optional<Node> prevSibling = deletedNode.previousSibling();
+                    while (prevSibling.isPresent()
+                            && (TransformationContext.isWhiteSpaceNode(prevSibling.get())
+                                    || prevSibling.get().type() == NodeType.COMMENT)) {
                         /* remove any preceding whitespace or comments */
-                        precedingNodesConsumer.accept(deletedNode, prevSibling);
-                        final Node newPrevSibling = DomTripUtils.previousSibling(deletedNode);
-                        if (prevSibling == newPrevSibling) {
+                        precedingNodesConsumer.accept(deletedNode, prevSibling.get());
+                        final Optional<Node> newPrevSibling = deletedNode.previousSibling();
+                        if (newPrevSibling.isPresent() && prevSibling.get() == newPrevSibling.get()) {
                             break;
                         }
                         prevSibling = newPrevSibling;
                     }
                 }
-                deletedNode.parent().removeNode(deletedNode);
+                deletedNode.parent().removeChild(deletedNode);
             };
         }
 
@@ -1687,7 +1695,7 @@ public class PomTransformer {
                 if ((removePrecedingWhitespace && TransformationContext.isWhiteSpaceNode(whitespaceOrComment))
                         || (removePrecedingComments && whitespaceOrComment.type() == NodeType.COMMENT)) {
                     /* remove any preceding whitespace or comments */
-                    whitespaceOrComment.parent().removeNode(whitespaceOrComment);
+                    whitespaceOrComment.parent().removeChild(whitespaceOrComment);
                 }
             };
         }
@@ -1697,8 +1705,8 @@ public class PomTransformer {
     public static class RemovableNode {
         private final Node node;
         private final Consumer<Node> remove;
-        private final Function<Node, Node> previous;
-        private final Function<Node, Node> next;
+        private final Function<Node, Optional<Node>> previous;
+        private final Function<Node, Optional<Node>> next;
 
         public static RemovableNode of(Node node) {
             //            Node nxt = DomTripUtils.nextSibling(node);
@@ -1709,12 +1717,12 @@ public class PomTransformer {
             //                            DomTripUtils::previousSibling, n -> nxt);
             //                }
             //            }
-            return new RemovableNode(node, DomTripUtils::remove, DomTripUtils::previousSibling,
-                    DomTripUtils::nextSibling);
+            return new RemovableNode(node, DomTripUtils::remove, Node::previousSibling,
+                    Node::nextSibling);
 
         }
 
-        RemovableNode(Node node, Consumer<Node> remove, Function<Node, Node> previous, Function<Node, Node> next) {
+        RemovableNode(Node node, Consumer<Node> remove, Function<Node, Optional<Node>> previous, Function<Node, Optional<Node>> next) {
             this.node = node;
             this.remove = remove;
             this.previous = previous;
@@ -1725,14 +1733,14 @@ public class PomTransformer {
             final String precedingWhitespace = node.precedingWhitespace();
             if (!precedingWhitespace.isEmpty()) {
                 return new RemovableNode(new Text(precedingWhitespace), n -> node.precedingWhitespace(""),
-                        n -> DomTripUtils.previousSibling(node), DomTripUtils::nextSibling);
+                        n -> node.previousSibling(), Node::nextSibling);
             }
-            final Node prev = previous.apply(node);
-            return prev != null ? new RemovableNode(
-                    prev,
+            final Optional<Node> prev = previous.apply(node);
+            return prev.isPresent() ? new RemovableNode(
+                    prev.get(),
                     DomTripUtils::remove,
-                    DomTripUtils::previousSibling,
-                    DomTripUtils::nextSibling) : null;
+                    Node::previousSibling,
+                    Node::nextSibling) : null;
         }
 
         public void remove() {
@@ -1744,22 +1752,22 @@ public class PomTransformer {
         }
 
         public RemovableNode nextSibling() {
-            Node nxt = next.apply(node);
-            if (nxt == null) {
+            Optional<Node> nxt = next.apply(node);
+            if (!nxt.isPresent()) {
                 return null;
             }
-            if (nxt instanceof IgnorePrecedingWsNode) {
-                nxt = ((IgnorePrecedingWsNode) nxt).delegate;
+            if (nxt.get() instanceof IgnorePrecedingWsNode) {
+                nxt = Optional.of(((IgnorePrecedingWsNode) nxt.get()).delegate);
             } else {
-                final Node localNxt = nxt;
+                final Node localNxt = nxt.get();
                 final String precedingWhitespace = localNxt.precedingWhitespace();
                 if (!precedingWhitespace.isEmpty()) {
                     return new RemovableNode(new Text(precedingWhitespace), n -> localNxt.precedingWhitespace(""),
-                            DomTripUtils::previousSibling, n -> new IgnorePrecedingWsNode(localNxt));
+                            Node::previousSibling, n -> Optional.of(new IgnorePrecedingWsNode(localNxt)));
                 }
             }
-            return new RemovableNode(nxt, DomTripUtils::remove, DomTripUtils::previousSibling,
-                    DomTripUtils::nextSibling);
+            return new RemovableNode(nxt.get(), DomTripUtils::remove, Node::previousSibling,
+                    Node::nextSibling);
         }
 
         @Override
@@ -1789,77 +1797,31 @@ public class PomTransformer {
                 delegate.toXml(sb);
             }
 
+            @Override
+            public Node clone() {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Action accept(DomTripVisitor visitor) {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public Node copy() {
+                return new IgnorePrecedingWsNode(delegate.copy());
+            }
+
         }
     }
 
     public static class DomTripUtils {
-        static int indexOf(Node child) {
-            if (child == null) {
-                return -1;
-            }
-            final ContainerNode parent = child.parent();
-            if (parent == null) {
-                return -1;
-            }
-            final int childCount = parent.nodeCount();
-            for (int i = 0; i < childCount; i++) {
-                if (child == parent.getNode(i)) {
-                    return i;
-                }
-            }
-            return -1;
-        }
-
-        public static void insertBefore(ContainerNode parent, Node newNode, Node refNode) {
-            if (refNode == null) {
-                parent.addNode(newNode);
-            } else {
-                int i = DomTripUtils.indexOf(refNode);
-                parent.insertNode(i, newNode);
-            }
-        }
 
         public static void remove(Node node) {
             final ContainerNode parent = node.parent();
             if (parent != null) {
-                parent.removeNode(node);
+                parent.removeChild(node);
             }
-        }
-        public static Node previousSibling(Node node) {
-            int i = indexOf(node);
-            if (i <= 0) {
-                return null;
-            }
-            return node.parent().getNode(i - 1);
-        }
-
-        public static Node nextSibling(Node node) {
-            int i = indexOf(node);
-            if (i < 0) {
-                return null;
-            }
-            i++;
-            final ContainerNode parent = node.parent();
-            if (i >= parent.nodeCount()) {
-                return null;
-            }
-            return parent.getNode(i);
-        }
-
-        public static Node lastChild(ContainerNode parent) {
-            final int cnt = parent.nodeCount();
-            if (cnt > 0) {
-                return parent.getNode(cnt - 1);
-            }
-            return null;
-        }
-
-        public static void replace(Node newNode, Node oldNode) {
-            int i = DomTripUtils.indexOf(oldNode);
-            final ContainerNode parent = oldNode.parent();
-            parent.removeNode(oldNode);
-            newNode.precedingWhitespace(oldNode.precedingWhitespace());
-            parent.insertNode(i, newNode);
         }
 
         public static Optional<Element> findProfile(Document document, String profileId) {
@@ -1867,10 +1829,10 @@ public class PomTransformer {
                 return Optional.of(document.root());
             } else {
                 return document.root()
-                        .child("profiles")
-                        .flatMap(profiles -> profiles.children()
+                        .childElement("profiles")
+                        .flatMap(profiles -> profiles.childElements()
                                 .filter(ch -> "profile".equals(ch.name()))
-                                .filter(profile -> profile.child("id")
+                                .filter(profile -> profile.childElement("id")
                                         .filter(pid -> profileId.equals(pid.textContent()))
                                         .isPresent())
                                 .findFirst());

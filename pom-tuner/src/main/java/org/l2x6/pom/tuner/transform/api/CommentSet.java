@@ -3,6 +3,7 @@ package org.l2x6.pom.tuner.transform.api;
 import eu.maveniverse.domtrip.Comment;
 import eu.maveniverse.domtrip.ContainerNode;
 import eu.maveniverse.domtrip.Document;
+import eu.maveniverse.domtrip.Element;
 import eu.maveniverse.domtrip.Node.NodeType;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -31,7 +32,7 @@ public class CommentSet {
         return profile -> profile.childElementsStream()
                 .filter(ch -> parentName.equals(ch.getElementName()))
                 .findFirst()
-                .map(parent -> parent.getNode().nodes()
+                .map(parent -> parent.getNode().children()
                         .filter(node -> node.type() == NodeType.COMMENT)
                         .map(node -> (Comment) node))
                 .orElse(Stream.empty());
@@ -114,7 +115,9 @@ public class CommentSet {
 
     public Transformer uncomment() {
         return modify(parsedComment -> {
-            DomTripUtils.replace(parsedComment.getParsedContent().root(), parsedComment.getSource());
+            final Element replacement = parsedComment.getParsedContent().root();
+            replacement.precedingWhitespace(parsedComment.getSource().precedingWhitespace());
+            parsedComment.getSource().parent().replaceChild(parsedComment.getSource(), replacement);
         });
     }
     public Transformer modify(Consumer<ParsedComment> parsedCommentConsumer) {

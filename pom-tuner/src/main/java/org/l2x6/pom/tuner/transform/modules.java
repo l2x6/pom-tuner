@@ -235,7 +235,7 @@ public interface modules {
         return new CommentSet(
                 ProfileId.all(),
                 CommentSet.commentGrandChildrenMapper(ELEMENT_NAME),
-                comment -> comment.getParsedContent().nodes()
+                comment -> comment.getParsedContent().children()
                         .reduce((first, second) -> second) // get the last element from the stream
                         .filter(lastNode -> lastNode.type() == NodeType.TEXT)
                         .map(lastNode -> (Text) lastNode)

@@ -520,7 +520,6 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p2", "new", Comparators.elementName());
                 }), expected);
@@ -561,7 +560,6 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p2", "new", Comparators.elementName());
                 }), expected);
@@ -602,13 +600,11 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new", Comparators.elementName());
                 }), expected);
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new", Comparators.beforeFirst());
                 }), expected);
@@ -646,7 +642,6 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p1", "new", Comparators.elementName());
                 }), expected);
@@ -684,7 +679,6 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p1", "new", Comparators.elementName());
                 }), expected);
@@ -723,13 +717,11 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p5", "new", Comparators.elementName());
                 }), expected);
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p5", "new", Comparators.afterLast());
                 }), expected);
@@ -770,7 +762,6 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p2", "new",
                             Comparators.elementName(Comparators.before("p1")));
@@ -810,7 +801,6 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new",
                             Comparators.elementName(Comparators.before("p1")));
@@ -850,7 +840,6 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new",
                             Comparators.elementName(Comparators.before("p2")));
@@ -892,7 +881,6 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p2", "new",
                             Comparators.elementName(Comparators.after("p1")));
@@ -932,7 +920,6 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new",
                             Comparators.elementName(Comparators.after("p1")));
@@ -972,7 +959,6 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p0", "new",
                             Comparators.elementName(Comparators.after("p2")));
@@ -1014,7 +1000,6 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p2", "new", Comparators.elementName());
                 }), expected);
@@ -1053,7 +1038,6 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement props = context.getOrAddContainerElement("properties");
                     props.addChildTextElementIfNeeded("p", "new",
                             Comparators.elementName(Comparators.before("p3")));
@@ -1776,7 +1760,6 @@ public class PomTransformerTest {
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singletonList(
                         (TransformationContext context) -> {
-                            Document document = context.getDocument();
                             final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
                             plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p2", "1.0.0"), Gavtcs.groupFirstComparator());
                         }),
@@ -1849,7 +1832,6 @@ public class PomTransformerTest {
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singletonList(
                         (TransformationContext context) -> {
-                            Document document = context.getDocument();
                             final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
                             plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p3", "1.0.0"), Gavtcs.groupFirstComparator());
                         }),
@@ -1912,7 +1894,6 @@ public class PomTransformerTest {
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singletonList(
                         (TransformationContext context) -> {
-                            Document document = context.getDocument();
                             final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
                             plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p0", "1.0.0"), Gavtcs.groupFirstComparator());
                         }),
@@ -1977,7 +1958,6 @@ public class PomTransformerTest {
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singletonList(
                         (TransformationContext context) -> {
-                            Document document = context.getDocument();
                             final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
                             plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p0", "1.0.0"), Gavtcs.groupFirstComparator());
                         }),
@@ -2045,7 +2025,6 @@ public class PomTransformerTest {
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singletonList(
                         (TransformationContext context) -> {
-                            Document document = context.getDocument();
                             final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
                             plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p0", "1.0.0"), Gavtcs.groupFirstComparator());
                         }),
@@ -2691,7 +2670,6 @@ public class PomTransformerTest {
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singletonList(
                         (TransformationContext context) -> {
-                            Document document = context.getDocument();
                             Set<NodeGavtcs> deps = context.getProject().getDependencies();
                             Iterator<NodeGavtcs> it = deps.iterator();
                             it.next();
@@ -3307,7 +3285,6 @@ public class PomTransformerTest {
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source,
                     Collections.singletonList((TransformationContext context) -> {
-                        Document document = context.getDocument();
                         properties.set("bar", "baz").perform(context);
                     }),
                     expected);
@@ -3496,7 +3473,6 @@ public class PomTransformerTest {
         String fullName = "l2x6/pom-tuner";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
                 (TransformationContext context) -> {
-                    Document document = context.getDocument();
                     final ContainerElement scm = context.getOrAddContainerElement("scm");
                     scm.addOrSetChildTextElement("connection", String.format("scm:git:git@github.com:%s.git", fullName));
                     scm.addOrSetChildTextElement("developerConnection",
