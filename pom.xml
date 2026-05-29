@@ -69,10 +69,11 @@
     <properties>
 
         <!-- Dependency versions in alphabectic order -->
-        <domtrip.version>1.5.2</domtrip.version>
-        <slf4j.version>2.0.17</slf4j.version>
-        <junit.version>5.13.4</junit.version>
         <assertj.version>3.27.7</assertj.version>
+        <cli-assured.version>0.0.1</cli-assured.version>
+        <domtrip.version>1.5.2</domtrip.version>
+        <junit.version>5.13.4</junit.version>
+        <slf4j.version>2.0.17</slf4j.version>
 
         <!-- Plugins and their dependencies -->
         <buildnumber-maven-plugin.version>3.3.0</buildnumber-maven-plugin.version>
@@ -155,6 +156,17 @@
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
                 <version>${assertj.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.cli-assured</groupId>
+                <artifactId>cli-assured</artifactId>
+                <version>${cli-assured.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.cli-assured</groupId>
+                <artifactId>cli-assured-mvn</artifactId>
+                <version>${cli-assured.version}</version>
             </dependency>
 
         </dependencies>

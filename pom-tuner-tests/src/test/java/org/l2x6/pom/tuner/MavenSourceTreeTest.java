@@ -16,20 +16,27 @@
  */
 package org.l2x6.pom.tuner;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.cliassured.CommandSpec;
+import org.cliassured.mvn.Mvn;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.MavenSourceTree.ActiveProfiles;
@@ -44,71 +51,51 @@ import org.l2x6.pom.tuner.model.GavSet;
 import org.l2x6.pom.tuner.model.Module;
 import org.l2x6.pom.tuner.model.Profile;
 import org.l2x6.pom.tuner.model.Profile.PropertyBuilder;
-import org.l2x6.pom.tuner.shell.BadExitCodeException;
-import org.l2x6.pom.tuner.shell.BuildException;
-import org.l2x6.pom.tuner.shell.CommandTimeoutException;
-import org.l2x6.pom.tuner.shell.LineConsumer;
-import org.l2x6.pom.tuner.shell.Shell;
-import org.l2x6.pom.tuner.shell.ShellCommand;
-import org.l2x6.pom.tuner.shell.ShellCommand.ShellCommandBuilder;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 public class MavenSourceTreeTest {
     private static final Path BASEDIR = Paths.get(System.getProperty("project.basedir", "."));
     private static final Path MVN_LOCAL_REPO;
-    private static final Path MVNW;
 
     static {
         MVN_LOCAL_REPO = BASEDIR.resolve("target/mvn-local-repo");
-        MVNW = ShellCommand.findMvnw(BASEDIR);
     }
 
-    static void assertProperty(MavenSourceTree t, String propertyName, Ga ga, String expectedValue, String... profiles)
-            throws BadExitCodeException, CommandTimeoutException, BuildException {
+    static void assertProperty(MavenSourceTree t, String propertyName, Ga ga, String expectedValue, String... profiles) {
+        final List<String> capturedLines = Collections.synchronizedList(new ArrayList<>());
 
-        final LineConsumer stringLineConsumer = LineConsumer.string();
-        final LineConsumer output = new LineConsumer() {
-            @Override
-            public void close() throws IOException {
-                stringLineConsumer.close();
-                ;
-            }
+        CommandSpec cmd = Mvn.fromMvnw().assertInstalled()
+                .args(
+                "org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate",
+                "-Dexpression=" + propertyName,
+                "-Dartifact=" + ga.toString(),
+                "-Dmaven.repo.local=" + MVN_LOCAL_REPO.toString(),
+                "-q",
+                "-DforceStdout")
+                .cd(t.getRootDirectory());
 
-            @Override
-            public void accept(String t) {
-                if (!t.startsWith("WARNING:")) {
-                    stringLineConsumer.accept(t);
-                }
-            }
-        };
-        final ShellCommandBuilder cmd = ShellCommand.builder() //
-                .id("assertProperty") //
-                .workingDirectory(t.getRootDirectory()) //
-                .executable(MVNW.toString()) //
-                .arguments( //
-                        "org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate", //
-                        "-Dexpression=" + propertyName, //
-                        "-Dartifact=" + ga.toString(), //
-                        "-Dmaven.repo.local=" + MVN_LOCAL_REPO.toString(), //
-                        "-q", //
-                        "-DforceStdout") //
-                .output(() -> output) //
-        ;
         if (profiles.length > 0) {
             final StringBuilder profs = new StringBuilder("-P");
-            if (profiles.length > 0) {
-                for (int i = 0; i < profiles.length; i++) {
-                    if (i > 0) {
-                        profs.append(',');
-                    }
-                    profs.append(profiles[i]);
+            for (int i = 0; i < profiles.length; i++) {
+                if (i > 0) {
+                    profs.append(',');
                 }
+                profs.append(profiles[i]);
             }
-            cmd.arguments(profs.toString());
+            cmd = cmd.args(profs.toString());
         }
-        Shell.execute(cmd.build()).assertSuccess();
-        Assertions.assertEquals(expectedValue, stringLineConsumer.toString().trim());
+
+        cmd.stderrToStdout()
+                .then()
+                .stdout()
+                .log(line -> {
+                    if (!line.startsWith("WARNING:")) {
+                        capturedLines.add(line);
+                    }
+                })
+                .execute()
+                .assertSuccess();
+
+        Assertions.assertEquals(expectedValue, String.join("\n", capturedLines).trim());
         ExpressionEvaluator evaluator = t.getExpressionEvaluator(ActiveProfiles.of(profiles));
         Assertions.assertEquals(expectedValue, evaluator.evaluate(Expression.of("${" + propertyName + "}", ga)));
     }
@@ -157,7 +144,7 @@ public class MavenSourceTreeTest {
     }
 
     @Test
-    public void propertyEval() throws BadExitCodeException, CommandTimeoutException, BuildException {
+    public void propertyEval() {
         final Path root = BASEDIR.resolve("target/test-classes/MavenSourceTree/properties");
         final MavenSourceTree t = new Builder(root, StandardCharsets.UTF_8).pomXml(root.resolve("pom.xml")).build();
 
@@ -171,14 +158,11 @@ public class MavenSourceTreeTest {
         Assertions.assertEquals(new Expression("val-1/p2", new Ga("org.srcdeps.properties", "module-1")),
                 m8.findPropertyDefinition("prop1", ActiveProfiles.of("p1", "p2")).getValue());
 
-        final ShellCommand cmd = ShellCommand.builder() //
-                .id("propertyEval") //
-                .workingDirectory(root) //
-                .executable(MVNW.toString()) //
-                .arguments("clean", "install", "-Dmaven.repo.local=" + MVN_LOCAL_REPO.toString(), "-B") //
-                .output(LineConsumer::dummy) //
-                .build();
-        Shell.execute(cmd).assertSuccess();
+        Mvn.fromMvnw().assertInstalled()
+        .args("clean", "install", "-Dmaven.repo.local=" + MVN_LOCAL_REPO.toString(), "-B")
+                .cd(root)
+                .execute()
+                .assertSuccess();
 
         assertProperty(t, "prop1", Ga.of("org.srcdeps.properties:module-1"), "val-1/main");
         assertProperty(t, "prop1", Ga.of("org.srcdeps.properties:module-1"), "val-1/p1", "p1");
