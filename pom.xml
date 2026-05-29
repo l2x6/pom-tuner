@@ -22,7 +22,7 @@
 
     <groupId>org.l2x6.pom-tuner</groupId>
     <artifactId>pom-tuner-parent</artifactId>
-    <version>4.10.1-SNAPSHOT</version>
+    <version>5.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
