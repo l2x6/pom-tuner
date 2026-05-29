@@ -1,7 +1,6 @@
 package org.l2x6.pom.tuner.transform.api;
 
 import eu.maveniverse.domtrip.Comment;
-import eu.maveniverse.domtrip.ContainerNode;
 import eu.maveniverse.domtrip.Document;
 import eu.maveniverse.domtrip.Element;
 import eu.maveniverse.domtrip.Node.NodeType;
@@ -10,8 +9,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
-import org.l2x6.pom.tuner.PomTransformer.DomTripUtils;
 import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
 
@@ -120,6 +117,7 @@ public class CommentSet {
             parsedComment.getSource().parent().replaceChild(parsedComment.getSource(), replacement);
         });
     }
+
     public Transformer modify(Consumer<ParsedComment> parsedCommentConsumer) {
         return context -> {
             context.getProfilesStream()

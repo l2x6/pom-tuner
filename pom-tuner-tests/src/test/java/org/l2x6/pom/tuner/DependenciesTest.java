@@ -5,8 +5,8 @@ import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.model.GavtcsSet;
-import org.l2x6.pom.tuner.transform.api.ProfileId;
 import org.l2x6.pom.tuner.transform.Dependencies;
+import org.l2x6.pom.tuner.transform.api.ProfileId;
 
 public class DependenciesTest {
 

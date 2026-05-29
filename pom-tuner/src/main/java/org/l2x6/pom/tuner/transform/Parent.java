@@ -99,9 +99,9 @@ public interface Parent {
      * Creates the {@code <parent>} element if needed and sets its {@code artifactId} to the given value.
      *
      * @param  artifactId the {@code artifactId} to set, must not be {@code null}
-     * @return         a new customizable {@link ParentTransformer}
+     * @return            a new customizable {@link ParentTransformer}
      *
-     * @since          5.0.0
+     * @since             5.0.0
      */
     public static ParentTransformer setArtifactId(String artifactId) {
         return new ParentTransformer().setArtifactId(artifactId);
@@ -123,9 +123,9 @@ public interface Parent {
      * Creates the {@code <parent>} element if needed and sets its {@code relativePath} to the given value.
      *
      * @param  relativePath the {@code relativePath} to set, must not be {@code null}
-     * @return         a new customizable {@link ParentTransformer}
+     * @return              a new customizable {@link ParentTransformer}
      *
-     * @since          5.0.0
+     * @since               5.0.0
      */
     public static ParentTransformer setRelativePath(String relativePath) {
         return new ParentTransformer().setRelativePath(relativePath);

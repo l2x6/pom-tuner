@@ -16,8 +16,6 @@
  */
 package org.l2x6.pom.tuner;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -34,7 +32,6 @@ import java.util.TreeSet;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import org.cliassured.CommandSpec;
 import org.cliassured.mvn.Mvn;
 import org.junit.jupiter.api.Assertions;
@@ -52,6 +49,8 @@ import org.l2x6.pom.tuner.model.Module;
 import org.l2x6.pom.tuner.model.Profile;
 import org.l2x6.pom.tuner.model.Profile.PropertyBuilder;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 public class MavenSourceTreeTest {
     private static final Path BASEDIR = Paths.get(System.getProperty("project.basedir", "."));
     private static final Path MVN_LOCAL_REPO;
@@ -65,12 +64,12 @@ public class MavenSourceTreeTest {
 
         CommandSpec cmd = Mvn.fromMvnw().assertInstalled()
                 .args(
-                "org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate",
-                "-Dexpression=" + propertyName,
-                "-Dartifact=" + ga.toString(),
-                "-Dmaven.repo.local=" + MVN_LOCAL_REPO.toString(),
-                "-q",
-                "-DforceStdout")
+                        "org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate",
+                        "-Dexpression=" + propertyName,
+                        "-Dartifact=" + ga.toString(),
+                        "-Dmaven.repo.local=" + MVN_LOCAL_REPO.toString(),
+                        "-q",
+                        "-DforceStdout")
                 .cd(t.getRootDirectory());
 
         if (profiles.length > 0) {
@@ -159,7 +158,7 @@ public class MavenSourceTreeTest {
                 m8.findPropertyDefinition("prop1", ActiveProfiles.of("p1", "p2")).getValue());
 
         Mvn.fromMvnw().assertInstalled()
-        .args("clean", "install", "-Dmaven.repo.local=" + MVN_LOCAL_REPO.toString(), "-B")
+                .args("clean", "install", "-Dmaven.repo.local=" + MVN_LOCAL_REPO.toString(), "-B")
                 .cd(root)
                 .execute()
                 .assertSuccess();

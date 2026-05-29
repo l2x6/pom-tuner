@@ -16,29 +16,25 @@
  */
 package org.l2x6.pom.tuner.transform;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer;
-import org.l2x6.pom.tuner.PomTunerUtils;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.PomTunerUtils;
 import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.model.GavPattern;
 import org.l2x6.pom.tuner.model.GavSet;
 import org.l2x6.pom.tuner.model.Gavtcs;
-import org.l2x6.pom.tuner.model.GavtcsPattern;
-import org.l2x6.pom.tuner.model.GavtcsSet;
 import org.l2x6.pom.tuner.transform.api.AddGavTransformer;
 import org.l2x6.pom.tuner.transform.api.ElementSet;
 import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 
 /**
- * Operations on {@code pom.xml} {@code pluginManagement} entries usable with {@link PomTransformer#transform(Transformer...)}.
+ * Operations on {@code pom.xml} {@code pluginManagement} entries usable with
+ * {@link PomTransformer#transform(Transformer...)}.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
@@ -75,14 +71,17 @@ public interface PluginManagement {
     }
 
     /**
-     * Returns a new {@link RemoveElementsTransformer} removing {@code pluginManagement} entries fulfilling the specified {@code predicate};
-     * the removed {@code pluginManagement} entries are located under {@code /project/build/pluginManagement/plugins} (but not under any profiles);
+     * Returns a new {@link RemoveElementsTransformer} removing {@code pluginManagement} entries fulfilling the specified
+     * {@code predicate};
+     * the removed {@code pluginManagement} entries are located under {@code /project/build/pluginManagement/plugins} (but
+     * not under any profiles);
      * also removes any previous sibling comments and whitespace.
      * <p>
      * The returned {@link RemoveElementsTransformer} instance can be further customized to select profiles
      * or other kinds of sibling nodes to remove.
      * <p>
-     * If no {@code pluginManagement} entries fulfill the specified {@code predicate} then the returned {@link RemoveElementsTransformer} exits
+     * If no {@code pluginManagement} entries fulfill the specified {@code predicate} then the returned
+     * {@link RemoveElementsTransformer} exits
      * quietly rather than throwing an exception.
      * <p>
      * Tip: {@link GavSet} implements {@code Predicate<Gav>} and can be used as an argument for this method.
@@ -100,8 +99,10 @@ public interface PluginManagement {
     }
 
     /**
-     * Returns a new {@link RemoveElementsTransformer} removing {@code pluginManagement} entries having the specified {@code gavs};
-     * the removed {@code pluginManagement} entries are located under {@code /project/build/pluginManagement/plugins} (but not under any profiles);
+     * Returns a new {@link RemoveElementsTransformer} removing {@code pluginManagement} entries having the specified
+     * {@code gavs};
+     * the removed {@code pluginManagement} entries are located under {@code /project/build/pluginManagement/plugins} (but
+     * not under any profiles);
      * also removes any previous sibling comments and whitespace.
      * <p>
      * The returned {@link RemoveElementsTransformer} instance can be further customized to select profiles
@@ -127,7 +128,8 @@ public interface PluginManagement {
     /**
      * Returns a new {@link RemoveElementsTransformer} removing {@code pluginManagement} entries matching any of the
      * specified {@code patterns};
-     * the removed {@code pluginManagement} entries are located under {@code /project/build/pluginManagement/plugins} (but not under any profiles);
+     * the removed {@code pluginManagement} entries are located under {@code /project/build/pluginManagement/plugins} (but
+     * not under any profiles);
      * also removes any previous sibling comments and whitespace.
      * <p>
      * The format of {@code patterns} is {@code groupId[:artifactId[:version]]}.
@@ -154,7 +156,8 @@ public interface PluginManagement {
     }
 
     /**
-     * Returns a new {@link RemoveElementsTransformer} removing the {@code /project/pluginManagement/plugins} node (including all
+     * Returns a new {@link RemoveElementsTransformer} removing the {@code /project/pluginManagement/plugins} node
+     * (including all
      * its child plugins);
      * also removes any previous sibling comments and whitespace.
      * <p>
@@ -233,10 +236,10 @@ public interface PluginManagement {
      * the default behavior is to select the matching elements only from under the {@code <project>} element
      * and ignore any matching elements under {@code <profile>} elements.
      *
-     * @param  <THIS>         type of the returned {@link ElementSet}
+     * @param  <THIS>   type of the returned {@link ElementSet}
      * @param  patterns an array of strings parseable by GavTcs
-     * @return                a new {@link ElementSet} having its node selector set as specified
-     * @since                 5.0.0
+     * @return          a new {@link ElementSet} having its node selector set as specified
+     * @since           5.0.0
      */
     public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> select(
             String... patterns) {
@@ -296,7 +299,8 @@ public interface PluginManagement {
      * and ignore any matching elements under {@code <profile>} elements.
      *
      * @param  <THIS>    type of the returned {@link ElementSet}
-     * @param  predicate a {@link Predicate} {@code pluginManagement} entries whose descendant dependency nodes will be selected for modification
+     * @param  predicate a {@link Predicate} {@code pluginManagement} entries whose descendant dependency nodes will be
+     *                   selected for modification
      * @return           a new {@link ElementSet} having its node selector set as specified
      * @since            5.0.0
      */
@@ -321,10 +325,10 @@ public interface PluginManagement {
      * the default behavior is to select the matching elements only from under the {@code <project>} element
      * and ignore any matching elements under {@code <profile>} elements.
      *
-     * @param  <THIS>         type of the returned {@link ElementSet}
+     * @param  <THIS>   type of the returned {@link ElementSet}
      * @param  patterns an array of strings parseable by {@link GavPattern#of(String)}
-     * @return                a new {@link ElementSet} having its node selector set as specified
-     * @since                 5.0.0
+     * @return          a new {@link ElementSet} having its node selector set as specified
+     * @since           5.0.0
      */
     public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> selectPluginDependencies(
             String... patterns) {

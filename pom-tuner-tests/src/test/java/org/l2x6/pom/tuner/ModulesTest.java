@@ -5,9 +5,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.l2x6.pom.tuner.transform.Modules;
 import org.l2x6.pom.tuner.transform.api.ProfileId;
 import org.l2x6.pom.tuner.transform.api.Siblings;
-import org.l2x6.pom.tuner.transform.Modules;
 
 public class ModulesTest {
 
@@ -435,6 +435,49 @@ public class ModulesTest {
                         .removeAll()
                         .alsoRemoveNone()
                         .alsoRemovePrevious(Siblings.whitespace())),
+                expected);
+    }
+
+    @Test
+    void removeWithComment() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
+                + "    xmlns=\"http://maven.apache.org/POM/4.0.0\"\n"
+                + "    xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
+                + "    <modelVersion>4.0.0</modelVersion>\n"
+                + "    <parent>\n"
+                + "        <groupId>org.apache.camel.quarkus</groupId>\n"
+                + "        <artifactId>camel-quarkus-parent</artifactId>\n"
+                + "        <version>0.1-SNAPSHOT</version>\n"
+                + "    </parent>\n"
+                + "\n"
+                + "    <artifactId>camel-quarkus-extensions-jvm</artifactId>\n"
+                + "\n"
+                + "    <modules>\n"
+                + "        <!-- extensions a..z; do not remove this comment, it is important when sorting via  mvn process-resources -Pformat -->\n"
+                + "        <module>foo</module>\n"
+                + "    </modules>\n"
+                + "\n"
+                + "</project>";
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
+                + "    xmlns=\"http://maven.apache.org/POM/4.0.0\"\n"
+                + "    xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n"
+                + "    <modelVersion>4.0.0</modelVersion>\n"
+                + "    <parent>\n"
+                + "        <groupId>org.apache.camel.quarkus</groupId>\n"
+                + "        <artifactId>camel-quarkus-parent</artifactId>\n"
+                + "        <version>0.1-SNAPSHOT</version>\n"
+                + "    </parent>\n"
+                + "\n"
+                + "    <artifactId>camel-quarkus-extensions-jvm</artifactId>\n"
+                + "\n"
+                + "    <modules>\n"
+                + "    </modules>\n"
+                + "\n"
+                + "</project>";
+        PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
+                Modules.remove("foo")),
                 expected);
     }
 
