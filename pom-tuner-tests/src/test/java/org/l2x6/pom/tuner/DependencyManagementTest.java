@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.model.GavtcsSet;
 import org.l2x6.pom.tuner.transform.api.ProfileId;
-import org.l2x6.pom.tuner.transform.dependencyManagement;
+import org.l2x6.pom.tuner.transform.DependencyManagement;
 
 public class DependencyManagementTest {
 
@@ -55,7 +55,7 @@ public class DependencyManagementTest {
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                dependencyManagement.add(new Gavtcs("org.acme", "dep2", null))), expected);
+                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null))), expected);
     }
 
     @Test
@@ -107,7 +107,7 @@ public class DependencyManagementTest {
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                dependencyManagement.add(new Gavtcs("org.acme", "dep2", null))), expected);
+                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null))), expected);
     }
 
     @Test
@@ -140,7 +140,7 @@ public class DependencyManagementTest {
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                dependencyManagement.add(new Gavtcs("org.acme", "dep2", null))), expected);
+                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null))), expected);
     }
 
     @Test
@@ -196,7 +196,7 @@ public class DependencyManagementTest {
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                dependencyManagement.add(new Gavtcs("org.acme", "dep2", null))
+                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null))
                         .at(Comparators.after(new Gavtcs("org.acme", "dep1", null)))),
                 expected);
     }
@@ -254,7 +254,7 @@ public class DependencyManagementTest {
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                dependencyManagement.add(new Gavtcs("org.acme", "dep2", null))
+                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null))
                         .before(new Gavtcs("org.acme", "dep3", null))),
                 expected);
     }
@@ -312,7 +312,7 @@ public class DependencyManagementTest {
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                dependencyManagement.add(new Gavtcs("org.acme", "dep2", null))
+                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null))
                         .after(new Gavtcs("org.acme", "dep1", null))),
                 expected);
     }
@@ -418,7 +418,7 @@ public class DependencyManagementTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                dependencyManagement.add(new Gavtcs("org.acme", "dep5", "1.2.3"))
+                DependencyManagement.add(new Gavtcs("org.acme", "dep5", "1.2.3"))
                         .intoProfile("profile1")
                         .after(new Gavtcs("org.acme", "dep3", "1.2.3"))
 
@@ -473,7 +473,7 @@ public class DependencyManagementTest {
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                dependencyManagement.remove("org.acme:dep1")),
+                DependencyManagement.remove("org.acme:dep1")),
 
                 expected);
     }
@@ -564,7 +564,7 @@ public class DependencyManagementTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                dependencyManagement.remove("org.acme:dep2", "org.acme:dep4").from("profile1")
+                DependencyManagement.remove("org.acme:dep2", "org.acme:dep4").from("profile1")
 
         ),
                 expected);
@@ -618,7 +618,7 @@ public class DependencyManagementTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                dependencyManagement.removeEmptyParent().from(ProfileId.all())
+                DependencyManagement.removeEmptyParent().from(ProfileId.all())
 
         ),
                 expected);
@@ -724,7 +724,7 @@ public class DependencyManagementTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    dependencyManagement.select(p -> true)
+                    DependencyManagement.select(p -> true)
                             .from(ProfileId.all())
                             .modify(dep -> dep.setGroupId("org.hackme")
                                     .setArtifactId(dep.getGavtcs().getArtifactId() + "-mod")
@@ -732,7 +732,7 @@ public class DependencyManagementTest {
                                     .setClassifier("cl"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    dependencyManagement.selectAll()
+                    DependencyManagement.selectAll()
                             .from(ProfileId.all())
                             .modify(dep -> dep.setGroupId("org.hackme")
                                     .setArtifactId(dep.getGavtcs().getArtifactId() + "-mod")
@@ -788,17 +788,17 @@ public class DependencyManagementTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    dependencyManagement.select(p -> p.getArtifactId().equals("dep2")).modify(dep -> dep.setVersion("1.2.4"))),
+                    DependencyManagement.select(p -> p.getArtifactId().equals("dep2")).modify(dep -> dep.setVersion("1.2.4"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    dependencyManagement.select(Gavtcs.of("org.acme:dep2:1.2.3")).modify(dep -> dep.setVersion("1.2.4"))),
+                    DependencyManagement.select(Gavtcs.of("org.acme:dep2:1.2.3")).modify(dep -> dep.setVersion("1.2.4"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    dependencyManagement.select(GavtcsSet.builder().include("*:dep2").build())
+                    DependencyManagement.select(GavtcsSet.builder().include("*:dep2").build())
                             .modify(dep -> dep.setVersion("1.2.4"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    dependencyManagement.select("*:dep2").modify(dep -> dep.setVersion("1.2.4"))),
+                    DependencyManagement.select("*:dep2").modify(dep -> dep.setVersion("1.2.4"))),
                     expected);
         }
         {
@@ -849,12 +849,12 @@ public class DependencyManagementTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    dependencyManagement.select(p -> p.getArtifactId().equals("dep4"))
+                    DependencyManagement.select(p -> p.getArtifactId().equals("dep4"))
                             .fromProfilesOnly("profile1")
                             .modify(dep -> dep.setVersion("1.2.4"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    dependencyManagement.select(p -> p.getArtifactId().equals("dep4"))
+                    DependencyManagement.select(p -> p.getArtifactId().equals("dep4"))
                             .from(ProfileId.idsOnly("profile1"))
                             .modify(dep -> dep.setVersion("1.2.4"))),
                     expected);

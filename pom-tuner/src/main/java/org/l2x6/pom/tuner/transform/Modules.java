@@ -43,7 +43,7 @@ import org.l2x6.pom.tuner.transform.api.TextElementSet;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
  */
-public interface modules {
+public interface Modules {
     public static final String ELEMENT_NAME = "modules";
     public static final String CHILD_ELEMENT_NAME = "module";
 

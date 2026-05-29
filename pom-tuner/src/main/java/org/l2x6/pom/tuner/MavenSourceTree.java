@@ -58,13 +58,13 @@ import org.l2x6.pom.tuner.model.Module;
 import org.l2x6.pom.tuner.model.Plugin;
 import org.l2x6.pom.tuner.model.Profile;
 import org.l2x6.pom.tuner.model.ValueDefinition;
-import org.l2x6.pom.tuner.transform.dependencies;
-import org.l2x6.pom.tuner.transform.dependencyManagement;
-import org.l2x6.pom.tuner.transform.extensions;
-import org.l2x6.pom.tuner.transform.modules;
-import org.l2x6.pom.tuner.transform.parent;
-import org.l2x6.pom.tuner.transform.pluginManagement;
-import org.l2x6.pom.tuner.transform.plugins;
+import org.l2x6.pom.tuner.transform.Dependencies;
+import org.l2x6.pom.tuner.transform.DependencyManagement;
+import org.l2x6.pom.tuner.transform.Extensions;
+import org.l2x6.pom.tuner.transform.Modules;
+import org.l2x6.pom.tuner.transform.Parent;
+import org.l2x6.pom.tuner.transform.PluginManagement;
+import org.l2x6.pom.tuner.transform.Plugins;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -817,7 +817,7 @@ public class MavenSourceTree {
 
             /* parent */
             if (parentGav != null && modulesByGa.containsKey(evaluator.evaluateGa(parentGav))) {
-                edits.add(pomPath, parent.setVersion(newVersion));
+                edits.add(pomPath, Parent.setVersion(newVersion));
             }
 
             final Set<String> profileIds = new HashSet<>();
@@ -830,14 +830,14 @@ public class MavenSourceTree {
             Ga moduleGa = evaluator.evaluateGa(module.getGav());
             edits.add(
                     module.getPomPath(),
-                    dependencyManagement
+                    DependencyManagement
                             .select(gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
                             .from(profileIds::contains)
                             .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
                                     edits)));
             edits.add(
                     module.getPomPath(),
-                    dependencies
+                    Dependencies
                             .select(gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
                             .from(profileIds::contains)
                             .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
@@ -845,14 +845,14 @@ public class MavenSourceTree {
 
             edits.add(
                     module.getPomPath(),
-                    plugins
+                    Plugins
                             .select(gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
                             .from(profileIds::contains)
                             .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
                                     edits)));
             edits.add(
                     module.getPomPath(),
-                    plugins
+                    Plugins
                             .selectPluginDependencies(
                                     gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
                             .from(profileIds::contains)
@@ -861,14 +861,14 @@ public class MavenSourceTree {
 
             edits.add(
                     module.getPomPath(),
-                    pluginManagement
+                    PluginManagement
                             .select(gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
                             .from(profileIds::contains)
                             .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
                                     edits)));
             edits.add(
                     module.getPomPath(),
-                    pluginManagement
+                    PluginManagement
                             .selectPluginDependencies(
                                     gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
                             .from(profileIds::contains)
@@ -877,7 +877,7 @@ public class MavenSourceTree {
 
             edits.add(
                     module.getPomPath(),
-                    extensions
+                    Extensions
                             .select(gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
                             .from(profileIds::contains)
                             .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
@@ -950,7 +950,7 @@ public class MavenSourceTree {
     public void unlinkModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
             String commentText) {
         unlinkModules(requiredModules, isProfileActive, encoding,
-                (Set<String> modulePaths) -> modules.select(modulePaths::contains).commentOut(te -> commentText));
+                (Set<String> modulePaths) -> Modules.select(modulePaths::contains).commentOut(te -> commentText));
     }
 
     /**
@@ -1036,7 +1036,7 @@ public class MavenSourceTree {
             final String relPath = en.getKey();
             final List<Transformer> transformations = new ArrayList<>();
             final Set<String> profileIds = activeProfileIds(profiles, en);
-            transformations.add(modules.selectComments(comment -> comment.getSource().content().endsWith(" " + commentText +" ")).from(profileIds::contains).uncomment());
+            transformations.add(Modules.selectComments(comment -> comment.getSource().content().endsWith(" " + commentText +" ")).from(profileIds::contains).uncomment());
             final Path pomXml = rootDirectory.resolve(relPath);
 
             PomTransformer.builder()
