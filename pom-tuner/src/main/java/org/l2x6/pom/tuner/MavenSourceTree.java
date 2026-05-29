@@ -51,6 +51,7 @@ import org.l2x6.pom.tuner.model.Dependency;
 import org.l2x6.pom.tuner.model.Expression;
 import org.l2x6.pom.tuner.model.Expression.NoSuchPropertyException;
 import org.l2x6.pom.tuner.model.Ga;
+import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.model.GavExpression;
 import org.l2x6.pom.tuner.model.GavSet;
 import org.l2x6.pom.tuner.model.Gavtcs;
@@ -888,7 +889,7 @@ public class MavenSourceTree {
 
     void setVersion(Ga module, String modulePath, GavtcsElement gavtcsElement, String newVersion, ExpressionEvaluator evaluator,
             DomEdits edits) {
-        GavExpression gavExpresion = toGavExpression(gavtcsElement.getGavtcs(), module);
+        GavExpression gavExpresion = toGavExpression(gavtcsElement.getGavtcs().toGavtc().toGav(), module);
         final Expression version = gavExpresion.getVersion();
         if (!version.isConstant()) {
             ((SourceTreeExpressionEvaluator) evaluator).evaluateExpression(version,
@@ -899,6 +900,9 @@ public class MavenSourceTree {
     }
 
     boolean isOwnVersionedDepenency(Ga module, Gavtcs gavtcsElement, ExpressionEvaluator evaluator) {
+        return isOwnVersionedDepenency(module, gavtcsElement.toGavtc().toGav(), evaluator);
+    }
+    boolean isOwnVersionedDepenency(Ga module, Gav gavtcsElement, ExpressionEvaluator evaluator) {
         if (gavtcsElement.getVersion() == null) {
             return false;
         }
@@ -908,9 +912,9 @@ public class MavenSourceTree {
         return result;
     }
 
-    private GavExpression toGavExpression(Gavtcs gavtcs, Ga module) {
-        return new GavExpression(Expression.of(gavtcs.getGroupId(), module), Expression.of(gavtcs.getArtifactId(), module),
-                Expression.of(gavtcs.getVersion(), module));
+    private GavExpression toGavExpression(Gav gav, Ga module) {
+        return new GavExpression(Expression.of(gav.getGroupId(), module), Expression.of(gav.getArtifactId(), module),
+                Expression.of(gav.getVersion(), module));
     }
 
     Map<String, Set<Path>> unlinkModules(Set<Ga> includes, Module module,

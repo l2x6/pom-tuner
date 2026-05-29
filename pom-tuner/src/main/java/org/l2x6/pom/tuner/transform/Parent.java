@@ -141,7 +141,7 @@ public interface Parent {
      * exits
      * quietly rather than throwing an exception.
      *
-     * @return a new {@link RemoveTransformer} removing properties having the specified names
+     * @return a new {@link RemoveTransformer} removing the {@code <parent>} element
      * @since  5.0.0
      */
     public static <THIS extends RemoveTransformer<ContainerElement, THIS>> RemoveTransformer<ContainerElement, THIS> remove() {
@@ -160,7 +160,7 @@ public interface Parent {
      * exits
      * quietly rather than throwing an exception.
      *
-     * @return a new {@link RemoveTransformer} removing properties having the specified names
+     * @return a new {@link RemoveTransformer} removing the {@code <relativePath>} element under {@code <parent>}
      * @since  5.0.0
      */
     public static <THIS extends RemoveTransformer<ContainerElement, THIS>> RemoveTransformer<ContainerElement, THIS> removeRelativePath() {

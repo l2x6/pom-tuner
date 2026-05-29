@@ -23,18 +23,22 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer;
+import org.l2x6.pom.tuner.PomTunerUtils;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.model.Gav;
+import org.l2x6.pom.tuner.model.GavPattern;
+import org.l2x6.pom.tuner.model.GavSet;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.model.GavtcsPattern;
 import org.l2x6.pom.tuner.model.GavtcsSet;
-import org.l2x6.pom.tuner.transform.api.AddGavtcsTransformer;
+import org.l2x6.pom.tuner.transform.api.AddGavTransformer;
 import org.l2x6.pom.tuner.transform.api.ElementSet;
 import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 
 /**
- * Operations on {@code pom.xml} pluginManagement usable with {@link PomTransformer#transform(Transformer...)}.
+ * Operations on {@code pom.xml} {@code pluginManagement} entries usable with {@link PomTransformer#transform(Transformer...)}.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
@@ -50,63 +54,92 @@ public interface PluginManagement {
      * If the given managed plugin is available already, does nothing; otherwise adds the given plugin as the last element
      * under {@code /project/build/pluginManagement/plugins}.
      * <p>
-     * The returned {@link AddGavtcsTransformer} instance can be further customized to target a specific profile using
-     * {@link AddGavtcsTransformer#intoProfile(String)}
-     * or to insert the plugin at some specific position using {@link AddGavtcsTransformer#before(Gavtcs)},
-     * {@link AddGavtcsTransformer#after(Gavtcs)} or {@link AddGavtcsTransformer#at(Comparator)} and
+     * The returned {@link AddGavTransformer} instance can be further customized to target a specific profile using
+     * {@link AddGavTransformer#intoProfile(String)}
+     * or to insert the plugin at some specific position using {@link AddGavTransformer#before(Gavtcs)},
+     * {@link AddGavTransformer#after(Gavtcs)} or {@link AddGavTransformer#at(Comparator)} and
      * compatible {@link Comparators}.
      *
      * @param  plugin the plugin to add
-     * @return        a new customizable {@link AddGavtcsTransformer}
+     * @return        a new customizable {@link AddGavTransformer}
      *
      * @since         5.0.0
      */
-    public static <THIS extends AddGavtcsTransformer<ContainerElement, GavtcsElement, THIS>> AddGavtcsTransformer<ContainerElement, GavtcsElement, THIS> add(
-            Gavtcs plugin) {
-        return new AddGavtcsTransformer<>(
+    public static <THIS extends AddGavTransformer<ContainerElement, GavtcsElement, THIS>> AddGavTransformer<ContainerElement, GavtcsElement, THIS> add(
+            Gav plugin) {
+        return new AddGavTransformer<>(
                 profile -> profile.getOrAddChildContainerElement(ELEMENT_NAME).getOrAddChildContainerElement(PLUGIN_MANAGEMENT)
                         .getOrAddChildContainerElement(PLUGINS),
-                (parent, comparator) -> parent.addGavtcsIfNeeded(plugin, comparator),
+                (parent, comparator) -> parent.addGavIfNeeded(plugin, comparator),
                 Comparators.afterLast());
     }
 
     /**
-     * Returns a new {@link RemoveElementsTransformer} removing {@code pluginManagement} entries matching any of the
-     * specified {@code patterns};
-     * the removed {@code pluginManagement} entries are located under {@code /project/plugins} (but not under any profiles);
+     * Returns a new {@link RemoveElementsTransformer} removing {@code pluginManagement} entries fulfilling the specified {@code predicate};
+     * the removed {@code pluginManagement} entries are located under {@code /project/build/pluginManagement/plugins} (but not under any profiles);
      * also removes any previous sibling comments and whitespace.
      * <p>
      * The returned {@link RemoveElementsTransformer} instance can be further customized to select profiles
      * or other kinds of sibling nodes to remove.
      * <p>
-     * If no {@code pluginManagement} entries match the given {@code dependencyNames} then the returned
+     * If no {@code pluginManagement} entries fulfill the specified {@code predicate} then the returned {@link RemoveElementsTransformer} exits
+     * quietly rather than throwing an exception.
+     * <p>
+     * Tip: {@link GavSet} implements {@code Predicate<Gav>} and can be used as an argument for this method.
+     *
+     * @param  <THIS>    type of the returned {@link RemoveElementsTransformer}
+     * @param  predicate a {@link Predicate} selecting {@code pluginManagement} entries to remove
+     * @return           a new {@link RemoveElementsTransformer} having its node selector set as specified
+     * @since            5.0.0
+     */
+    public static <THIS extends RemoveElementsTransformer<GavtcsElement, THIS>> RemoveElementsTransformer<GavtcsElement, THIS> remove(
+            Predicate<Gav> predicate) {
+        return new RemoveElementsTransformer<>(
+                RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
+                textElement -> predicate.test(textElement.getGavtcs().toGavtc().toGav()));
+    }
+
+    /**
+     * Returns a new {@link RemoveElementsTransformer} removing {@code pluginManagement} entries having the specified {@code gavs};
+     * the removed {@code pluginManagement} entries are located under {@code /project/build/pluginManagement/plugins} (but not under any profiles);
+     * also removes any previous sibling comments and whitespace.
+     * <p>
+     * The returned {@link RemoveElementsTransformer} instance can be further customized to select profiles
+     * or other kinds of sibling nodes to remove.
+     * <p>
+     * If no {@code pluginManagement} entries match the given {@code gavs} then the returned
      * {@link RemoveElementsTransformer} exits
      * quietly rather than throwing an exception.
      *
-     * @param  patterns of the {@code pluginManagement} entries to remove
-     * @return          a new {@link RemoveElementsTransformer} removing {@code pluginManagement} entries matching the
-     *                  specified {@code patterns}
-     * @since           5.0.0
+     * @param  gavs of the {@code pluginManagement} entries to remove
+     * @return      a new {@link RemoveElementsTransformer} removing {@code pluginManagement} entries matching the
+     *              specified {@code gavs}
+     * @since       5.0.0
      */
     public static <THIS extends RemoveElementsTransformer<GavtcsElement, THIS>> RemoveElementsTransformer<GavtcsElement, THIS> remove(
-            GavtcsPattern... patterns) {
+            Gav... gavs) {
+        final Set<Gav> set = PomTunerUtils.toLinkedHashSet(gavs);
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
-                textElement -> Stream.of(patterns).anyMatch(pattern -> pattern.matches(textElement.getGavtcs())));
+                textElement -> set.contains(textElement.getGavtcs().toGavtc().toGav()));
     }
 
     /**
      * Returns a new {@link RemoveElementsTransformer} removing {@code pluginManagement} entries matching any of the
      * specified {@code patterns};
-     * the removed {@code pluginManagement} entries are located under {@code /project/plugins} (but not under any profiles);
+     * the removed {@code pluginManagement} entries are located under {@code /project/build/pluginManagement/plugins} (but not under any profiles);
      * also removes any previous sibling comments and whitespace.
      * <p>
-     * The {@code patterns} must be in the format supported by {@link GavtcsPattern#of(String)}.
+     * The format of {@code patterns} is {@code groupId[:artifactId[:version]]}.
+     * In addition to syntax specified in {@link GavPattern#of(String)}, the entries can be prefixed with {@code !} to be
+     * interpreted as excludes.
+     * This method is a shorthand for {@link #remove(Predicate)
+     * remove(GavSet.builder().includes(patterns).build())}.
      * <p>
      * The returned {@link RemoveElementsTransformer} instance can be further customized to select profiles
      * or other kinds of sibling nodes to remove.
      * <p>
-     * If no {@code pluginManagement} entries match the given {@code dependencyNames} then the returned
+     * If no {@code pluginManagement} entries match the given {@code patterns} then the returned
      * {@link RemoveElementsTransformer} exits
      * quietly rather than throwing an exception.
      *
@@ -117,14 +150,12 @@ public interface PluginManagement {
      */
     public static <THIS extends RemoveElementsTransformer<GavtcsElement, THIS>> RemoveElementsTransformer<GavtcsElement, THIS> remove(
             String... patterns) {
-        return remove(Stream.of(patterns).map(GavtcsPattern::of).toArray(GavtcsPattern[]::new));
+        return remove(GavSet.builder().includes(patterns).build());
     }
 
     /**
-     * Returns a new {@link RemoveElementsTransformer} removing the {@code /pluginManagement/plugins} node (including all
-     * its child
-     * plugins);
-     * the removed {@code <plugins>} node is located under {@code /project} (but not under any profiles);
+     * Returns a new {@link RemoveElementsTransformer} removing the {@code /project/pluginManagement/plugins} node (including all
+     * its child plugins);
      * also removes any previous sibling comments and whitespace.
      * <p>
      * The returned {@link RemoveElementsTransformer} instance can be further customized to select profiles
@@ -134,7 +165,7 @@ public interface PluginManagement {
      * {@link RemoveElementsTransformer} exits
      * quietly rather than throwing an exception.
      *
-     * @return a new {@link RemoveElementsTransformer} removing plugins having the specified names
+     * @return a new {@link RemoveElementsTransformer} removing the {@code /project/pluginManagement/plugins} node
      * @since  5.0.0
      */
     public static <THIS extends RemoveElementsTransformer<ContainerElement, THIS>> RemoveElementsTransformer<ContainerElement, THIS> removeAll() {
@@ -144,11 +175,8 @@ public interface PluginManagement {
     }
 
     /**
-     * Returns a new {@link RemoveElementsTransformer} removing the {@code /pluginManagement/plugins} node (including all
-     * its child
-     * plugins)
-     * that is located under {@code /project} (but not under any profiles),
-     * if the {@code <plugins>} node has no element children;
+     * Returns a new {@link RemoveElementsTransformer} removing the {@code /project/pluginManagement/plugins} node
+     * if the {@code <plugins>} node has no child elements;
      * also removes any previous sibling comments and whitespace.
      * <p>
      * The returned {@link RemoveElementsTransformer} instance can be further customized to select profiles
@@ -158,9 +186,8 @@ public interface PluginManagement {
      * {@link RemoveElementsTransformer} exits
      * quietly rather than throwing an exception.
      *
-     * @param  selector a {@link Predicate} to select dependency nodes to remove
-     * @return          a new {@link RemoveElementsTransformer} removing plugins having the specified names
-     * @since           5.0.0
+     * @return a new {@link RemoveElementsTransformer} removing the empty {@code <plugins>} parent node
+     * @since  5.0.0
      */
     public static <THIS extends RemoveElementsTransformer<ContainerElement, THIS>> RemoveElementsTransformer<ContainerElement, THIS> removeEmptyParent() {
         return new RemoveElementsTransformer<>(
@@ -169,12 +196,12 @@ public interface PluginManagement {
     }
 
     /**
-     * Select some {@code <plugin>} nodes for modification.
+     * Select some {@code pluginManagement} entries for modification.
      * <p>
      * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual
      * modification operation.
      * <p>
-     * Tip: {@link GavtcsSet} implements {@code Predicate<Gavtcs>} and can be used as an argument for this method.
+     * Tip: {@link GavSet} implements {@code Predicate<Gav>} and can be used as an argument for this method.
      * <p>
      * If none of the {@code from*(*)} methods of the returned {@link ElementSet} is called,
      * the default behavior is to select the matching elements only from under the {@code <project>} element
@@ -186,18 +213,18 @@ public interface PluginManagement {
      * @since            5.0.0
      */
     public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> select(
-            Predicate<Gavtcs> predicate) {
+            Predicate<Gav> predicate) {
         return new ElementSet<>(RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
-                gavtcsElement -> predicate.test(gavtcsElement.getGavtcs()));
+                gavtcsElement -> predicate.test(gavtcsElement.getGavtcs().toGavtc().toGav()));
     }
 
     /**
-     * Select some {@code <plugin>} nodes for modification by an array of
-     * {@code groupId[:artifactId[:version[:type[:classifier[:scope]]]]]} patterns.
-     * In addition to syntax specified in {@link GavtcsPattern#of(String)}, the entries can be prefixed with {@code !} to be
+     * Select some {@code pluginManagement} entries for modification by an array of
+     * {@code groupId[:artifactId[:version]]} patterns.
+     * In addition to syntax specified in {@link GavPattern#of(String)}, the entries can be prefixed with {@code !} to be
      * interpreted as excludes.
-     * This method is a shorthand for {@link #select(Gavtcs...)
-     * select(GavtcsSet.builder().includes(gavtcsPatterns).build())}.
+     * This method is a shorthand for {@link #select(Predicate)
+     * select(GavSet.builder().includes(patterns).build())}.
      * <p>
      * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual
      * modification operation.
@@ -207,17 +234,17 @@ public interface PluginManagement {
      * and ignore any matching elements under {@code <profile>} elements.
      *
      * @param  <THIS>         type of the returned {@link ElementSet}
-     * @param  gavtcsPatterns an array of strings parseable by GavTcs
+     * @param  patterns an array of strings parseable by GavTcs
      * @return                a new {@link ElementSet} having its node selector set as specified
      * @since                 5.0.0
      */
     public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> select(
-            String... gavtcsPatterns) {
-        return select(GavtcsSet.builder().includes(gavtcsPatterns).build());
+            String... patterns) {
+        return select(GavSet.builder().includes(patterns).build());
     }
 
     /**
-     * Select some {@code <plugin>} nodes for modification.
+     * Select some {@code pluginManagement} entries for modification.
      * <p>
      * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual
      * modification operation.
@@ -231,24 +258,14 @@ public interface PluginManagement {
      * @return         a new {@link ElementSet} having its node selector set as specified
      * @since          5.0.0
      */
-    public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> select(Gavtcs... plugins) {
-        final Set<Gavtcs> set;
-        if (plugins.length == 0) {
-            set = Collections.emptySet();
-        } else if (plugins.length == 1) {
-            set = Collections.singleton(plugins[0]);
-        } else {
-            set = new HashSet<>();
-            for (int i = 0; i < plugins.length; i++) {
-                set.add(plugins[i]);
-            }
-        }
+    public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> select(Gav... plugins) {
+        final Set<Gav> set = PomTunerUtils.toLinkedHashSet(plugins);
         return new ElementSet<>(RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
-                gavtcsElement -> set.contains(gavtcsElement.getGavtcs()));
+                gavtcsElement -> set.contains(gavtcsElement.getGavtcs().toGavtc().toGav()));
     }
 
     /**
-     * Select all {@code <plugin>} nodes for modification.
+     * Select all {@code pluginManagement} entries for modification.
      * <p>
      * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual
      * modification operation.
@@ -267,35 +284,35 @@ public interface PluginManagement {
     }
 
     /**
-     * Select some {@code <plugin>} nodes for modification.
+     * Select {@code <dependency>} nodes of the specified {@code pluginManagement} entries for modification.
      * <p>
      * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual
      * modification operation.
      * <p>
-     * Tip: {@link GavtcsSet} implements {@code Predicate<Gavtcs>} and can be used as an argument for this method.
+     * Tip: {@link GavSet} implements {@code Predicate<Gav>} and can be used as an argument for this method.
      * <p>
      * If none of the {@code from*(*)} methods of the returned {@link ElementSet} is called,
      * the default behavior is to select the matching elements only from under the {@code <project>} element
      * and ignore any matching elements under {@code <profile>} elements.
      *
      * @param  <THIS>    type of the returned {@link ElementSet}
-     * @param  predicate a {@link Predicate} selecting plugin nodes to modify
+     * @param  predicate a {@link Predicate} {@code pluginManagement} entries whose descendant dependency nodes will be selected for modification
      * @return           a new {@link ElementSet} having its node selector set as specified
      * @since            5.0.0
      */
     public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> selectPluginDependencies(
-            Predicate<Gavtcs> predicate) {
+            Predicate<Gav> predicate) {
         return new ElementSet<>(RemoveElementsTransformer.pluginDependenciesMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
-                gavtcsElement -> predicate.test(gavtcsElement.getGavtcs()));
+                gavtcsElement -> predicate.test(gavtcsElement.getGavtcs().toGavtc().toGav()));
     }
 
     /**
-     * Select some {@code <plugin>} nodes for modification by an array of
-     * {@code groupId[:artifactId[:version[:type[:classifier[:scope]]]]]} patterns.
-     * In addition to syntax specified in {@link GavtcsPattern#of(String)}, the entries can be prefixed with {@code !} to be
+     * Select {@code <dependency>} nodes of the specified {@code pluginManagement} entries for modification.
+     * The {@code pluginManagement} entries are selected by an array of {@code groupId[:artifactId[:version]]} patterns.
+     * In addition to syntax specified in {@link GavPattern#of(String)}, the entries can be prefixed with {@code !} to be
      * interpreted as excludes.
-     * This method is a shorthand for {@link #select(Gavtcs...)
-     * select(GavtcsSet.builder().includes(gavtcsPatterns).build())}.
+     * This method is a shorthand for {@link #selectPluginDependencies(Predicate)
+     * selectPluginDependencies(GavSet.builder().includes(patterns).build())}.
      * <p>
      * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual
      * modification operation.
@@ -305,17 +322,17 @@ public interface PluginManagement {
      * and ignore any matching elements under {@code <profile>} elements.
      *
      * @param  <THIS>         type of the returned {@link ElementSet}
-     * @param  gavtcsPatterns an array of strings parseable by GavTcs
+     * @param  patterns an array of strings parseable by {@link GavPattern#of(String)}
      * @return                a new {@link ElementSet} having its node selector set as specified
      * @since                 5.0.0
      */
     public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> selectPluginDependencies(
-            String... gavtcsPatterns) {
-        return select(GavtcsSet.builder().includes(gavtcsPatterns).build());
+            String... patterns) {
+        return selectPluginDependencies(GavSet.builder().includes(patterns).build());
     }
 
     /**
-     * Select some {@code <plugin>} nodes for modification.
+     * Select {@code <dependency>} nodes of the specified {@code pluginManagement} entries for modification.
      * <p>
      * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual
      * modification operation.
@@ -330,24 +347,14 @@ public interface PluginManagement {
      * @since          5.0.0
      */
     public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> selectPluginDependencies(
-            Gavtcs... plugins) {
-        final Set<Gavtcs> set;
-        if (plugins.length == 0) {
-            set = Collections.emptySet();
-        } else if (plugins.length == 1) {
-            set = Collections.singleton(plugins[0]);
-        } else {
-            set = new HashSet<>();
-            for (int i = 0; i < plugins.length; i++) {
-                set.add(plugins[i]);
-            }
-        }
+            Gav... plugins) {
+        final Set<Gav> set = PomTunerUtils.toLinkedHashSet(plugins);
         return new ElementSet<>(RemoveElementsTransformer.pluginDependenciesMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
-                gavtcsElement -> set.contains(gavtcsElement.getGavtcs()));
+                gavtcsElement -> set.contains(gavtcsElement.getGavtcs().toGavtc().toGav()));
     }
 
     /**
-     * Select all {@code <plugin>} nodes for modification.
+     * Select {@code <dependency>} nodes of all {@code pluginManagement} entries for modification.
      * <p>
      * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual
      * modification operation.

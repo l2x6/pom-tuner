@@ -34,7 +34,7 @@ import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
 
 /**
- * A generic removed of {@code pom.xml} elements such as {@code <properties>}, their child properties,
+ * A generic remover of {@code pom.xml} elements such as {@code <properties>}, their child properties,
  * {@code <modules>}, {@code <module>}, etc.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>

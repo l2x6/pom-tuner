@@ -61,8 +61,8 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
      * the default behavior is to select the matching elements only from under the {@code <project>} element
      * and ignore any matching elements under {@code <profile>} elements.
      *
-     * @param  profileSelector the profile selector to set on the resulting {@link RemoveElementsTransformer}
-     * @return                 a copy of this {@link RemoveElementsTransformer} instance with the
+     * @param  profileSelector the profile selector to set on the resulting {@link ElementSet}
+     * @return                 a copy of this {@link ElementSet} instance with the
      *                         {@link #profileSelector} set to the given {@code profileSelector}
      * @since                  5.0.0
      * @see                    ProfileId
@@ -74,15 +74,15 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
     /**
      * Choose from under which specific profiles should the matching elements be selected; matching elements under the
      * {@code <project>} element will be selected too.
-     * Use {@link #fromProfilesOnly(String...)} to avoid selected from under the {@code <project>} element.
+     * Use {@link #fromProfilesOnly(String...)} to avoid selecting from under the {@code <project>} element.
      * <p>
      * If none of the {@code from*(*)} methods is called,
-     * the default behavior is to selected the matching elements only from under the {@code <project>} element
+     * the default behavior is to select the matching elements only from under the {@code <project>} element
      * and ignore any matching elements under {@code <profile>} elements.
      *
-     * @param  profileIds the profile {@code id}s to select on the resulting {@link RemoveElementsTransformer} in addition
+     * @param  profileIds the profile {@code id}s to select on the resulting {@link ElementSet} in addition
      *                    to the {@link ProfileId#main()}
-     * @return            a copy of this {@link RemoveElementsTransformer} instance with the
+     * @return            a copy of this {@link ElementSet} instance with the
      *                    {@link #profileSelector} adjusted
      * @since             5.0.0
      * @see               ProfileId#ids(String...)
@@ -94,15 +94,15 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
     /**
      * Choose from under which specific profiles should the matching elements be selected; matching elements under the
      * {@code <project>} element will not be selected.
-     * Use {@link #from(String...)} to selected also the matching elements from under the {@code <project>} element.
+     * Use {@link #from(String...)} to select also the matching elements from under the {@code <project>} element.
      * <p>
      * If none of the {@code from*(*)} methods is called,
-     * the default behavior is to selected the matching elements only from under the {@code <project>} element
+     * the default behavior is to select the matching elements only from under the {@code <project>} element
      * and ignore any matching elements under {@code <profile>} elements.
      *
-     * @param  profileIds the profile {@code id}s to select on the resulting {@link RemoveElementsTransformer} (but not the
+     * @param  profileIds the profile {@code id}s to select on the resulting {@link ElementSet} (but not the
      *                    {@link ProfileId#main()}
-     * @return            a copy of this {@link RemoveElementsTransformer} instance with the
+     * @return            a copy of this {@link ElementSet} instance with the
      *                    {@link #profileSelector} adjusted
      * @since             5.0.0
      * @see               ProfileId#idsOnly(String...)

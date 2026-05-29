@@ -24,6 +24,7 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer;
+import org.l2x6.pom.tuner.PomTunerUtils;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
@@ -35,7 +36,7 @@ import org.l2x6.pom.tuner.transform.api.ElementSet;
 import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 
 /**
- * Operations on {@code pom.xml} dependencyManagement usable with {@link PomTransformer#transform(Transformer...)}.
+ * Operations on {@code pom.xml} {@code dependencyManagement} usable with {@link PomTransformer#transform(Transformer...)}.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
@@ -70,11 +71,36 @@ public interface DependencyManagement {
                 Comparators.afterLast());
     }
 
+
     /**
-     * Returns a new {@link RemoveElementsTransformer} removing {@code dependencyManagement} entries matching any of the
-     * specified {@code patterns};
-     * the removed {@code dependencyManagement} entries are located under {@code /project/dependencies} (but not under any
-     * profiles);
+     * Returns a new {@link RemoveElementsTransformer} removing {@code dependencyManagement} entries fulfilling the specified {@code predicate};
+     * the removed {@code dependencyManagement} entries are located under {@code /project/dependencyManagement/dependencies} (but not under any profiles);
+     * also removes any previous sibling comments and whitespace.
+     * <p>
+     * The returned {@link RemoveElementsTransformer} instance can be further customized to select profiles
+     * or other kinds of sibling nodes to remove.
+     * <p>
+     * If no {@code dependencyManagement} entries fulfill the specified {@code predicate} then the returned {@link RemoveElementsTransformer} exits
+     * quietly rather than throwing an exception.
+     * <p>
+     * Tip: {@link GavtcsSet} implements {@code Predicate<Gavtcs>} and can be used as an argument for this method.
+     *
+     * @param  <THIS>    type of the returned {@link RemoveElementsTransformer}
+     * @param  predicate a {@link Predicate} selecting {@code dependencyManagement} entries to remove
+     * @return           a new {@link RemoveElementsTransformer} having its node selector set as specified
+     * @since            5.0.0
+     */
+    public static <THIS extends RemoveElementsTransformer<GavtcsElement, THIS>> RemoveElementsTransformer<GavtcsElement, THIS> remove(
+            Predicate<Gavtcs> predicate) {
+        return new RemoveElementsTransformer<>(
+                RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
+                textElement -> predicate.test(textElement.getGavtcs()));
+    }
+
+    /**
+     * Returns a new {@link RemoveElementsTransformer} removing the specified {@code dependencyManagement} entries;
+     * the removed {@code dependencyManagement} entries are located under
+     * {@code /project/dependencyManagement/dependencies} (but not under any profiles);
      * also removes any previous sibling comments and whitespace.
      * <p>
      * The returned {@link RemoveElementsTransformer} instance can be further customized to select profiles
@@ -84,26 +110,30 @@ public interface DependencyManagement {
      * {@link RemoveElementsTransformer} exits
      * quietly rather than throwing an exception.
      *
-     * @param  patterns of the {@code dependencyManagement} entries to remove
-     * @return          a new {@link RemoveElementsTransformer} removing {@code dependencyManagement} entries matching the
-     *                  specified {@code patterns}
+     * @param  dependencies the {@code dependencyManagement} entries to remove
+     * @return          a new {@link RemoveElementsTransformer} removing the specified {@code dependencies}
      * @since           5.0.0
      */
     public static <THIS extends RemoveElementsTransformer<GavtcsElement, THIS>> RemoveElementsTransformer<GavtcsElement, THIS> remove(
-            GavtcsPattern... patterns) {
+            Gavtcs... dependencies) {
+        final Set<Gavtcs> set = PomTunerUtils.toLinkedHashSet(dependencies);
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
-                textElement -> Stream.of(patterns).anyMatch(pattern -> pattern.matches(textElement.getGavtcs())));
+                textElement -> set.contains(textElement.getGavtcs()));
     }
 
     /**
      * Returns a new {@link RemoveElementsTransformer} removing {@code dependencyManagement} entries matching any of the
      * specified {@code patterns};
-     * the removed {@code dependencyManagement} entries are located under {@code /project/dependencies} (but not under any
-     * profiles);
+     * the removed {@code dependencyManagement} entries are located under
+     * {@code /project/dependencyManagement/dependencies} (but not under any profiles);
      * also removes any previous sibling comments and whitespace.
      * <p>
-     * The {@code patterns} must be in the format supported by {@link GavtcsPattern#of(String)}.
+     * The format of {@code patterns} is {@code groupId[:artifactId[:version[:type[:classifier[:scope]]]]]}.
+     * In addition to syntax specified in {@link GavtcsPattern#of(String)}, the entries can be prefixed with {@code !} to be
+     * interpreted as excludes.
+     * This method is a shorthand for {@link #remove(Predicate)
+     * remove(GavtcsSet.builder().includes(patterns).build())}.
      * <p>
      * The returned {@link RemoveElementsTransformer} instance can be further customized to select profiles
      * or other kinds of sibling nodes to remove.
@@ -119,11 +149,11 @@ public interface DependencyManagement {
      */
     public static <THIS extends RemoveElementsTransformer<GavtcsElement, THIS>> RemoveElementsTransformer<GavtcsElement, THIS> remove(
             String... patterns) {
-        return remove(Stream.of(patterns).map(GavtcsPattern::of).toArray(GavtcsPattern[]::new));
+        return remove(GavtcsSet.builder().includes(patterns).build());
     }
 
     /**
-     * Returns a new {@link RemoveElementsTransformer} removing the {@code /dependencyManagement/dependencies>} node
+     * Returns a new {@link RemoveElementsTransformer} removing the {@code /project/dependencyManagement/dependencies} node
      * (including all its child
      * dependencies);
      * the removed {@code <dependencies>} node is located under {@code /project} (but not under any profiles);
@@ -136,7 +166,7 @@ public interface DependencyManagement {
      * {@link RemoveElementsTransformer} exits
      * quietly rather than throwing an exception.
      *
-     * @return a new {@link RemoveElementsTransformer} removing dependencies having the specified names
+     * @return a new {@link RemoveElementsTransformer} removing the {@code /project/dependencyManagement/dependencies} node
      * @since  5.0.0
      */
     public static <THIS extends RemoveElementsTransformer<ContainerElement, THIS>> RemoveElementsTransformer<ContainerElement, THIS> removeAll() {
@@ -146,11 +176,8 @@ public interface DependencyManagement {
     }
 
     /**
-     * Returns a new {@link RemoveElementsTransformer} removing the {@code /dependencyManagement/dependencies>} node
-     * (including all its child
-     * dependencies)
-     * that is located under {@code /project} (but not under any profiles),
-     * if the {@code <dependencies>} node has no element children;
+     * Returns a new {@link RemoveElementsTransformer} removing the {@code /project/dependencyManagement/dependencies} node
+     * if the {@code <dependencies>} node has no child elements;
      * also removes any previous sibling comments and whitespace.
      * <p>
      * The returned {@link RemoveElementsTransformer} instance can be further customized to select profiles
@@ -160,7 +187,7 @@ public interface DependencyManagement {
      * {@link RemoveElementsTransformer} exits
      * quietly rather than throwing an exception.
      *
-     * @return a new {@link RemoveElementsTransformer} removing dependencies having the specified names
+     * @return a new {@link RemoveElementsTransformer} removing the empty {@code /project/dependencyManagement/dependencies} parent node
      * @since  5.0.0
      */
     public static <THIS extends RemoveElementsTransformer<ContainerElement, THIS>> RemoveElementsTransformer<ContainerElement, THIS> removeEmptyParent() {
@@ -197,7 +224,7 @@ public interface DependencyManagement {
      * {@code groupId[:artifactId[:version[:type[:classifier[:scope]]]]]} patterns.
      * In addition to syntax specified in {@link GavtcsPattern#of(String)}, the entries can be prefixed with {@code !} to be
      * interpreted as excludes.
-     * This method is a shorthand for {@link #select(Gavtcs...)
+     * This method is a shorthand for {@link #select(Predicate)
      * select(GavtcsSet.builder().includes(gavtcsPatterns).build())}.
      * <p>
      * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual
@@ -234,17 +261,7 @@ public interface DependencyManagement {
      */
     public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> select(
             Gavtcs... dependencies) {
-        final Set<Gavtcs> set;
-        if (dependencies.length == 0) {
-            set = Collections.emptySet();
-        } else if (dependencies.length == 1) {
-            set = Collections.singleton(dependencies[0]);
-        } else {
-            set = new HashSet<>();
-            for (int i = 0; i < dependencies.length; i++) {
-                set.add(dependencies[i]);
-            }
-        }
+        final Set<Gavtcs> set = PomTunerUtils.toLinkedHashSet(dependencies);
         return new ElementSet<>(RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
                 gavtcsElement -> set.contains(gavtcsElement.getGavtcs()));
     }

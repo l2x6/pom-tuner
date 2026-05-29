@@ -16,6 +16,11 @@
  */
 package org.l2x6.pom.tuner;
 
+import java.security.cert.CollectionCertStoreParameters;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 public class PomTunerUtils {
 
     private PomTunerUtils() {
@@ -46,6 +51,20 @@ public class PomTunerUtils {
             sb.append("/*[local-name()='").append(e).append("']");
         }
         return sb.toString();
+    }
+
+    public static <T> Set<T> toLinkedHashSet(T... entries) {
+        if (entries.length == 0) {
+            return Collections.emptySet();
+        } else if (entries.length == 1) {
+            return Collections.singleton(entries[0]);
+        } else {
+            final Set<T> set = new LinkedHashSet<>();
+            for (int i = 0; i < entries.length; i++) {
+                set.add(entries[i]);
+            }
+            return Collections.unmodifiableSet(set);
+        }
     }
 
 }
