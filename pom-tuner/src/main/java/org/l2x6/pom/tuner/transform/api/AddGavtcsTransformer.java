@@ -30,8 +30,7 @@ import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 import org.l2x6.pom.tuner.model.Gavtcs;
 
 /**
- * A generic removed of {@code pom.xml} elements such as {@code <properties>}, their child properties,
- * {@code <modules>}, {@code <module>}, etc.
+ * A generic adder of {@code pom.xml} GAVTCS elements such as {@code <dependency>} or managed dependency entries.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
@@ -112,11 +111,11 @@ public class AddGavtcsTransformer<P extends ContainerElement, T extends GavtcsEl
     }
 
     /**
-     * @param  elementName the name of the XML element after which the new element should be added; if there is no such
-     *                     element, the new element is added at the last position
-     * @return             a copy of this {@link AddElementTransformer} instance with the
-     *                     {@link #position} {@link Comparator} adjusted
-     * @since              5.0.0
+     * @param  gavtcs the {@link Gavtcs} after which the new element should be added; if there is no such
+     *                element, the new element is added at the last position
+     * @return        a copy of this {@link AddGavtcsTransformer} instance with the
+     *                {@link #comparator} adjusted
+     * @since         5.0.0
      */
     public AddGavtcsTransformer<P, T, THIS> after(Gavtcs gavtcs) {
         return new AddGavtcsTransformer<P, T, THIS>(
@@ -128,11 +127,11 @@ public class AddGavtcsTransformer<P extends ContainerElement, T extends GavtcsEl
     }
 
     /**
-     * @param  elementName the name of the XML element before which the new element should be added; if there is no such
-     *                     element, the new element is added at the last position
-     * @return             a copy of this {@link AddElementTransformer} instance with the
-     *                     {@link #position} {@link Comparator} adjusted
-     * @since              5.0.0
+     * @param  gavtcs the {@link Gavtcs} before which the new element should be added; if there is no such
+     *                element, the new element is added at the last position
+     * @return        a copy of this {@link AddGavtcsTransformer} instance with the
+     *                {@link #comparator} adjusted
+     * @since         5.0.0
      */
     public AddGavtcsTransformer<P, T, THIS> before(Gavtcs gavtcs) {
         return new AddGavtcsTransformer<P, T, THIS>(

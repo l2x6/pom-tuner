@@ -26,9 +26,11 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer;
+import org.l2x6.pom.tuner.PomTunerUtils;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.transform.api.AddElementTransformer;
 import org.l2x6.pom.tuner.transform.api.CommentSet;
 import org.l2x6.pom.tuner.transform.api.CommentSet.ParsedComment;
@@ -142,7 +144,7 @@ public interface Modules {
      * Returns a new {@link RemoveElementsTransformer} removing the {@code <modules>} node (including all its child
      * modules)
      * that is located under {@code /project} (but not under any profiles),
-     * if the {@code <modules>} node has no element children;
+     * if the {@code <modules>} node has no child elements;
      * also removes any previous sibling comments and whitespace.
      * <p>
      * The returned {@link RemoveElementsTransformer} instance can be further customized to select profiles
@@ -152,7 +154,7 @@ public interface Modules {
      * {@link RemoveElementsTransformer} exits
      * quietly rather than throwing an exception.
      *
-     * @return a new {@link RemoveElementsTransformer} removing modules having the specified names
+     * @return a new {@link RemoveElementsTransformer} removing the empty {@code <modules>} parent node
      * @since  5.0.0
      */
     public static <THIS extends RemoveElementsTransformer<ContainerElement, THIS>> RemoveElementsTransformer<ContainerElement, THIS> removeEmptyParent() {
@@ -195,17 +197,7 @@ public interface Modules {
      * @since              5.0.0
      */
     public static TextElementSet select(String... modulePaths) {
-        final Set<String> set;
-        if (modulePaths.length == 0) {
-            set = Collections.emptySet();
-        } else if (modulePaths.length == 1) {
-            set = Collections.singleton(modulePaths[0]);
-        } else {
-            set = new HashSet<>();
-            for (int i = 0; i < modulePaths.length; i++) {
-                set.add(modulePaths[i]);
-            }
-        }
+        final Set<String> set = PomTunerUtils.toLinkedHashSet(modulePaths);
         return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME),
                 textElement -> set.contains(textElement.getTextContent()));
     }

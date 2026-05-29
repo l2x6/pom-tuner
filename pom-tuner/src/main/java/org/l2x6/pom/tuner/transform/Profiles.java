@@ -21,7 +21,7 @@ import org.l2x6.pom.tuner.PomTransformer.Transformer;
 import org.l2x6.pom.tuner.transform.api.AddGavtcsTransformer;
 
 /**
- * Operations on {@code pom.xml} dependencies usable with {@link PomTransformer#transform(Transformer...)}.
+ * Operations on {@code pom.xml} profiles usable with {@link PomTransformer#transform(Transformer...)}.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
@@ -35,8 +35,8 @@ public interface Profiles {
      * element
      * under {@code /project/profiles}.
      *
-     * @param  dependency the dependency to add
-     * @return            a new customizable {@link AddGavtcsTransformer}
+     * @param  profileId the profile id to add
+     * @return           a new {@link Transformer}
      *
      * @since             5.0.0
      */

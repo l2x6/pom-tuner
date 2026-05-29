@@ -46,6 +46,7 @@ import java.util.stream.Stream;
 import javax.xml.xpath.XPath;
 
 import org.l2x6.pom.tuner.model.Ga;
+import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.transform.api.Siblings;
 import org.w3c.dom.DocumentFragment;
@@ -868,6 +869,35 @@ public class PomTransformer {
             return addGavtcs(gavtcs, refNode);
         }
 
+        /**
+         * If not available already, add a new {@code <dependency>} node under {@link #node} with {@code <groupId>},
+         * {@code <artifactId>}, etc. set to value taken from the specified {@link Gavtcs}.
+         * The availability and insertion point is determined using the given {@link Comparator}.
+         *
+         * @param  gav     the GAV coordinates to use when creating the new {@code <dependency>}
+         * @param  comparator for figuring out whether the given {@code gavtcs} is already available under this
+         *                    {@link ContainerElement} or for determining the insert position for a newly added child node
+         * @return            the newly created child node
+         */
+        public GavtcsElement addGavIfNeeded(Gav gav, Comparator<Gav> comparator) {
+            /* Find the insertion position if the gavtcs is not available yet and possibly add it */
+            Node refNode = null;
+            for (ContainerElement dep : childElements()) {
+                final Gavtcs depGavtcs = dep.asGavtcs();
+                int comparison = comparator.compare(gav, depGavtcs.toGavtc().toGav());
+                if (comparison == 0) {
+                    /* We have found the item, no need to add it */
+                    return dep.asGavtcsElement();
+                }
+                if (refNode == null && comparison < 0) {
+                    refNode = dep.previousSiblingInsertionRefNode();
+                }
+            }
+            if (refNode == null) {
+                ensureClosingTagIndented();
+            }
+            return addGavtcs(gav.toGavtc(null, null).toGavtcs(null), refNode);
+        }
         /**
          * Transform this {@link ContainerElement} to a {@link NodeGavtcs} assuming that it has {@code <groupId>},
          * {@code <artifactId>}, etc. children

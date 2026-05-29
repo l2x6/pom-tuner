@@ -27,6 +27,7 @@ import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.PomTunerUtils;
 import org.l2x6.pom.tuner.transform.api.AddElementTransformer;
 import org.l2x6.pom.tuner.transform.api.ElementSet;
 import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
@@ -127,7 +128,7 @@ public interface Properties {
      * {@link RemoveElementsTransformer} exits
      * quietly rather than throwing an exception.
      *
-     * @return a new {@link RemoveElementsTransformer} removing properties having the specified names
+     * @return a new {@link RemoveElementsTransformer} removing the {@code <properties>} node
      * @since  5.0.0
      */
     public static <THIS extends RemoveElementsTransformer<ContainerElement, THIS>> RemoveElementsTransformer<ContainerElement, THIS> removeAll() {
@@ -137,10 +138,8 @@ public interface Properties {
     }
 
     /**
-     * Returns a new {@link RemoveElementsTransformer} removing the {@code <properties>} node (including all its child
-     * properties)
-     * that is located under {@code /project} (but not under any profiles),
-     * if the {@code <properties>} node has no element children;
+     * Returns a new {@link RemoveElementsTransformer} removing the {@code /project/properties} node
+     * if it has no child elements;
      * also removes any previous sibling comments and whitespace.
      * <p>
      * The returned {@link RemoveElementsTransformer} instance can be further customized to select profiles
@@ -150,7 +149,7 @@ public interface Properties {
      * {@link RemoveElementsTransformer} exits
      * quietly rather than throwing an exception.
      *
-     * @return a new {@link RemoveElementsTransformer} removing properties having the specified names
+     * @return a new {@link RemoveElementsTransformer} removing the empty {@code <properties>} parent node
      * @since  5.0.0
      */
     public static <THIS extends RemoveElementsTransformer<ContainerElement, THIS>> RemoveElementsTransformer<ContainerElement, THIS> removeEmptyParent() {
@@ -193,17 +192,7 @@ public interface Properties {
      * @since                5.0.0
      */
     public static TextElementSet selectByName(String... propertyNames) {
-        final Set<String> set;
-        if (propertyNames.length == 0) {
-            set = Collections.emptySet();
-        } else if (propertyNames.length == 1) {
-            set = Collections.singleton(propertyNames[0]);
-        } else {
-            set = new HashSet<>();
-            for (int i = 0; i < propertyNames.length; i++) {
-                set.add(propertyNames[i]);
-            }
-        }
+        final Set<String> set = PomTunerUtils.toLinkedHashSet(propertyNames);
         return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME),
                 textElement -> set.contains(textElement.getElementName()));
     }
@@ -242,23 +231,13 @@ public interface Properties {
      * @since         5.0.0
      */
     public static TextElementSet selectByValue(String... values) {
-        final Set<String> set;
-        if (values.length == 0) {
-            set = Collections.emptySet();
-        } else if (values.length == 1) {
-            set = Collections.singleton(values[0]);
-        } else {
-            set = new HashSet<>();
-            for (int i = 0; i < values.length; i++) {
-                set.add(values[i]);
-            }
-        }
+        final Set<String> set = PomTunerUtils.toLinkedHashSet(values);
         return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME),
                 textElement -> set.contains(textElement.getTextContent()));
     }
 
     /**
-     * Select some property elements modification.
+     * Select some property elements for modification.
      * <p>
      * The returned {@link TextElementSet} instance can be further customized to select profiles and/or specify the actual
      * modification operation.

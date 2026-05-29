@@ -25,7 +25,7 @@ import java.util.function.Predicate;
 /**
  * Utility methods for constructing predicates for selecting {@code pom.xml} profiles by {@code id}.
  * Note that this library handles the {@code <project>} element as a profile with a {@code null} {@code id}.
- * Use {@link #main()} to create a {@link Predicate} secting only the {@code <project>} element and nothing else.
+ * Use {@link #main()} to create a {@link Predicate} selecting only the {@code <project>} element and nothing else.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
