@@ -40,7 +40,7 @@ import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
  */
-public interface dependencies {
+public interface Dependencies {
 
     public static final String ELEMENT_NAME = "dependencies";
 

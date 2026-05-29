@@ -7,7 +7,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.transform.api.ProfileId;
 import org.l2x6.pom.tuner.transform.api.Siblings;
-import org.l2x6.pom.tuner.transform.properties;
+import org.l2x6.pom.tuner.transform.Properties;
 
 public class PropertiesTest {
 
@@ -43,7 +43,7 @@ public class PropertiesTest {
                 + "    </properties>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                properties.set("p2", "v2")), expected);
+                Properties.set("p2", "v2")), expected);
     }
 
     @Test
@@ -71,7 +71,7 @@ public class PropertiesTest {
                 + "    </properties>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                properties.set("p2", "v2")), expected);
+                Properties.set("p2", "v2")), expected);
     }
 
     @Test
@@ -106,7 +106,7 @@ public class PropertiesTest {
                 + "    </properties>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                properties.set("p3", "v3")
+                Properties.set("p3", "v3")
                         .at(Comparator.comparing(Map.Entry::getKey, Comparators.after("p1")))),
                 expected);
     }
@@ -143,7 +143,7 @@ public class PropertiesTest {
                 + "    </properties>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                properties.set("p3", "v3")
+                Properties.set("p3", "v3")
                         .afterElement("p1")),
                 expected);
     }
@@ -180,7 +180,7 @@ public class PropertiesTest {
                 + "    </properties>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                properties.set("p3", "v3")
+                Properties.set("p3", "v3")
                         .beforeElement("p2")),
                 expected);
     }
@@ -240,7 +240,7 @@ public class PropertiesTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                properties.set("p7", "v7").intoProfile("profile1").afterElement("p4")
+                Properties.set("p7", "v7").intoProfile("profile1").afterElement("p4")
 
         ),
                 expected);
@@ -279,7 +279,7 @@ public class PropertiesTest {
                 + "    </properties>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                properties.set("p2", "v4")), expected);
+                Properties.set("p2", "v4")), expected);
     }
 
     @Test
@@ -315,7 +315,7 @@ public class PropertiesTest {
                 + "    </properties>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                properties.remove("p2")), expected);
+                Properties.remove("p2")), expected);
     }
 
     @Test
@@ -351,7 +351,7 @@ public class PropertiesTest {
                 + "    </properties>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                properties
+                Properties
                         .remove(te -> te.getTextContent().equals("v2"))
                         .alsoRemoveNone()
                         .alsoRemoveNext(Siblings.commentsOrWhitespace())),
@@ -390,7 +390,7 @@ public class PropertiesTest {
                 + "    </properties>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                properties
+                Properties
                         .remove("p1", "p2")
                         .alsoRemoveNext(Siblings.commentsOrWhitespace())),
                 expected);
@@ -425,7 +425,7 @@ public class PropertiesTest {
                 + "    <!-- foo -->\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                properties
+                Properties
                         .removeAll()
                         .alsoRemoveNone()
                         .alsoRemovePrevious(Siblings.whitespace())),
@@ -484,7 +484,7 @@ public class PropertiesTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                properties.remove("p2", "p5").from("profile1")
+                Properties.remove("p2", "p5").from("profile1")
 
         ),
                 expected);
@@ -544,7 +544,7 @@ public class PropertiesTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                properties.remove("p2", "p5").fromProfilesOnly("profile1")
+                Properties.remove("p2", "p5").fromProfilesOnly("profile1")
 
         ),
                 expected);
@@ -599,7 +599,7 @@ public class PropertiesTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                properties.removeEmptyParent().from(ProfileId.all())
+                Properties.removeEmptyParent().from(ProfileId.all())
 
         ),
                 expected);
@@ -661,10 +661,10 @@ public class PropertiesTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    properties.select(p -> true).modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    Properties.select(p -> true).modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    properties.select(p -> true).modifyTextContent(old -> old + "-mod")),
+                    Properties.select(p -> true).modifyTextContent(old -> old + "-mod")),
                     expected);
         }
         {
@@ -695,11 +695,11 @@ public class PropertiesTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    properties.selectByValue(p -> p.equals("val-1"))
+                    Properties.selectByValue(p -> p.equals("val-1"))
                             .modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    properties.selectByValue("val-1").modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    Properties.selectByValue("val-1").modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
                     expected);
         }
         {
@@ -730,12 +730,12 @@ public class PropertiesTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    properties.selectAll()
+                    Properties.selectAll()
                             .from(ProfileId.all())
                             .modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    properties.select(p -> true)
+                    Properties.select(p -> true)
                             .from("profile1", "profile2").modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
                     expected);
         }
@@ -768,7 +768,7 @@ public class PropertiesTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    properties.select(p -> true)
+                    Properties.select(p -> true)
                             .fromProfilesOnly("profile2").commentOut(t -> "comment")),
                     expected);
         }

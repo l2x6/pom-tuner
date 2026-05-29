@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.model.GavtcsSet;
 import org.l2x6.pom.tuner.transform.api.ProfileId;
-import org.l2x6.pom.tuner.transform.pluginManagement;
+import org.l2x6.pom.tuner.transform.PluginManagement;
 
 public class PluginManagementTest {
 
@@ -59,7 +59,7 @@ public class PluginManagementTest {
                 + "    </build>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                pluginManagement.add(new Gavtcs("org.acme", "dep2", null))), expected);
+                PluginManagement.add(new Gavtcs("org.acme", "dep2", null))), expected);
     }
 
     @Test
@@ -115,7 +115,7 @@ public class PluginManagementTest {
                 + "    </build>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                pluginManagement.add(new Gavtcs("org.acme", "dep2", null))), expected);
+                PluginManagement.add(new Gavtcs("org.acme", "dep2", null))), expected);
     }
 
     @Test
@@ -150,7 +150,7 @@ public class PluginManagementTest {
                 + "    </build>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                pluginManagement.add(new Gavtcs("org.acme", "dep2", null))), expected);
+                PluginManagement.add(new Gavtcs("org.acme", "dep2", null))), expected);
     }
 
     @Test
@@ -210,7 +210,7 @@ public class PluginManagementTest {
                 + "    </build>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                pluginManagement.add(new Gavtcs("org.acme", "dep2", null))
+                PluginManagement.add(new Gavtcs("org.acme", "dep2", null))
                         .at(Comparators.after(new Gavtcs("org.acme", "dep1", null)))),
                 expected);
     }
@@ -272,7 +272,7 @@ public class PluginManagementTest {
                 + "    </build>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                pluginManagement.add(new Gavtcs("org.acme", "dep2", null))
+                PluginManagement.add(new Gavtcs("org.acme", "dep2", null))
                         .before(new Gavtcs("org.acme", "dep3", null))),
                 expected);
     }
@@ -334,7 +334,7 @@ public class PluginManagementTest {
                 + "    </build>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                pluginManagement.add(new Gavtcs("org.acme", "dep2", null))
+                PluginManagement.add(new Gavtcs("org.acme", "dep2", null))
                         .after(new Gavtcs("org.acme", "dep1", null))),
                 expected);
     }
@@ -448,7 +448,7 @@ public class PluginManagementTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                pluginManagement.add(new Gavtcs("org.acme", "dep5", "1.2.3"))
+                PluginManagement.add(new Gavtcs("org.acme", "dep5", "1.2.3"))
                         .intoProfile("profile1")
                         .after(new Gavtcs("org.acme", "dep3", "1.2.3"))
 
@@ -507,7 +507,7 @@ public class PluginManagementTest {
                 + "    </build>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                pluginManagement.remove("org.acme:dep1")),
+                PluginManagement.remove("org.acme:dep1")),
 
                 expected);
     }
@@ -606,7 +606,7 @@ public class PluginManagementTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                pluginManagement.remove("org.acme:dep2", "org.acme:dep4").from("profile1")
+                PluginManagement.remove("org.acme:dep2", "org.acme:dep4").from("profile1")
 
         ),
                 expected);
@@ -668,7 +668,7 @@ public class PluginManagementTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                pluginManagement.removeEmptyParent().from(ProfileId.all())
+                PluginManagement.removeEmptyParent().from(ProfileId.all())
 
         ),
                 expected);
@@ -782,7 +782,7 @@ public class PluginManagementTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    pluginManagement.select(p -> true)
+                    PluginManagement.select(p -> true)
                             .from(ProfileId.all())
                             .modify(dep -> dep.setGroupId("org.hackme")
                                     .setArtifactId(dep.getGavtcs().getArtifactId() + "-mod")
@@ -790,7 +790,7 @@ public class PluginManagementTest {
                                     .setClassifier("cl"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    pluginManagement.selectAll()
+                    PluginManagement.selectAll()
                             .from(ProfileId.all())
                             .modify(dep -> dep.setGroupId("org.hackme")
                                     .setArtifactId(dep.getGavtcs().getArtifactId() + "-mod")
@@ -850,17 +850,17 @@ public class PluginManagementTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    pluginManagement.select(p -> p.getArtifactId().equals("dep2")).modify(dep -> dep.setVersion("1.2.4"))),
+                    PluginManagement.select(p -> p.getArtifactId().equals("dep2")).modify(dep -> dep.setVersion("1.2.4"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    pluginManagement.select(Gavtcs.of("org.acme:dep2:1.2.3")).modify(dep -> dep.setVersion("1.2.4"))),
+                    PluginManagement.select(Gavtcs.of("org.acme:dep2:1.2.3")).modify(dep -> dep.setVersion("1.2.4"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    pluginManagement.select(GavtcsSet.builder().include("*:dep2").build())
+                    PluginManagement.select(GavtcsSet.builder().include("*:dep2").build())
                             .modify(dep -> dep.setVersion("1.2.4"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    pluginManagement.select("*:dep2").modify(dep -> dep.setVersion("1.2.4"))),
+                    PluginManagement.select("*:dep2").modify(dep -> dep.setVersion("1.2.4"))),
                     expected);
         }
         {
@@ -915,12 +915,12 @@ public class PluginManagementTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    pluginManagement.select(p -> p.getArtifactId().equals("dep4"))
+                    PluginManagement.select(p -> p.getArtifactId().equals("dep4"))
                             .fromProfilesOnly("profile1")
                             .modify(dep -> dep.setVersion("1.2.4"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    pluginManagement.select(p -> p.getArtifactId().equals("dep4"))
+                    PluginManagement.select(p -> p.getArtifactId().equals("dep4"))
                             .from(ProfileId.idsOnly("profile1"))
                             .modify(dep -> dep.setVersion("1.2.4"))),
                     expected);

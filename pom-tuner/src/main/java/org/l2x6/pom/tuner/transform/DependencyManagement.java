@@ -40,7 +40,7 @@ import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
  */
-public interface dependencyManagement {
+public interface DependencyManagement {
 
     public static final String ELEMENT_NAME = "dependencyManagement";
     public static final String OTHER_ELEMENT_NAMES = "dependencies";
@@ -102,6 +102,8 @@ public interface dependencyManagement {
      * the removed {@code dependencyManagement} entries are located under {@code /project/dependencies} (but not under any
      * profiles);
      * also removes any previous sibling comments and whitespace.
+     * <p>
+     * The {@code patterns} must be in the format supported by {@link GavtcsPattern#of(String)}.
      * <p>
      * The returned {@link RemoveElementsTransformer} instance can be further customized to select profiles
      * or other kinds of sibling nodes to remove.

@@ -6,7 +6,7 @@ import java.util.Collection;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
-import org.l2x6.pom.tuner.transform.parent;
+import org.l2x6.pom.tuner.transform.Parent;
 
 public class ParentTest {
 
@@ -49,7 +49,7 @@ public class ParentTest {
                 + "\n" //
                 + "</project>\n";
         assertTransformation(source, Arrays.asList(
-                parent.set("org.foo", "foo", "0.2-SNAPSHOT", "../../pom.xml")), expected);
+                Parent.set("org.foo", "foo", "0.2-SNAPSHOT", "../../pom.xml")), expected);
     }
 
     @Test
@@ -91,7 +91,7 @@ public class ParentTest {
                 + "\n" //
                 + "</project>\n";
         assertTransformation(source, Arrays.asList(
-                parent.set("org.foo", "foo", "0.2-SNAPSHOT")), expected);
+                Parent.set("org.foo", "foo", "0.2-SNAPSHOT")), expected);
     }
 
     @Test
@@ -133,7 +133,7 @@ public class ParentTest {
                 + "\n" //
                 + "</project>\n";
         assertTransformation(source, Arrays.asList(
-                parent.setGroupId("org.foo")), expected);
+                Parent.setGroupId("org.foo")), expected);
     }
 
     @Test
@@ -175,7 +175,7 @@ public class ParentTest {
                 + "\n" //
                 + "</project>\n";
         assertTransformation(source, Arrays.asList(
-                parent.setArtifactId("foo")), expected);
+                Parent.setArtifactId("foo")), expected);
     }
 
     @Test
@@ -217,7 +217,7 @@ public class ParentTest {
                 + "\n" //
                 + "</project>\n";
         assertTransformation(source, Arrays.asList(
-                parent.setVersion("0.2-SNAPSHOT")), expected);
+                Parent.setVersion("0.2-SNAPSHOT")), expected);
     }
 
     @Test
@@ -259,7 +259,7 @@ public class ParentTest {
                 + "\n" //
                 + "</project>\n";
         assertTransformation(source, Arrays.asList(
-                parent.setRelativePath("../../pom.xml")), expected);
+                Parent.setRelativePath("../../pom.xml")), expected);
     }
 
     @Test
@@ -300,7 +300,7 @@ public class ParentTest {
                 + "\n" //
                 + "</project>\n";
         assertTransformation(source, Arrays.asList(
-                parent.removeRelativePath()), expected);
+                Parent.removeRelativePath()), expected);
     }
 
     @Test
@@ -335,7 +335,7 @@ public class ParentTest {
                 + "\n" //
                 + "</project>\n";
         assertTransformation(source, Arrays.asList(
-                parent.remove()), expected);
+                Parent.remove()), expected);
     }
 
     static void assertTransformation(String src, Collection<Transformer> transformations, String expected) {

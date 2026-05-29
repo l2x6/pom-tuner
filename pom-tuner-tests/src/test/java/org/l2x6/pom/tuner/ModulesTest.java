@@ -7,7 +7,7 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.transform.api.ProfileId;
 import org.l2x6.pom.tuner.transform.api.Siblings;
-import org.l2x6.pom.tuner.transform.modules;
+import org.l2x6.pom.tuner.transform.Modules;
 
 public class ModulesTest {
 
@@ -43,7 +43,7 @@ public class ModulesTest {
                 + "    </modules>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                modules.add("module-2")), expected);
+                Modules.add("module-2")), expected);
     }
 
     @Test
@@ -79,7 +79,7 @@ public class ModulesTest {
                 + "    </modules>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                modules.add("module-2")), expected);
+                Modules.add("module-2")), expected);
     }
 
     @Test
@@ -107,7 +107,7 @@ public class ModulesTest {
                 + "    </modules>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                modules.add("module-2")), expected);
+                Modules.add("module-2")), expected);
     }
 
     @Test
@@ -144,7 +144,7 @@ public class ModulesTest {
                 + "    </modules>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                modules.add("module-2")
+                Modules.add("module-2")
                         .at(Comparator.comparing(Map.Entry::getValue, Comparators.after("module-1")))),
                 expected);
     }
@@ -183,7 +183,7 @@ public class ModulesTest {
                 + "    </modules>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                modules.add("module-2")
+                Modules.add("module-2")
                         .beforeTextContent("module-3")),
                 expected);
     }
@@ -222,7 +222,7 @@ public class ModulesTest {
                 + "    </modules>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                modules.add("module-2")
+                Modules.add("module-2")
                         .afterTextContent("module-1")),
                 expected);
     }
@@ -282,7 +282,7 @@ public class ModulesTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                modules.add("module-7").intoProfile("profile1").afterTextContent("module-4")
+                Modules.add("module-7").intoProfile("profile1").afterTextContent("module-4")
 
         ),
                 expected);
@@ -321,7 +321,7 @@ public class ModulesTest {
                 + "    </modules>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                modules.remove("module-2")), expected);
+                Modules.remove("module-2")), expected);
     }
 
     @Test
@@ -357,7 +357,7 @@ public class ModulesTest {
                 + "    </modules>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                modules
+                Modules
                         .remove(te -> te.getTextContent().equals("module-2"))
                         .alsoRemoveNone()
                         .alsoRemoveNext(Siblings.commentsOrWhitespace())),
@@ -396,7 +396,7 @@ public class ModulesTest {
                 + "    </modules>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                modules
+                Modules
                         .remove("module-1", "module-2")
                         .alsoRemoveNext(Siblings.commentsOrWhitespace())),
                 expected);
@@ -431,7 +431,7 @@ public class ModulesTest {
                 + "    <!-- foo -->\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                modules
+                Modules
                         .removeAll()
                         .alsoRemoveNone()
                         .alsoRemovePrevious(Siblings.whitespace())),
@@ -490,7 +490,7 @@ public class ModulesTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                modules.remove("module-2", "module-5").from("profile1")
+                Modules.remove("module-2", "module-5").from("profile1")
 
         ),
                 expected);
@@ -550,7 +550,7 @@ public class ModulesTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                modules.remove("module-2", "module-5").fromProfilesOnly("profile1")
+                Modules.remove("module-2", "module-5").fromProfilesOnly("profile1")
 
         ),
                 expected);
@@ -605,7 +605,7 @@ public class ModulesTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                modules.removeEmptyParent().from(ProfileId.all())
+                Modules.removeEmptyParent().from(ProfileId.all())
 
         ),
                 expected);
@@ -667,10 +667,10 @@ public class ModulesTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    modules.select(p -> true).modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    Modules.select(p -> true).modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    modules.select(p -> true).modifyTextContent(old -> old + "-mod")),
+                    Modules.select(p -> true).modifyTextContent(old -> old + "-mod")),
                     expected);
         }
         {
@@ -701,10 +701,10 @@ public class ModulesTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    modules.select(p -> p.equals("module-1")).modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    Modules.select(p -> p.equals("module-1")).modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    modules.select("module-1").modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    Modules.select("module-1").modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
                     expected);
         }
         {
@@ -735,12 +735,12 @@ public class ModulesTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    modules.selectAll()
+                    Modules.selectAll()
                             .from(ProfileId.all())
                             .modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    modules.select(p -> true)
+                    Modules.select(p -> true)
                             .from("profile1", "profile2").modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
                     expected);
         }
@@ -773,7 +773,7 @@ public class ModulesTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    modules.select(p -> true)
+                    Modules.select(p -> true)
                             .fromProfilesOnly("profile2").commentOut(t -> "comment")),
                     expected);
         }

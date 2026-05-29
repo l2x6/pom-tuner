@@ -17,6 +17,7 @@
 package org.l2x6.pom.tuner.transform;
 
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -34,21 +35,19 @@ import org.l2x6.pom.tuner.transform.api.ElementSet;
 import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 
 /**
- * Operations on {@code pom.xml} pluginManagement usable with {@link PomTransformer#transform(Transformer...)}.
+ * Operations on {@code pom.xml} plugins usable with {@link PomTransformer#transform(Transformer...)}.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
  */
-public interface pluginManagement {
+public interface Plugins {
 
-    public static final String PLUGINS = "plugins";
-    public static final String PLUGIN_MANAGEMENT = "pluginManagement";
     public static final String ELEMENT_NAME = "build";
-    public static final String[] OTHER_ELEMENT_NAMES = { PLUGIN_MANAGEMENT, PLUGINS };
+    public static final String OTHER_ELEMENT_NAMES = "plugins";
 
     /**
-     * If the given managed plugin is available already, does nothing; otherwise adds the given plugin as the last element
-     * under {@code /project/build/pluginManagement/plugins}.
+     * If the given plugin is available already, does nothing; otherwise adds the given plugin as the last element
+     * under {@code /project/build/plugins}.
      * <p>
      * The returned {@link AddGavtcsTransformer} instance can be further customized to target a specific profile using
      * {@link AddGavtcsTransformer#intoProfile(String)}
@@ -64,28 +63,25 @@ public interface pluginManagement {
     public static <THIS extends AddGavtcsTransformer<ContainerElement, GavtcsElement, THIS>> AddGavtcsTransformer<ContainerElement, GavtcsElement, THIS> add(
             Gavtcs plugin) {
         return new AddGavtcsTransformer<>(
-                profile -> profile.getOrAddChildContainerElement(ELEMENT_NAME).getOrAddChildContainerElement(PLUGIN_MANAGEMENT)
-                        .getOrAddChildContainerElement(PLUGINS),
+                profile -> profile.getOrAddChildContainerElement(ELEMENT_NAME)
+                        .getOrAddChildContainerElement(OTHER_ELEMENT_NAMES),
                 (parent, comparator) -> parent.addGavtcsIfNeeded(plugin, comparator),
                 Comparators.afterLast());
     }
 
     /**
-     * Returns a new {@link RemoveElementsTransformer} removing {@code pluginManagement} entries matching any of the
-     * specified {@code patterns};
-     * the removed {@code pluginManagement} entries are located under {@code /project/plugins} (but not under any profiles);
+     * Returns a new {@link RemoveElementsTransformer} removing plugins matching any of the specified {@code patterns};
+     * the removed plugins are located under {@code /project/plugins} (but not under any profiles);
      * also removes any previous sibling comments and whitespace.
      * <p>
      * The returned {@link RemoveElementsTransformer} instance can be further customized to select profiles
      * or other kinds of sibling nodes to remove.
      * <p>
-     * If no {@code pluginManagement} entries match the given {@code dependencyNames} then the returned
-     * {@link RemoveElementsTransformer} exits
+     * If no plugins match the given {@code dependencyNames} then the returned {@link RemoveElementsTransformer} exits
      * quietly rather than throwing an exception.
      *
-     * @param  patterns of the {@code pluginManagement} entries to remove
-     * @return          a new {@link RemoveElementsTransformer} removing {@code pluginManagement} entries matching the
-     *                  specified {@code patterns}
+     * @param  patterns of the plugins to remove
+     * @return          a new {@link RemoveElementsTransformer} removing plugins matching the specified {@code patterns}
      * @since           5.0.0
      */
     public static <THIS extends RemoveElementsTransformer<GavtcsElement, THIS>> RemoveElementsTransformer<GavtcsElement, THIS> remove(
@@ -96,21 +92,20 @@ public interface pluginManagement {
     }
 
     /**
-     * Returns a new {@link RemoveElementsTransformer} removing {@code pluginManagement} entries matching any of the
-     * specified {@code patterns};
-     * the removed {@code pluginManagement} entries are located under {@code /project/plugins} (but not under any profiles);
+     * Returns a new {@link RemoveElementsTransformer} removing plugins matching any of the specified {@code patterns};
+     * the removed plugins are located under {@code /project/plugins} (but not under any profiles);
      * also removes any previous sibling comments and whitespace.
+     * <p>
+     * The {@code patterns} must be in the format supported by {@link GavtcsPattern#of(String)}.
      * <p>
      * The returned {@link RemoveElementsTransformer} instance can be further customized to select profiles
      * or other kinds of sibling nodes to remove.
      * <p>
-     * If no {@code pluginManagement} entries match the given {@code dependencyNames} then the returned
-     * {@link RemoveElementsTransformer} exits
+     * If no plugins match the given {@code dependencyNames} then the returned {@link RemoveElementsTransformer} exits
      * quietly rather than throwing an exception.
      *
-     * @param  patterns of the {@code pluginManagement} entries to remove
-     * @return          a new {@link RemoveElementsTransformer} removing {@code pluginManagement} entries matching the
-     *                  specified {@code patterns}
+     * @param  patterns of the plugins to remove
+     * @return          a new {@link RemoveElementsTransformer} removing plugins matching the specified {@code patterns}
      * @since           5.0.0
      */
     public static <THIS extends RemoveElementsTransformer<GavtcsElement, THIS>> RemoveElementsTransformer<GavtcsElement, THIS> remove(
@@ -119,8 +114,7 @@ public interface pluginManagement {
     }
 
     /**
-     * Returns a new {@link RemoveElementsTransformer} removing the {@code /pluginManagement/plugins} node (including all
-     * its child
+     * Returns a new {@link RemoveElementsTransformer} removing the {@code <plugins>} node (including all its child
      * plugins);
      * the removed {@code <plugins>} node is located under {@code /project} (but not under any profiles);
      * also removes any previous sibling comments and whitespace.
@@ -142,8 +136,7 @@ public interface pluginManagement {
     }
 
     /**
-     * Returns a new {@link RemoveElementsTransformer} removing the {@code /pluginManagement/plugins} node (including all
-     * its child
+     * Returns a new {@link RemoveElementsTransformer} removing the {@code <plugins>} node (including all its child
      * plugins)
      * that is located under {@code /project} (but not under any profiles),
      * if the {@code <plugins>} node has no element children;
@@ -156,9 +149,8 @@ public interface pluginManagement {
      * {@link RemoveElementsTransformer} exits
      * quietly rather than throwing an exception.
      *
-     * @param  selector a {@link Predicate} to select dependency nodes to remove
-     * @return          a new {@link RemoveElementsTransformer} removing plugins having the specified names
-     * @since           5.0.0
+     * @return a new {@link RemoveElementsTransformer} removing plugins having the specified names
+     * @since  5.0.0
      */
     public static <THIS extends RemoveElementsTransformer<ContainerElement, THIS>> RemoveElementsTransformer<ContainerElement, THIS> removeEmptyParent() {
         return new RemoveElementsTransformer<>(

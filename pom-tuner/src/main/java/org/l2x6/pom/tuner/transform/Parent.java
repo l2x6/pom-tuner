@@ -29,7 +29,7 @@ import org.l2x6.pom.tuner.transform.api.RemoveTransformer;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
  */
-public interface parent {
+public interface Parent {
     public static final String ELEMENT_NAME = "parent";
 
     /**
