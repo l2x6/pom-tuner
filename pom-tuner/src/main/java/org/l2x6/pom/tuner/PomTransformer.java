@@ -16,6 +16,15 @@
  */
 package org.l2x6.pom.tuner;
 
+import eu.maveniverse.domtrip.Comment;
+import eu.maveniverse.domtrip.ContainerNode;
+import eu.maveniverse.domtrip.Document;
+import eu.maveniverse.domtrip.DomTripVisitor;
+import eu.maveniverse.domtrip.DomTripVisitor.Action;
+import eu.maveniverse.domtrip.Element;
+import eu.maveniverse.domtrip.Node;
+import eu.maveniverse.domtrip.Node.NodeType;
+import eu.maveniverse.domtrip.Text;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -42,24 +51,12 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-
 import javax.xml.xpath.XPath;
-
 import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.transform.api.Siblings;
 import org.w3c.dom.DocumentFragment;
-
-import eu.maveniverse.domtrip.Comment;
-import eu.maveniverse.domtrip.ContainerNode;
-import eu.maveniverse.domtrip.Document;
-import eu.maveniverse.domtrip.DomTripVisitor;
-import eu.maveniverse.domtrip.DomTripVisitor.Action;
-import eu.maveniverse.domtrip.Element;
-import eu.maveniverse.domtrip.Node;
-import eu.maveniverse.domtrip.Node.NodeType;
-import eu.maveniverse.domtrip.Text;
 
 /**
  * A utility to programmatically modify a {@code pom.xml} file while keeping the original comments and formatting also
@@ -333,7 +330,8 @@ public class PomTransformer {
                 switch (next.get().type()) {
                 case COMMENT:
                     final Optional<Node> previousNode = next.get().previousSibling();
-                    if (next.get().precedingWhitespace().length() == 0 && previousNode.isPresent() && previousNode.get().type() == NodeType.ELEMENT) {
+                    if (next.get().precedingWhitespace().length() == 0 && previousNode.isPresent()
+                            && previousNode.get().type() == NodeType.ELEMENT) {
                         /*
                          * A comment following an element with no whitespace in between: such comment belongs to the
                          * previous element
@@ -357,7 +355,8 @@ public class PomTransformer {
         /**
          * Remove this {@link TextElement} together with its siblings selected by the given {@code siblingsSelector}
          *
-         * @param siblingsSelector selects siblings to remove together with this {@link TextElement}, such as indentation whitespace and/or adjacent comments. See {@link Siblings}
+         * @param siblingsSelector selects siblings to remove together with this {@link TextElement}, such as indentation
+         *                         whitespace and/or adjacent comments. See {@link Siblings}
          */
         public void remove(Function<Node, List<RemovableNode>> siblingsSelector) {
             ContainerNode parent = node.parent();
@@ -381,9 +380,8 @@ public class PomTransformer {
          */
         public Comment prependComment(String comment) {
             final Node refNode = previousSiblingInsertionRefNode();
-            Comment result = Comment.of(comment);
+            Comment result = Comment.of(comment).precedingWhitespace(context.indent(indentLevel));
             int i = refNode.siblingIndex();
-            node.parent().insertChild(i, context.indentNode(indentLevel));
             node.parent().insertChild(i, result);
             return result;
         }
@@ -874,7 +872,7 @@ public class PomTransformer {
          * {@code <artifactId>}, etc. set to value taken from the specified {@link Gavtcs}.
          * The availability and insertion point is determined using the given {@link Comparator}.
          *
-         * @param  gav     the GAV coordinates to use when creating the new {@code <dependency>}
+         * @param  gav        the GAV coordinates to use when creating the new {@code <dependency>}
          * @param  comparator for figuring out whether the given {@code gavtcs} is already available under this
          *                    {@link ContainerElement} or for determining the insert position for a newly added child node
          * @return            the newly created child node
@@ -898,6 +896,7 @@ public class PomTransformer {
             }
             return addGavtcs(gav.toGavtc(null, null).toGavtcs(null), refNode);
         }
+
         /**
          * Transform this {@link ContainerElement} to a {@link NodeGavtcs} assuming that it has {@code <groupId>},
          * {@code <artifactId>}, etc. children
@@ -1010,6 +1009,9 @@ public class PomTransformer {
                 default:
                     break;
                 }
+            }
+            if (groupId == null && node.localName().equals("plugin")) {
+                groupId = "org.apache.maven.plugins";
             }
             return new GavtcsElement(context, node, indentLevel,
                     groupId, artifactId, version, type, classifier, scope, exclusions);
@@ -1228,7 +1230,11 @@ public class PomTransformer {
                 TransformationContext context, Element containerElement, int indentLevel, String groupId,
                 String artifactId, String version, String type, String classifier, String scope, Collection<Ga> exclusions) {
             super(context, containerElement, indentLevel);
-            this.gavtcs = new Gavtcs(groupId, artifactId, version, type, classifier, scope, exclusions);
+            try {
+                this.gavtcs = new Gavtcs(groupId, artifactId, version, type, classifier, scope, exclusions);
+            } catch (RuntimeException e) {
+                throw new RuntimeException("Could not create Gavtcs out of element " + containerElement, e);
+            }
         }
 
         /**
@@ -1385,6 +1391,7 @@ public class PomTransformer {
         public Text indentNode(int indentCount) {
             return Text.of(indent(indentCount));
         }
+
         /**
          * @param  indentCount how many times to concatenate the {@link #indentationString}
          * @return             a new indentation {@link String} containing a newline and {@code indentCount} times concatenated
@@ -1594,7 +1601,7 @@ public class PomTransformer {
             }
         }
 
-        static void fixIndent(Supplier<String> get, Consumer<String> set,String newIndent) {
+        static void fixIndent(Supplier<String> get, Consumer<String> set, String newIndent) {
             final String oldValue = get.get();
             final String newValue = INDENT_PATTERN.matcher(oldValue).replaceAll("$1" + newIndent);
             if (!oldValue.equals(newValue)) {
@@ -1752,7 +1759,8 @@ public class PomTransformer {
 
         }
 
-        RemovableNode(Node node, Consumer<Node> remove, Function<Node, Optional<Node>> previous, Function<Node, Optional<Node>> next) {
+        RemovableNode(Node node, Consumer<Node> remove, Function<Node, Optional<Node>> previous,
+                Function<Node, Optional<Node>> next) {
             this.node = node;
             this.remove = remove;
             this.previous = previous;

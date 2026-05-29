@@ -5,10 +5,8 @@ import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.model.GavSet;
-import org.l2x6.pom.tuner.model.Gavtcs;
-import org.l2x6.pom.tuner.model.GavtcsSet;
-import org.l2x6.pom.tuner.transform.api.ProfileId;
 import org.l2x6.pom.tuner.transform.Plugins;
+import org.l2x6.pom.tuner.transform.api.ProfileId;
 
 public class PluginsTest {
     @Test

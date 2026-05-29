@@ -42,7 +42,6 @@ import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.NodeGavtcs;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 import org.l2x6.pom.tuner.model.Gavtcs;
-import org.l2x6.pom.tuner.transform.api.Siblings;
 import org.l2x6.pom.tuner.transform.Dependencies;
 import org.l2x6.pom.tuner.transform.DependencyManagement;
 import org.l2x6.pom.tuner.transform.Modules;
@@ -50,6 +49,7 @@ import org.l2x6.pom.tuner.transform.Parent;
 import org.l2x6.pom.tuner.transform.Plugins;
 import org.l2x6.pom.tuner.transform.Profiles;
 import org.l2x6.pom.tuner.transform.Properties;
+import org.l2x6.pom.tuner.transform.api.Siblings;
 
 public class PomTransformerTest {
 
@@ -3044,6 +3044,102 @@ public class PomTransformerTest {
                 + "</project><!-- trailing comment -->";
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singleton(Properties.set("foo", "val")),
+                expected);
+    }
+
+    @Test
+    void prependComment() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo/>\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>";
+
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <!-- foo -->\n" //
+                + "        <foo/>\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>";
+        PomTransformerTestUtils.assertTransformer(source,
+                Collections.singleton(context -> {
+                    ContainerElement prop = context.getProject()
+                            .getOrAddChildContainerElement("properties")
+                            .childElementsStream().findFirst()
+                            .orElseThrow(RuntimeException::new);
+                    prop.prependComment(" foo ");
+                }),
+                expected);
+    }
+
+    @Test
+    void prependCommentIfNeeded() {
+        final String source = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <foo/>\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>";
+
+        final String expected = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" //
+                + "<project xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://maven.apache.org/POM/4.0.0\"\n" //
+                + "         xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">\n" //
+                + "    <modelVersion>4.0.0</modelVersion>\n" //
+                + "    <groupId>org.acme</groupId>\n" //
+                + "    <artifactId>bom</artifactId>\n" //
+                + "    <version>0.1-SNAPSHOT</version>\n" //
+                + "    <packaging>pom</packaging>\n" //
+                + "\n" //
+                + "    <properties>\n" //
+                + "        <!-- foo -->\n" //
+                + "        <foo/>\n" //
+                + "    </properties>\n" //
+                + "\n" //
+                + "</project>";
+        PomTransformerTestUtils.assertTransformer(source,
+                Collections.singleton(context -> {
+                    ContainerElement prop = context.getProject()
+                            .getOrAddChildContainerElement("properties")
+                            .childElementsStream().findFirst()
+                            .orElseThrow(RuntimeException::new);
+                    prop.prependCommentIfNeeded(" foo ");
+                }),
+                expected);
+        /* No change if we do it second time */
+        PomTransformerTestUtils.assertTransformer(expected,
+                Collections.singleton(context -> {
+                    ContainerElement prop = context.getProject()
+                            .getOrAddChildContainerElement("properties")
+                            .childElementsStream().findFirst()
+                            .orElseThrow(RuntimeException::new);
+                    prop.prependCommentIfNeeded(" foo ");
+                }),
                 expected);
     }
 

@@ -5,9 +5,9 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
+import org.l2x6.pom.tuner.transform.Properties;
 import org.l2x6.pom.tuner.transform.api.ProfileId;
 import org.l2x6.pom.tuner.transform.api.Siblings;
-import org.l2x6.pom.tuner.transform.Properties;
 
 public class PropertiesTest {
 

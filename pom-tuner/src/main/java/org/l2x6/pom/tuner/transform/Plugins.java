@@ -16,12 +16,9 @@
  */
 package org.l2x6.pom.tuner.transform;
 
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
@@ -94,6 +91,7 @@ public interface Plugins {
                 RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
                 textElement -> predicate.test(textElement.getGavtcs().toGavtc().toGav()));
     }
+
     /**
      * Returns a new {@link RemoveElementsTransformer} removing plugins having the specified {@code gavs};
      * the removed plugins are located under {@code /project/build/plugins} (but not under any profiles);
@@ -106,8 +104,8 @@ public interface Plugins {
      * quietly rather than throwing an exception.
      *
      * @param  gavs of the plugins to remove
-     * @return          a new {@link RemoveElementsTransformer} removing plugins matching the specified {@code patterns}
-     * @since           5.0.0
+     * @return      a new {@link RemoveElementsTransformer} removing plugins matching the specified {@code patterns}
+     * @since       5.0.0
      */
     public static <THIS extends RemoveElementsTransformer<GavtcsElement, THIS>> RemoveElementsTransformer<GavtcsElement, THIS> remove(
             Gav... gavs) {
@@ -226,10 +224,10 @@ public interface Plugins {
      * the default behavior is to select the matching elements only from under the {@code <project>} element
      * and ignore any matching elements under {@code <profile>} elements.
      *
-     * @param  <THIS>         type of the returned {@link ElementSet}
+     * @param  <THIS>   type of the returned {@link ElementSet}
      * @param  patterns an array of strings parseable by {@link GavPattern#of(String)}
-     * @return                a new {@link ElementSet} having its node selector set as specified
-     * @since                 5.0.0
+     * @return          a new {@link ElementSet} having its node selector set as specified
+     * @since           5.0.0
      */
     public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> select(
             String... patterns) {
@@ -289,7 +287,8 @@ public interface Plugins {
      * and ignore any matching elements under {@code <profile>} elements.
      *
      * @param  <THIS>    type of the returned {@link ElementSet}
-     * @param  predicate a {@link Predicate} selecting plugin nodes whose descendant dependency nodes will be selected for modification
+     * @param  predicate a {@link Predicate} selecting plugin nodes whose descendant dependency nodes will be selected for
+     *                   modification
      * @return           a new {@link ElementSet} having its node selector set as specified
      * @since            5.0.0
      */
@@ -314,10 +313,10 @@ public interface Plugins {
      * the default behavior is to select the matching elements only from under the {@code <project>} element
      * and ignore any matching elements under {@code <profile>} elements.
      *
-     * @param  <THIS>    type of the returned {@link ElementSet}
-     * @param  patterns  an array of strings parseable by {@link GavPattern#of(String)}
-     * @return           a new {@link ElementSet} having its node selector set as specified
-     * @since            5.0.0
+     * @param  <THIS>   type of the returned {@link ElementSet}
+     * @param  patterns an array of strings parseable by {@link GavPattern#of(String)}
+     * @return          a new {@link ElementSet} having its node selector set as specified
+     * @since           5.0.0
      */
     public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> selectPluginDependencies(
             String... patterns) {

@@ -16,19 +16,15 @@
  */
 package org.l2x6.pom.tuner.transform;
 
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer;
-import org.l2x6.pom.tuner.PomTunerUtils;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.PomTunerUtils;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.model.GavtcsPattern;
 import org.l2x6.pom.tuner.model.GavtcsSet;
@@ -94,6 +90,7 @@ public interface Dependencies {
                 RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME),
                 textElement -> predicate.test(textElement.getGavtcs()));
     }
+
     /**
      * Returns a new {@link RemoveElementsTransformer} removing the specified {@code dependencies};
      * the removed dependencies are located under {@code /project/dependencies} (but not under any profiles);
@@ -106,8 +103,8 @@ public interface Dependencies {
      * quietly rather than throwing an exception.
      *
      * @param  dependencies the dependencies to remove
-     * @return          a new {@link RemoveElementsTransformer} removing the specified {@code dependencies}
-     * @since           5.0.0
+     * @return              a new {@link RemoveElementsTransformer} removing the specified {@code dependencies}
+     * @since               5.0.0
      */
     public static <THIS extends RemoveElementsTransformer<GavtcsElement, THIS>> RemoveElementsTransformer<GavtcsElement, THIS> remove(
             Gavtcs... dependencies) {

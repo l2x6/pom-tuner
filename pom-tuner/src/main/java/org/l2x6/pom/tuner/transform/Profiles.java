@@ -18,7 +18,6 @@ package org.l2x6.pom.tuner.transform;
 
 import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
-import org.l2x6.pom.tuner.transform.api.AddGavtcsTransformer;
 
 /**
  * Operations on {@code pom.xml} profiles usable with {@link PomTransformer#transform(Transformer...)}.
@@ -38,7 +37,7 @@ public interface Profiles {
      * @param  profileId the profile id to add
      * @return           a new {@link Transformer}
      *
-     * @since             5.0.0
+     * @since            5.0.0
      */
     public static Transformer add(String profileId) {
         return context -> context.getOrAddProfile(profileId);

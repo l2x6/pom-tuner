@@ -74,8 +74,8 @@ public class Ga implements Comparable<Ga> {
 
     public Ga(String groupId, String artifactId) {
         super();
-        this.groupId = Objects.requireNonNull(groupId, "groupId");
-        this.artifactId = Objects.requireNonNull(artifactId, "artifactId");
+        this.groupId = Objects.requireNonNull(groupId, "groupId null with artifactId " + artifactId);
+        this.artifactId = Objects.requireNonNull(artifactId, "artifactId null with groupId " + groupId);
         this.hashCode = 31 * (31 + artifactId.hashCode()) + groupId.hashCode();
     }
 

@@ -798,8 +798,8 @@ public class MavenSourceTree {
     /**
      * A fast alternative to {@code mvn versions:set -DnewVersion=...}
      *
-     * @param newVersion              the new version to set
-     * @param isProfileActive         a {@link Profile} filter, see {@link #from(String...)}
+     * @param newVersion      the new version to set
+     * @param isProfileActive a {@link Profile} filter, see {@link #from(String...)}
      */
     public void setVersions(final String newVersion, final Predicate<Profile> isProfileActive) {
         final DomEdits edits = new DomEdits();
@@ -902,6 +902,7 @@ public class MavenSourceTree {
     boolean isOwnVersionedDepenency(Ga module, Gavtcs gavtcsElement, ExpressionEvaluator evaluator) {
         return isOwnVersionedDepenency(module, gavtcsElement.toGavtc().toGav(), evaluator);
     }
+
     boolean isOwnVersionedDepenency(Ga module, Gav gavtcsElement, ExpressionEvaluator evaluator) {
         if (gavtcsElement.getVersion() == null) {
             return false;
@@ -945,11 +946,11 @@ public class MavenSourceTree {
      * Delegates to {@link #unlinkModules(Set, Predicate, Charset, boolean)} with
      * {@code remove} set to {@code false}.
      *
-     * @param requiredModules         a list of {@code groupId:artifactId}s
-     * @param isProfileActive         a {@link Profile} filter, see {@link #from(String...)}
-     * @param encoding                the encoding for reading and writing pom.xml files
-     * @param commentText             for @{@code commentText} {@code "a comment"} the resulting snippet would look like
-     *                                {@code <!-- <module>some-module</module> a comment --> }
+     * @param requiredModules a list of {@code groupId:artifactId}s
+     * @param isProfileActive a {@link Profile} filter, see {@link #from(String...)}
+     * @param encoding        the encoding for reading and writing pom.xml files
+     * @param commentText     for @{@code commentText} {@code "a comment"} the resulting snippet would look like
+     *                        {@code <!-- <module>some-module</module> a comment --> }
      */
     public void unlinkModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
             String commentText) {
@@ -962,14 +963,15 @@ public class MavenSourceTree {
      * unnecessary
      * {@code <module>} elements from {@code pom.xml} files.
      *
-     * @param requiredModules         a list of {@code groupId:artifactId}s that are required to build
-     * @param isProfileActive         a {@link Profile} filter, see {@link #from(String...)}
-     * @param encoding                the encoding for reading and writing pom.xml files
-     * @param remover                 a {@link Function} that takes a {@link Set} of module names (as in
-     *                                {@code <module>my-module</module>} elements) and produces a {@link Transformation}
-     *                                removing those elements.
+     * @param requiredModules a list of {@code groupId:artifactId}s that are required to build
+     * @param isProfileActive a {@link Profile} filter, see {@link #from(String...)}
+     * @param encoding        the encoding for reading and writing pom.xml files
+     * @param remover         a {@link Function} that takes a {@link Set} of module names (as in
+     *                        {@code <module>my-module</module>} elements) and produces a {@link Transformation}
+     *                        removing those elements.
      */
-    public void unlinkModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding, Function<Set<String>, PomTransformer.Transformer> remover) {
+    public void unlinkModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
+            Function<Set<String>, PomTransformer.Transformer> remover) {
         final Module rootModule = modulesByPath.get("pom.xml");
         final ExpressionEvaluator evaluator = getExpressionEvaluator(isProfileActive);
         final Map<String, Set<Path>> removeChildPaths = unlinkModules(requiredModules, rootModule,
@@ -1008,12 +1010,12 @@ public class MavenSourceTree {
      * This variant handles only module elements that are not under any profile - see
      * {@link #relinkModules(Charset, String, Predicate)} for a profile-aware alternative.
      *
-     * @param  encoding                the encoding for reading and writing pom.xml files
-     * @param  commentText             has to be the same as used in the previous
-     *                                 {@link #unlinkModules(Set, Predicate, Charset, Function)}
-     *                                 invocation
-     * @return                         either this {@link MavenSourceTree} if no relinking edits could be performed or a new
-     *                                 {@link MavenSourceTree} with all modules relinked
+     * @param  encoding    the encoding for reading and writing pom.xml files
+     * @param  commentText has to be the same as used in the previous
+     *                     {@link #unlinkModules(Set, Predicate, Charset, Function)}
+     *                     invocation
+     * @return             either this {@link MavenSourceTree} if no relinking edits could be performed or a new
+     *                     {@link MavenSourceTree} with all modules relinked
      */
     public MavenSourceTree relinkModules(Charset encoding, String commentText) {
         return relinkModules(encoding, commentText, ActiveProfiles.of());
@@ -1023,16 +1025,16 @@ public class MavenSourceTree {
      * Link back any modules anywhere in the source tree previously removed by
      * {@link #unlinkModules(Set, Predicate, Charset, Function)}.
      *
-     * @param  encoding                the encoding for reading and writing pom.xml files
-     * @param  commentText             has to be the same as used in the previous
-     *                                 {@link #unlinkModules(Set, Predicate, Charset, Function)}
-     *                                 invocation
-     * @param  profiles                a predicate selecting profiles whose modules should be transformed; the default
-     *                                 profile-less scope is always included
-     * @return                         either this {@link MavenSourceTree} if no relinking edits could be performed or a new
-     *                                 {@link MavenSourceTree} with all modules relinked
+     * @param  encoding    the encoding for reading and writing pom.xml files
+     * @param  commentText has to be the same as used in the previous
+     *                     {@link #unlinkModules(Set, Predicate, Charset, Function)}
+     *                     invocation
+     * @param  profiles    a predicate selecting profiles whose modules should be transformed; the default
+     *                     profile-less scope is always included
+     * @return             either this {@link MavenSourceTree} if no relinking edits could be performed or a new
+     *                     {@link MavenSourceTree} with all modules relinked
      *
-     * @since                          4.6.0
+     * @since              4.6.0
      */
     public MavenSourceTree relinkModules(Charset encoding,
             String commentText, Predicate<Profile> profiles) {
@@ -1040,13 +1042,15 @@ public class MavenSourceTree {
             final String relPath = en.getKey();
             final List<Transformer> transformations = new ArrayList<>();
             final Set<String> profileIds = activeProfileIds(profiles, en);
-            transformations.add(Modules.selectComments(comment -> comment.getSource().content().endsWith(" " + commentText +" ")).from(profileIds::contains).uncomment());
+            transformations
+                    .add(Modules.selectComments(comment -> comment.getSource().content().endsWith(" " + commentText + " "))
+                            .from(profileIds::contains).uncomment());
             final Path pomXml = rootDirectory.resolve(relPath);
 
             PomTransformer.builder()
-            .charset(encoding)
-            .transformers(transformations)
-            .transform(pomXml);
+                    .charset(encoding)
+                    .transformers(transformations)
+                    .transform(pomXml);
 
         }
         MavenSourceTree newTree = reload();

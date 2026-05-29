@@ -116,6 +116,20 @@ public class RemovableNodeTest {
 
             Assertions.assertThat(doc.toXml()).isEqualTo(expected);
         }
+        {
+            String xml = "<root>\n"
+                    + "    <child1/>\n"
+                    + "    <!-- comment -->\n"
+                    + "    <child2/>\n"
+                    + "</root>\n";
+            Document doc = Document.of(xml);
+            Element ch2 = doc.root().query().withName("child2").all().findFirst().orElse(null);
+            List<RemovableNode> nodes = Siblings.previous(Siblings.commentsOrWhitespace()).apply(ch2);
+            Assertions.assertThat(nodes).hasSize(3);
+            nodes.forEach(RemovableNode::remove);
+
+            Assertions.assertThat(doc.toXml()).isEqualTo(expected);
+        }
 
     }
 

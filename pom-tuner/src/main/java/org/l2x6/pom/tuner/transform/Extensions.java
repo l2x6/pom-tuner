@@ -16,25 +16,18 @@
  */
 package org.l2x6.pom.tuner.transform;
 
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Stream;
 import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer;
-import org.l2x6.pom.tuner.PomTunerUtils;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.PomTunerUtils;
 import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.model.GavPattern;
 import org.l2x6.pom.tuner.model.GavSet;
-import org.l2x6.pom.tuner.model.Gavtc;
-import org.l2x6.pom.tuner.model.Gavtcs;
-import org.l2x6.pom.tuner.model.GavtcsPattern;
-import org.l2x6.pom.tuner.model.GavtcsSet;
 import org.l2x6.pom.tuner.transform.api.AddGavTransformer;
 import org.l2x6.pom.tuner.transform.api.ElementSet;
 import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
@@ -61,9 +54,9 @@ public interface Extensions {
      * compatible {@link Comparators}.
      *
      * @param  extension the extension to add
-     * @return        a new customizable {@link AddGavTransformer}
+     * @return           a new customizable {@link AddGavTransformer}
      *
-     * @since         5.0.0
+     * @since            5.0.0
      */
     public static <THIS extends AddGavTransformer<ContainerElement, GavtcsElement, THIS>> AddGavTransformer<ContainerElement, GavtcsElement, THIS> add(
             Gav extension) {
@@ -111,8 +104,8 @@ public interface Extensions {
      * quietly rather than throwing an exception.
      *
      * @param  gavs of the extensions to remove
-     * @return          a new {@link RemoveElementsTransformer} removing extensions matching the specified {@code patterns}
-     * @since           5.0.0
+     * @return      a new {@link RemoveElementsTransformer} removing extensions matching the specified {@code patterns}
+     * @since       5.0.0
      */
     public static <THIS extends RemoveElementsTransformer<GavtcsElement, THIS>> RemoveElementsTransformer<GavtcsElement, THIS> remove(
             Gav... gavs) {
@@ -229,10 +222,10 @@ public interface Extensions {
      * the default behavior is to select the matching elements only from under the {@code <project>} element
      * and ignore any matching elements under {@code <profile>} elements.
      *
-     * @param  <THIS>    type of the returned {@link ElementSet}
-     * @param  patterns  an array of strings parseable by {@link GavPattern#of(String)}
-     * @return           a new {@link ElementSet} having its node selector set as specified
-     * @since            5.0.0
+     * @param  <THIS>   type of the returned {@link ElementSet}
+     * @param  patterns an array of strings parseable by {@link GavPattern#of(String)}
+     * @return          a new {@link ElementSet} having its node selector set as specified
+     * @since           5.0.0
      */
     public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> select(
             String... patterns) {
@@ -249,10 +242,10 @@ public interface Extensions {
      * the default behavior is to select the matching elements only from under the {@code <project>} element
      * and ignore any matching elements under {@code <profile>} elements.
      *
-     * @param  <THIS>  type of the returned {@link ElementSet}
+     * @param  <THIS>     type of the returned {@link ElementSet}
      * @param  extensions to select for modification
-     * @return         a new {@link ElementSet} having its node selector set as specified
-     * @since          5.0.0
+     * @return            a new {@link ElementSet} having its node selector set as specified
+     * @since             5.0.0
      */
     public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> select(Gav... extensions) {
         final Set<Gav> set = PomTunerUtils.toLinkedHashSet(extensions);
