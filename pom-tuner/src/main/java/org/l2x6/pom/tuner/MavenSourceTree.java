@@ -46,7 +46,7 @@ import java.util.stream.Collectors;
 import org.l2x6.pom.tuner.ExpressionEvaluator.ConstantOnlyExpressionEvaluator;
 import org.l2x6.pom.tuner.PomTransformer.DomTripUtils;
 import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
-import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.l2x6.pom.tuner.model.Dependency;
 import org.l2x6.pom.tuner.model.Expression;
 import org.l2x6.pom.tuner.model.Expression.NoSuchPropertyException;
@@ -263,13 +263,13 @@ public class MavenSourceTree {
      * A set of {@link DomEdit}s.
      */
     static class DomEdits {
-        final Map<String, Set<Transformer>> domEditsByPath = new LinkedHashMap<>();
+        final Map<String, Set<Transformation>> domEditsByPath = new LinkedHashMap<>();
 
         /**
          * @param path    a file system path to a {@code pom.xml} file relative to {@link MavenSourceTree#rootDirectory}
          * @param domEdit the operation to add
          */
-        public void add(String path, Transformer domEdit) {
+        public void add(String path, Transformation domEdit) {
             domEditsByPath.computeIfAbsent(path, k -> new LinkedHashSet<>()).add(domEdit);
         }
 
@@ -281,11 +281,11 @@ public class MavenSourceTree {
          */
         public void perform(Path rootDirectory, Charset encoding) {
             while (!domEditsByPath.isEmpty()) {
-                LinkedHashMap<String, Set<Transformer>> cp = new LinkedHashMap<>(domEditsByPath);
+                LinkedHashMap<String, Set<Transformation>> cp = new LinkedHashMap<>(domEditsByPath);
                 domEditsByPath.clear();
-                for (Entry<String, Set<Transformer>> e : cp.entrySet()) {
+                for (Entry<String, Set<Transformation>> e : cp.entrySet()) {
                     final Path pomXml = rootDirectory.resolve(e.getKey());
-                    final Set<Transformer> tfs = e.getValue();
+                    final Set<Transformation> tfs = e.getValue();
                     PomTransformer.builder()
                             .charset(encoding)
                             .transformers(tfs)
@@ -325,7 +325,7 @@ public class MavenSourceTree {
             } else if (PROJECT_VERSION_XPATH == valueDefinition.getXPath()) {
                 /* ignore */
             } else {
-                final Transformer edit = context -> {
+                final Transformation edit = context -> {
                     final Text text = valueDefinition.getXPath().apply(context.getDocument());
                     text.content(newValue);
                 };
@@ -971,7 +971,7 @@ public class MavenSourceTree {
      *                        removing those elements.
      */
     public void unlinkModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
-            Function<Set<String>, PomTransformer.Transformer> remover) {
+            Function<Set<String>, PomTransformer.Transformation> remover) {
         final Module rootModule = modulesByPath.get("pom.xml");
         final ExpressionEvaluator evaluator = getExpressionEvaluator(isProfileActive);
         final Map<String, Set<Path>> removeChildPaths = unlinkModules(requiredModules, rootModule,
@@ -988,7 +988,7 @@ public class MavenSourceTree {
             Path pomXml,
             Set<Path> removeChildPaths,
             Charset encoding,
-            Function<Set<String>, PomTransformer.Transformer> remover) {
+            Function<Set<String>, PomTransformer.Transformation> remover) {
 
         final Path parentDir = pomXml.getParent();
         final Set<String> relPathsToRemove = removeChildPaths.stream()
@@ -1040,7 +1040,7 @@ public class MavenSourceTree {
             String commentText, Predicate<Profile> profiles) {
         for (Entry<String, Module> en : modulesByPath.entrySet()) {
             final String relPath = en.getKey();
-            final List<Transformer> transformations = new ArrayList<>();
+            final List<Transformation> transformations = new ArrayList<>();
             final Set<String> profileIds = activeProfileIds(profiles, en);
             transformations
                     .add(Modules.selectComments(comment -> comment.getSource().content().endsWith(" " + commentText + " "))

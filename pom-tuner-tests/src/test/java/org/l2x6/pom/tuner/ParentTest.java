@@ -5,7 +5,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.l2x6.pom.tuner.transform.Parent;
 
 public class ParentTest {
@@ -338,7 +338,7 @@ public class ParentTest {
                 Parent.remove()), expected);
     }
 
-    static void assertTransformation(String src, Collection<Transformer> transformations, String expected) {
+    static void assertTransformation(String src, Collection<Transformation> transformations, String expected) {
         PomTransformer.transform(transformations, Paths.get("pom.xml"),
                 () -> src, xml -> Assertions.assertThat(xml).isEqualTo(expected));
     }

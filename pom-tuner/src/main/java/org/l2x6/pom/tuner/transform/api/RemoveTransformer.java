@@ -31,7 +31,7 @@ import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
 import org.l2x6.pom.tuner.PomTransformer.RemovableNode;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
-import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.PomTransformer.Transformation;
 
 /**
  * A generic remover of {@code pom.xml} elements such as {@code <properties>}, their child properties,
@@ -40,7 +40,7 @@ import org.l2x6.pom.tuner.PomTransformer.Transformer;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
  */
-public class RemoveTransformer<T extends TextElement, THIS extends RemoveTransformer<T, THIS>> implements Transformer {
+public class RemoveTransformer<T extends TextElement, THIS extends RemoveTransformer<T, THIS>> implements Transformation {
 
     final Predicate<String> profileSelector;
     final Function<ProfileElement, Stream<T>> profileToRemovedElements;

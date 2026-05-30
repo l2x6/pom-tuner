@@ -6,7 +6,7 @@ import java.util.stream.Stream;
 import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
-import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.PomTransformer.Transformation;
 
 public class TextElementSet extends ElementSet<TextElement, TextElementSet> {
     public TextElementSet(Function<ProfileElement, Stream<TextElement>> getNodes, Predicate<TextElement> nodeSelector) {
@@ -18,11 +18,11 @@ public class TextElementSet extends ElementSet<TextElement, TextElementSet> {
         super(profileSelector, getNodes, nodeSelector);
     }
 
-    public Transformer modifyTextContent(Function<String, String> modifyTextContent) {
+    public Transformation modifyTextContent(Function<String, String> modifyTextContent) {
         return modify(textElement -> textElement.setTextContent(modifyTextContent.apply(textElement.getTextContent())));
     }
 
-    public Transformer commentOut(Function<TextElement, String> getCommentText) {
+    public Transformation commentOut(Function<TextElement, String> getCommentText) {
         return modify(
                 textElement -> TransformationContext.commentTextNode(textElement.getNode(), getCommentText.apply(textElement)));
     }

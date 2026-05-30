@@ -10,7 +10,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
-import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.PomTransformer.Transformation;
 
 public class CommentSet {
 
@@ -110,7 +110,7 @@ public class CommentSet {
         return new CommentSet(ProfileId.idsOnly(profileIds), getComments, nodeSelector);
     }
 
-    public Transformer uncomment() {
+    public Transformation uncomment() {
         return modify(parsedComment -> {
             final Element replacement = parsedComment.getParsedContent().root();
             replacement.precedingWhitespace(parsedComment.getSource().precedingWhitespace());
@@ -118,7 +118,7 @@ public class CommentSet {
         });
     }
 
-    public Transformer modify(Consumer<ParsedComment> parsedCommentConsumer) {
+    public Transformation modify(Consumer<ParsedComment> parsedCommentConsumer) {
         return context -> {
             context.getProfilesStream()
                     .filter(profile -> profileSelector.test(profile.getId()))

@@ -26,7 +26,7 @@ import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
-import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.l2x6.pom.tuner.PomTunerUtils;
 import org.l2x6.pom.tuner.transform.api.AddElementTransformer;
 import org.l2x6.pom.tuner.transform.api.CommentSet;
@@ -37,7 +37,7 @@ import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 import org.l2x6.pom.tuner.transform.api.TextElementSet;
 
 /**
- * Operations on {@code pom.xml} modules usable with {@link PomTransformer#transform(Transformer...)}.
+ * Operations on {@code pom.xml} modules usable with {@link PomTransformer#transform(Transformation...)}.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0

@@ -7,7 +7,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
-import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.PomTransformer.Transformation;
 
 public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>> {
 
@@ -111,7 +111,7 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
         return create(ProfileId.idsOnly(profileIds), getNodes, nodeSelector);
     }
 
-    public Transformer modify(Consumer<T> element) {
+    public Transformation modify(Consumer<T> element) {
         return context -> {
             context.getProfilesStream()
                     .filter(profile -> profileSelector.test(profile.getId()))
