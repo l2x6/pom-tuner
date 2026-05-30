@@ -26,7 +26,7 @@ import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
-import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.PomTransformer.Transformation;
 
 /**
  * A generic adder of {@code pom.xml} elements.
@@ -35,7 +35,7 @@ import org.l2x6.pom.tuner.PomTransformer.Transformer;
  * @since  5.0.0
  */
 abstract class AbstractAddTransformer<P extends ContainerElement, T extends TextElement, C, THIS extends AbstractAddTransformer<P, T, C, THIS>>
-        implements Transformer {
+        implements Transformation {
 
     final Function<TransformationContext, ProfileElement> profileSelector;
     final Function<ProfileElement, P> profileToParentElement;

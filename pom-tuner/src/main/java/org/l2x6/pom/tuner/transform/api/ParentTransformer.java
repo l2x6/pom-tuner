@@ -3,13 +3,13 @@ package org.l2x6.pom.tuner.transform.api;
 import java.util.Collections;
 import java.util.List;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
-import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.PomTransformer.Transformation;
 
-public class ParentTransformer implements Transformer {
+public class ParentTransformer implements Transformation {
 
-    private final List<Transformer> transformers;
+    private final List<Transformation> transformers;
 
-    private ParentTransformer(List<Transformer> transformers) {
+    private ParentTransformer(List<Transformation> transformers) {
         this.transformers = transformers;
     }
 
@@ -71,7 +71,7 @@ public class ParentTransformer implements Transformer {
 
     @Override
     public void perform(TransformationContext context) {
-        for (Transformer transformer : transformers) {
+        for (Transformation transformer : transformers) {
             transformer.perform(context);
         }
     }

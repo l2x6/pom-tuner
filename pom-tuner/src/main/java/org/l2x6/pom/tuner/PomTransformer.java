@@ -98,7 +98,7 @@ public class PomTransformer {
     static final Pattern SIMPLE_ELEM_WS_PATTERN = Pattern.compile("<([^ \t\n\r]+)([ \t\n\r]*)/>");
 
     private final Charset charset;
-    private final Collection<? extends Transformer> transformers;
+    private final Collection<? extends Transformation> transformers;
 
     /**
      * @param  transformers
@@ -106,7 +106,7 @@ public class PomTransformer {
      *
      * @since               5.0.0
      */
-    public static PomTransformer of(Collection<? extends Transformer> transformers) {
+    public static PomTransformer of(Collection<? extends Transformation> transformers) {
         return builder().transformers(transformers).build();
     }
 
@@ -117,7 +117,7 @@ public class PomTransformer {
      * @since               5.0.0
      */
     @SafeVarargs
-    public static <T extends Transformer> PomTransformer of(T... transformers) {
+    public static <T extends Transformation> PomTransformer of(T... transformers) {
         return builder().transformers(transformers).build();
     }
 
@@ -130,7 +130,7 @@ public class PomTransformer {
         return new Builder();
     }
 
-    private PomTransformer(Charset charset, Collection<? extends Transformer> transformers) {
+    private PomTransformer(Charset charset, Collection<? extends Transformation> transformers) {
         super();
         this.charset = charset;
         this.transformers = transformers;
@@ -150,7 +150,7 @@ public class PomTransformer {
     }
 
     static void transform(
-            Collection<? extends Transformer> edits,
+            Collection<? extends Transformation> edits,
             Path path,
             Supplier<String> source,
             Consumer<String> outConsumer) {
@@ -159,7 +159,7 @@ public class PomTransformer {
 
         final Document document = Document.of(src);
         final TransformationContext context = new TransformationContext(path, document, detectIndentation(document));
-        for (Transformer edit : edits) {
+        for (Transformation edit : edits) {
             edit.perform(context);
         }
         String result = document.toXml();
@@ -220,24 +220,24 @@ public class PomTransformer {
     }
 
     public static class Builder {
-        private Collection<Transformer> transformers = new ArrayList<>();
+        private Collection<Transformation> transformers = new ArrayList<>();
         private Charset charset = StandardCharsets.UTF_8;
 
         public PomTransformer build() {
             return new PomTransformer(charset, transformers);
         }
 
-        public <T extends Transformer> Builder charset(Charset charset) {
+        public <T extends Transformation> Builder charset(Charset charset) {
             this.charset = charset;
             return this;
         }
 
-        public <T extends Transformer> Builder transformers(Collection<T> transformers) {
+        public <T extends Transformation> Builder transformers(Collection<T> transformers) {
             this.transformers.addAll(transformers);
             return this;
         }
 
-        public <T extends Transformer> Builder transformers(T... transformers) {
+        public <T extends Transformation> Builder transformers(T... transformers) {
             for (T t : transformers) {
                 this.transformers.add(t);
             }
@@ -1881,7 +1881,7 @@ public class PomTransformer {
     /**
      * A transformation of a DOM
      */
-    public interface Transformer {
+    public interface Transformation {
         /**
          * Perform this {@link Transformation} on the given {@code document}
          *

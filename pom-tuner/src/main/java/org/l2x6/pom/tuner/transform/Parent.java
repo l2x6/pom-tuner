@@ -18,13 +18,13 @@ package org.l2x6.pom.tuner.transform;
 
 import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
-import org.l2x6.pom.tuner.PomTransformer.Transformer;
+import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.l2x6.pom.tuner.transform.api.ParentTransformer;
 import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 import org.l2x6.pom.tuner.transform.api.RemoveTransformer;
 
 /**
- * Operations on {@code pom.xml} {@code parent} usable with {@link PomTransformer#transform(Transformer...)}.
+ * Operations on {@code pom.xml} {@code parent} usable with {@link PomTransformer#transform(Transformation...)}.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
@@ -39,11 +39,11 @@ public interface Parent {
      * @param  artifactId   the {@code artifactId} to set, must not be {@code null}
      * @param  version      the {@code version} to set, must not be {@code null}
      * @param  relativePath the {@code relativePath} to set, must not be {@code null}
-     * @return              a new customizable {@link Transformer}
+     * @return              a new customizable {@link Transformation}
      *
      * @since               5.0.0
      */
-    public static Transformer set(
+    public static Transformation set(
             String groupId,
             String artifactId,
             String version,
@@ -66,11 +66,11 @@ public interface Parent {
      * @param  artifactId   the {@code artifactId} to set, must not be {@code null}
      * @param  version      the {@code version} to set, must not be {@code null}
      * @param  relativePath the {@code relativePath} to set, must not be {@code null}
-     * @return              a new customizable {@link Transformer}
+     * @return              a new customizable {@link Transformation}
      *
      * @since               5.0.0
      */
-    public static Transformer set(
+    public static Transformation set(
             String groupId,
             String artifactId,
             String version) {
