@@ -726,7 +726,7 @@ public class DependencyManagementTest {
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                     DependencyManagement.select(p -> true)
                             .from(ProfileId.all())
-                            .modify(dep -> dep.setGroupId("org.hackme")
+                            .forEach(dep -> dep.setGroupId("org.hackme")
                                     .setArtifactId(dep.getGavtcs().getArtifactId() + "-mod")
                                     .setVersion("1.2.4")
                                     .setClassifier("cl"))),
@@ -734,7 +734,7 @@ public class DependencyManagementTest {
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                     DependencyManagement.selectAll()
                             .from(ProfileId.all())
-                            .modify(dep -> dep.setGroupId("org.hackme")
+                            .forEach(dep -> dep.setGroupId("org.hackme")
                                     .setArtifactId(dep.getGavtcs().getArtifactId() + "-mod")
                                     .setVersion("1.2.4")
                                     .setClassifier("cl"))),
@@ -788,17 +788,17 @@ public class DependencyManagementTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    DependencyManagement.select(p -> p.getArtifactId().equals("dep2")).modify(dep -> dep.setVersion("1.2.4"))),
+                    DependencyManagement.select(p -> p.getArtifactId().equals("dep2")).forEach(dep -> dep.setVersion("1.2.4"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    DependencyManagement.select(Gavtcs.of("org.acme:dep2:1.2.3")).modify(dep -> dep.setVersion("1.2.4"))),
+                    DependencyManagement.select(Gavtcs.of("org.acme:dep2:1.2.3")).forEach(dep -> dep.setVersion("1.2.4"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                     DependencyManagement.select(GavtcsSet.builder().include("*:dep2").build())
-                            .modify(dep -> dep.setVersion("1.2.4"))),
+                            .forEach(dep -> dep.setVersion("1.2.4"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    DependencyManagement.select("*:dep2").modify(dep -> dep.setVersion("1.2.4"))),
+                    DependencyManagement.select("*:dep2").forEach(dep -> dep.setVersion("1.2.4"))),
                     expected);
         }
         {
@@ -851,12 +851,12 @@ public class DependencyManagementTest {
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                     DependencyManagement.select(p -> p.getArtifactId().equals("dep4"))
                             .fromProfilesOnly("profile1")
-                            .modify(dep -> dep.setVersion("1.2.4"))),
+                            .forEach(dep -> dep.setVersion("1.2.4"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                     DependencyManagement.select(p -> p.getArtifactId().equals("dep4"))
                             .from(ProfileId.idsOnly("profile1"))
-                            .modify(dep -> dep.setVersion("1.2.4"))),
+                            .forEach(dep -> dep.setVersion("1.2.4"))),
                     expected);
         }
     }

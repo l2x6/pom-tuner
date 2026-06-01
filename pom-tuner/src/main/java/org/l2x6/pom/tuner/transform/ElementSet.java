@@ -19,8 +19,9 @@ import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  *
- * @param <T>
- * @param <THIS>
+ * @since           5.0.0
+ * @param <T> the type of elements in this {@link ElementSet}
+ * @param <THIS> the generic type of this {@link ElementSet}
  */
 public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>> {
 
@@ -124,10 +125,25 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
         return create(ProfileId.idsOnly(profileIds), getNodes, nodeSelector);
     }
 
+    /**
+     * Returns an {@link ElementStream} mapping each element using the given {@code mapper} operation.
+     * @param <R> the type of the returned {@link ElementStream} elements
+     * @param mapper a {@link Function} transforming this {@link ElementSet} elements to something else.
+     * @return a new {@link ElementStream}
+     * @since             5.0.0
+     */
     public <R> ElementStream<R> map(Function<T, ? extends R> mapper) {
         return new ElementStream<R>(stream().andThen(stream -> stream.map(mapper)));
     }
 
+    /**
+     * Returns an {@link ElementStream} navigating through the given descendant path, returning the first matching
+     * {@link ContainerElement} at each level.
+     *
+     * @param  descendantsPath the names of the descendant elements to navigate through
+     * @return                 a new {@link ElementStream}
+     * @since                  5.0.0
+     */
     public ElementStream<ContainerElement> mapFirst(String... descendantsPath) {
 
         Function<TransformationContext, Stream<ContainerElement>> stream = stream()
@@ -145,10 +161,27 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
         return new ElementStream<ContainerElement>(stream);
     }
 
+    /**
+     * Returns an {@link ElementStream} flat-mapping each element of this {@link ElementSet} using the given {@code mapper}.
+     *
+     * @param  <R>    the type of the returned {@link ElementStream} elements
+     * @param  mapper a {@link Function} transforming each element to a {@link Stream} of results
+     * @return        a new {@link ElementStream}
+     * @since         5.0.0
+     */
     public <R> ElementStream<R> flatMap(Function<T, Stream<? extends R>> mapper) {
         return new ElementStream<R>(stream().andThen(stream -> stream.flatMap(mapper)));
     }
 
+    /**
+     * Returns an {@link ElementStream} navigating through the given descendant path, returning all child
+     * {@link ContainerElement}s at the last level.
+     *
+     * @param  descendantsPath the names of the descendant elements to navigate through;
+     *                         must not be empty
+     * @return                 a new {@link ElementStream}
+     * @since                  5.0.0
+     */
     public ElementStream<ContainerElement> flatMap(String... descendantsPath) {
         switch (descendantsPath.length) {
         case 0:
@@ -165,15 +198,30 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
             return mapFirst(prefix).flatMap(descendantsPath[descendantsPath.length - 1]);
         }
     }
+    /**
+     * Returns an {@link ElementStream} navigating through the given descendant path and converting
+     * the resulting elements to {@link GavtcsElement}s.
+     *
+     * @param  descendantsPath the names of the descendant elements to navigate through
+     * @return                 a new {@link ElementStream} of {@link GavtcsElement}s
+     * @since                  5.0.0
+     */
     public ElementStream<GavtcsElement> flatMapGavtcs(String... descendantsPath) {
         return flatMap(descendantsPath).map(ContainerElement::asGavtcsElement);
     }
 
-    public Transformation modify(Consumer<T> element) {
+    /**
+     * Returns a {@link Transformation} that applies the given {@code action} to each selected element.
+     *
+     * @param  action the consumer to apply to each selected element
+     * @return         a new {@link Transformation}
+     * @since          5.0.0
+     */
+    public Transformation forEach(Consumer<T> action) {
         return context -> {
             stream().apply(context)
                     .collect(Collectors.toList()) // create a temporary list to allow deletions, etc.
-                    .forEach(element);
+                    .forEach(action);
         };
     }
 
@@ -202,10 +250,26 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
             this.streamSource = streamSource;
         }
 
+        /**
+         * Returns an {@link ElementStream} mapping each element of this {@link ElementStream} using the given {@code mapper}.
+         *
+         * @param  <R>    the type of the returned {@link ElementStream} elements
+         * @param  mapper a {@link Function} transforming each element
+         * @return        a new {@link ElementStream}
+         * @since         5.0.0
+         */
         public <R> ElementStream<R> map(Function<? super T, ? extends R> mapper) {
             return new ElementStream<>(streamSource.andThen(stream -> stream.map(mapper)));
         }
 
+        /**
+         * Returns an {@link ElementStream} navigating through the given descendant path, returning the first matching
+         * {@link ContainerElement} at each level.
+         *
+         * @param  descendantsPath the names of the descendant elements to navigate through
+         * @return                 a new {@link ElementStream}
+         * @since                  5.0.0
+         */
         public ElementStream<ContainerElement> mapFirst(String... descendantsPath) {
 
             Function<TransformationContext, Stream<ContainerElement>> stream = streamSource
@@ -223,9 +287,26 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
             return new ElementStream<ContainerElement>(stream);
         }
 
+        /**
+         * Returns an {@link ElementStream} flat-mapping each element using the given {@code mapper}.
+         *
+         * @param  <R>    the type of the returned {@link ElementStream} elements
+         * @param  mapper a {@link Function} transforming each element to a {@link Stream} of results
+         * @return        a new {@link ElementStream}
+         * @since         5.0.0
+         */
         public <R> ElementStream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper) {
             return new ElementStream<>(streamSource.andThen(stream -> stream.flatMap(mapper)));
         }
+        /**
+         * Returns an {@link ElementStream} navigating through the given descendant path, returning all child
+         * {@link ContainerElement}s at the last level.
+         *
+         * @param  descendantsPath the names of the descendant elements to navigate through;
+         *                         must not be empty
+         * @return                 a new {@link ElementStream}
+         * @since                  5.0.0
+         */
         public ElementStream<ContainerElement> flatMap(String... descendantsPath) {
             switch (descendantsPath.length) {
             case 0:
@@ -243,15 +324,29 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
             }
         }
 
+        /**
+         * Returns an {@link ElementStream} containing only the elements matching the given {@code filter}.
+         *
+         * @param  filter the predicate to filter by
+         * @return        a new {@link ElementStream}
+         * @since         5.0.0
+         */
         public ElementStream<T> filter(Predicate<T> filter) {
             return new ElementStream<>(streamSource.andThen(stream -> stream.filter(filter)));
         }
 
-        public Transformation modify(Consumer<T> element) {
+        /**
+         * Returns a {@link Transformation} that applies the given {@code action} to each element.
+         *
+         * @param  action the consumer to apply to each element
+         * @return         a new {@link Transformation}
+         * @since          5.0.0
+         */
+        public Transformation forEach(Consumer<T> action) {
             return context -> {
                 streamSource.apply(context)
                         .collect(Collectors.toList()) // create a temporary list to allow deletions, etc.
-                        .forEach(element);
+                        .forEach(action);
             };
         }
 

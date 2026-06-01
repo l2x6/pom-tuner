@@ -784,7 +784,7 @@ public class PluginManagementTest {
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                     PluginManagement.select(p -> true)
                             .from(ProfileId.all())
-                            .modify(dep -> dep.setGroupId("org.hackme")
+                            .forEach(dep -> dep.setGroupId("org.hackme")
                                     .setArtifactId(dep.getGavtcs().getArtifactId() + "-mod")
                                     .setVersion("1.2.4")
                                     .setClassifier("cl"))),
@@ -792,7 +792,7 @@ public class PluginManagementTest {
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                     PluginManagement.selectAll()
                             .from(ProfileId.all())
-                            .modify(dep -> dep.setGroupId("org.hackme")
+                            .forEach(dep -> dep.setGroupId("org.hackme")
                                     .setArtifactId(dep.getGavtcs().getArtifactId() + "-mod")
                                     .setVersion("1.2.4")
                                     .setClassifier("cl"))),
@@ -850,17 +850,17 @@ public class PluginManagementTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    PluginManagement.select(p -> p.getArtifactId().equals("dep2")).modify(dep -> dep.setVersion("1.2.4"))),
+                    PluginManagement.select(p -> p.getArtifactId().equals("dep2")).forEach(dep -> dep.setVersion("1.2.4"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    PluginManagement.select(Gav.of("org.acme:dep2:1.2.3")).modify(dep -> dep.setVersion("1.2.4"))),
+                    PluginManagement.select(Gav.of("org.acme:dep2:1.2.3")).forEach(dep -> dep.setVersion("1.2.4"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                     PluginManagement.select(GavSet.builder().include("*:dep2").build())
-                            .modify(dep -> dep.setVersion("1.2.4"))),
+                            .forEach(dep -> dep.setVersion("1.2.4"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    PluginManagement.select("*:dep2").modify(dep -> dep.setVersion("1.2.4"))),
+                    PluginManagement.select("*:dep2").forEach(dep -> dep.setVersion("1.2.4"))),
                     expected);
         }
         {
@@ -917,12 +917,12 @@ public class PluginManagementTest {
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                     PluginManagement.select(p -> p.getArtifactId().equals("dep4"))
                             .fromProfilesOnly("profile1")
-                            .modify(dep -> dep.setVersion("1.2.4"))),
+                            .forEach(dep -> dep.setVersion("1.2.4"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                     PluginManagement.select(p -> p.getArtifactId().equals("dep4"))
                             .from(ProfileId.idsOnly("profile1"))
-                            .modify(dep -> dep.setVersion("1.2.4"))),
+                            .forEach(dep -> dep.setVersion("1.2.4"))),
                     expected);
         }
     }

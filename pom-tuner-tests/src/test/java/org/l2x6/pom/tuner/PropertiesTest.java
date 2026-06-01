@@ -661,7 +661,7 @@ public class PropertiesTest {
                     + "    </profiles>\n" //
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    Properties.select(p -> true).modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    Properties.select(p -> true).forEach(te -> te.setTextContent(te.getTextContent() + "-mod"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                     Properties.select(p -> true).modifyTextContent(old -> old + "-mod")),
@@ -696,10 +696,10 @@ public class PropertiesTest {
                     + "</project>\n";
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                     Properties.selectByValue(p -> p.equals("val-1"))
-                            .modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                            .forEach(te -> te.setTextContent(te.getTextContent() + "-mod"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                    Properties.selectByValue("val-1").modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                    Properties.selectByValue("val-1").forEach(te -> te.setTextContent(te.getTextContent() + "-mod"))),
                     expected);
         }
         {
@@ -732,11 +732,11 @@ public class PropertiesTest {
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                     Properties.selectAll()
                             .from(ProfileId.all())
-                            .modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                            .forEach(te -> te.setTextContent(te.getTextContent() + "-mod"))),
                     expected);
             PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                     Properties.select(p -> true)
-                            .from("profile1", "profile2").modify(te -> te.setTextContent(te.getTextContent() + "-mod"))),
+                            .from("profile1", "profile2").forEach(te -> te.setTextContent(te.getTextContent() + "-mod"))),
                     expected);
         }
 

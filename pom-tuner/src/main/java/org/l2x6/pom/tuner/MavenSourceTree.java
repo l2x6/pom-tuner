@@ -835,14 +835,14 @@ public class MavenSourceTree {
                     DependencyManagement
                             .select(gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
                             .from(profileIds::contains)
-                            .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
+                            .forEach(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
                                     edits)));
             edits.add(
                     module.getPomPath(),
                     Dependencies
                             .select(gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
                             .from(profileIds::contains)
-                            .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
+                            .forEach(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
                                     edits)));
 
             edits.add(
@@ -850,7 +850,7 @@ public class MavenSourceTree {
                     Plugins
                             .select(gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
                             .from(profileIds::contains)
-                            .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
+                            .forEach(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
                                     edits)));
             edits.add(
                     module.getPomPath(),
@@ -859,7 +859,7 @@ public class MavenSourceTree {
                             .from(profileIds::contains)
                             .flatMapGavtcs("dependencies")
                             .filter(gavtcsElememt -> isOwnVersionedDepenency(moduleGa, gavtcsElememt.getGavtcs().toGavtc().toGav(), evaluator))
-                            .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
+                            .forEach(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
                                     edits)));
 
             edits.add(
@@ -867,7 +867,7 @@ public class MavenSourceTree {
                     PluginManagement
                             .select(gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
                             .from(profileIds::contains)
-                            .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
+                            .forEach(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
                                     edits)));
             edits.add(
                     module.getPomPath(),
@@ -876,7 +876,7 @@ public class MavenSourceTree {
                             .from(profileIds::contains)
                             .flatMapGavtcs("dependencies")
                             .filter(gavtcsElememt -> isOwnVersionedDepenency(moduleGa, gavtcsElememt.getGavtcs().toGavtc().toGav(), evaluator))
-                            .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
+                            .forEach(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
                                     edits)));
 
             edits.add(
@@ -884,7 +884,7 @@ public class MavenSourceTree {
                     Extensions
                             .select(gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
                             .from(profileIds::contains)
-                            .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
+                            .forEach(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
                                     edits)));
         }
         edits.perform(rootDirectory, encoding);
