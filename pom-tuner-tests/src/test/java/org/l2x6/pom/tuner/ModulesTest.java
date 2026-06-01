@@ -6,8 +6,8 @@ import java.util.Comparator;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.transform.Modules;
-import org.l2x6.pom.tuner.transform.api.ProfileId;
-import org.l2x6.pom.tuner.transform.api.Siblings;
+import org.l2x6.pom.tuner.transform.ProfileId;
+import org.l2x6.pom.tuner.transform.Siblings;
 
 public class ModulesTest {
 

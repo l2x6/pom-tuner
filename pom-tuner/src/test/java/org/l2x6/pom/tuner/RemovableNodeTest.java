@@ -22,7 +22,7 @@ import java.util.List;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.l2x6.pom.tuner.PomTransformer.RemovableNode;
-import org.l2x6.pom.tuner.transform.api.Siblings;
+import org.l2x6.pom.tuner.transform.Siblings;
 
 public class RemovableNodeTest {
 

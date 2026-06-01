@@ -49,7 +49,7 @@ import org.l2x6.pom.tuner.transform.Parent;
 import org.l2x6.pom.tuner.transform.Plugins;
 import org.l2x6.pom.tuner.transform.Profiles;
 import org.l2x6.pom.tuner.transform.Properties;
-import org.l2x6.pom.tuner.transform.api.Siblings;
+import org.l2x6.pom.tuner.transform.Siblings;
 
 public class PomTransformerTest {
 

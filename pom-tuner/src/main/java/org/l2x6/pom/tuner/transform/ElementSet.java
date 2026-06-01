@@ -1,14 +1,27 @@
-package org.l2x6.pom.tuner.transform.api;
+package org.l2x6.pom.tuner.transform;
 
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
+import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
 import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
+import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 
+/**
+ * A set of {@code pom.xml} elements selected for modification.
+ *
+ * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
+ *
+ * @param <T>
+ * @param <THIS>
+ */
 public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>> {
 
     /**
@@ -111,21 +124,137 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
         return create(ProfileId.idsOnly(profileIds), getNodes, nodeSelector);
     }
 
+    public <R> ElementStream<R> map(Function<T, ? extends R> mapper) {
+        return new ElementStream<R>(stream().andThen(stream -> stream.map(mapper)));
+    }
+
+    public ElementStream<ContainerElement> mapFirst(String... descendantsPath) {
+
+        Function<TransformationContext, Stream<ContainerElement>> stream = stream()
+                .andThen(s ->
+                s.
+                        map(textElement -> (ContainerElement) textElement));
+
+        for (String descendantName : descendantsPath) {
+            stream = stream.andThen(s ->
+                s
+                    .map(containerElement -> containerElement.getChildContainerElement(descendantName))
+                    .filter(Optional::isPresent)
+                    .map(Optional::get));
+        }
+        return new ElementStream<ContainerElement>(stream);
+    }
+
+    public <R> ElementStream<R> flatMap(Function<T, Stream<? extends R>> mapper) {
+        return new ElementStream<R>(stream().andThen(stream -> stream.flatMap(mapper)));
+    }
+
+    public ElementStream<ContainerElement> flatMap(String... descendantsPath) {
+        switch (descendantsPath.length) {
+        case 0:
+            throw new IllegalStateException("empty descendantsPath is not supported");
+        case 1:
+            Function<TransformationContext, Stream<ContainerElement>> stream = stream()
+            .andThen(s ->
+            s.
+                    flatMap(textElement -> ((ContainerElement) textElement).childElementsStream()));
+            return new ElementStream<>(stream);
+        default:
+            String[] prefix = new String[descendantsPath.length - 1];
+            System.arraycopy(descendantsPath, 0, prefix, 0, descendantsPath.length - 1);
+            return mapFirst(prefix).flatMap(descendantsPath[descendantsPath.length - 1]);
+        }
+    }
+    public ElementStream<GavtcsElement> flatMapGavtcs(String... descendantsPath) {
+        return flatMap(descendantsPath).map(ContainerElement::asGavtcsElement);
+    }
+
     public Transformation modify(Consumer<T> element) {
         return context -> {
-            context.getProfilesStream()
-                    .filter(profile -> profileSelector.test(profile.getId()))
-                    .flatMap(getNodes)
-                    .filter(nodeSelector)
+            stream().apply(context)
                     .collect(Collectors.toList()) // create a temporary list to allow deletions, etc.
                     .forEach(element);
         };
+    }
+
+    Function<TransformationContext, Stream<T>> stream() {
+        return context -> context.getProfilesStream()
+                .filter(profile -> profileSelector.test(profile.getId()))
+                .flatMap(getNodes)
+                .filter(nodeSelector);
     }
 
     @SuppressWarnings("unchecked")
     protected THIS create(Predicate<String> profileSelector, Function<ProfileElement, Stream<T>> getNodes,
             Predicate<T> nodeSelector) {
         return (THIS) new ElementSet<>(profileSelector, getNodes, nodeSelector);
+    }
+
+    /**
+     * A stream of items stemming from a {@code pom.xml file}.
+     *
+     * @param <T> the type of the stream items
+     */
+    public static class ElementStream<T> {
+        private final Function<TransformationContext, Stream<T>> streamSource;
+
+        ElementStream(Function<TransformationContext, Stream<T>> streamSource) {
+            this.streamSource = streamSource;
+        }
+
+        public <R> ElementStream<R> map(Function<? super T, ? extends R> mapper) {
+            return new ElementStream<>(streamSource.andThen(stream -> stream.map(mapper)));
+        }
+
+        public ElementStream<ContainerElement> mapFirst(String... descendantsPath) {
+
+            Function<TransformationContext, Stream<ContainerElement>> stream = streamSource
+                    .andThen(s ->
+                    s.
+                            map(textElement -> (ContainerElement) textElement));
+
+            for (String descendantName : descendantsPath) {
+                stream = stream.andThen(s ->
+                    s
+                        .map(containerElement -> containerElement.getChildContainerElement(descendantName))
+                        .filter(Optional::isPresent)
+                        .map(Optional::get));
+            }
+            return new ElementStream<ContainerElement>(stream);
+        }
+
+        public <R> ElementStream<R> flatMap(Function<? super T, ? extends Stream<? extends R>> mapper) {
+            return new ElementStream<>(streamSource.andThen(stream -> stream.flatMap(mapper)));
+        }
+        public ElementStream<ContainerElement> flatMap(String... descendantsPath) {
+            switch (descendantsPath.length) {
+            case 0:
+                throw new IllegalStateException("empty descendantsPath is not supported");
+            case 1:
+                Function<TransformationContext, Stream<ContainerElement>> stream = streamSource
+                .andThen(s ->
+                s.
+                        flatMap(textElement -> ((ContainerElement) textElement).childElementsStream()));
+                return new ElementStream<>(stream);
+            default:
+                String[] prefix = new String[descendantsPath.length - 1];
+                System.arraycopy(descendantsPath, 0, prefix, 0, descendantsPath.length - 1);
+                return mapFirst(prefix).flatMap(descendantsPath[descendantsPath.length - 1]);
+            }
+        }
+
+        public ElementStream<T> filter(Predicate<T> filter) {
+            return new ElementStream<>(streamSource.andThen(stream -> stream.filter(filter)));
+        }
+
+        public Transformation modify(Consumer<T> element) {
+            return context -> {
+                streamSource.apply(context)
+                        .collect(Collectors.toList()) // create a temporary list to allow deletions, etc.
+                        .forEach(element);
+            };
+        }
+
     }
 
 }

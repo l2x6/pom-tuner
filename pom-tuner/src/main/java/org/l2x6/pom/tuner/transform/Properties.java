@@ -26,10 +26,6 @@ import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
 import org.l2x6.pom.tuner.PomTunerUtils;
-import org.l2x6.pom.tuner.transform.api.AddElementTransformer;
-import org.l2x6.pom.tuner.transform.api.ElementSet;
-import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
-import org.l2x6.pom.tuner.transform.api.TextElementSet;
 
 /**
  * Operations on {@code pom.xml} properties usable with {@link PomTransformer#transform(Transformation...)}.

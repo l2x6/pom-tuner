@@ -55,7 +55,7 @@ import javax.xml.xpath.XPath;
 import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.model.Gavtcs;
-import org.l2x6.pom.tuner.transform.api.Siblings;
+import org.l2x6.pom.tuner.transform.Siblings;
 import org.w3c.dom.DocumentFragment;
 
 /**

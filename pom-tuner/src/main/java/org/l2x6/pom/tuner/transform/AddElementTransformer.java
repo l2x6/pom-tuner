@@ -14,45 +14,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.l2x6.pom.tuner.transform.api;
+package org.l2x6.pom.tuner.transform;
 
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import org.l2x6.pom.tuner.Comparators;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
-import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
 import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
+import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
-import org.l2x6.pom.tuner.model.Gavtcs;
 
 /**
- * A generic adder of {@code pom.xml} GAVTCS elements such as {@code <dependency>} or managed dependency entries.
+ * A generic adder of {@code pom.xml} text elements such as properties and modules.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  * @since  5.0.0
  */
-public class AddGavtcsTransformer<P extends ContainerElement, T extends GavtcsElement, THIS extends AddGavtcsTransformer<P, T, THIS>>
-        extends AbstractAddTransformer<P, T, Gavtcs, THIS> {
+public class AddElementTransformer<P extends ContainerElement, T extends TextElement, THIS extends AddElementTransformer<P, T, THIS>>
+        extends AbstractAddTransformer<P, T, Map.Entry<String, String>, THIS> {
 
-    AddGavtcsTransformer(
+    AddElementTransformer(
             Function<TransformationContext, ProfileElement> profileSelector,
             Function<ProfileElement, P> profileToParentElement,
-            BiFunction<ContainerElement, Comparator<Gavtcs>, T> createChild,
-            Comparator<Gavtcs> comparator,
+            BiFunction<ContainerElement, Comparator<Map.Entry<String, String>>, T> createChild,
+            Comparator<Map.Entry<String, String>> comparator,
             List<Consumer<T>> postprocessors) {
         super(profileSelector, profileToParentElement, createChild, comparator, postprocessors);
     }
 
-    public AddGavtcsTransformer(
+    public AddElementTransformer(
             Function<ProfileElement, P> profileToParentElement,
-            BiFunction<ContainerElement, Comparator<Gavtcs>, T> createChild,
-            Comparator<Gavtcs> comparator) {
+            BiFunction<ContainerElement, Comparator<Map.Entry<String, String>>, T> createChild,
+            Comparator<Map.Entry<String, String>> comparator) {
         this(
-                AddElementTransformer.selectProject(),
+                selectProject(),
                 profileToParentElement,
                 createChild,
                 comparator,
@@ -68,7 +68,7 @@ public class AddGavtcsTransformer<P extends ContainerElement, T extends GavtcsEl
      */
     @SuppressWarnings("unchecked")
     public THIS intoProfile(Function<TransformationContext, ProfileElement> profileSelector) {
-        return (THIS) new AddGavtcsTransformer<>(
+        return (THIS) new AddElementTransformer<P, T, THIS>(
                 profileSelector,
                 profileToParentElement,
                 createChild,
@@ -86,8 +86,8 @@ public class AddGavtcsTransformer<P extends ContainerElement, T extends GavtcsEl
      */
     @SuppressWarnings("unchecked")
     public THIS intoProfile(String profileId) {
-        return (THIS) new AddGavtcsTransformer<P, T, THIS>(
-                AddElementTransformer.selectProfile(profileId),
+        return (THIS) new AddElementTransformer<P, T, THIS>(
+                selectProfile(profileId),
                 profileToParentElement,
                 createChild,
                 comparator,
@@ -101,8 +101,8 @@ public class AddGavtcsTransformer<P extends ContainerElement, T extends GavtcsEl
      * @since           5.0.0
      */
     @SuppressWarnings("unchecked")
-    public THIS at(Comparator<Gavtcs> position) {
-        return (THIS) new AddGavtcsTransformer<P, T, THIS>(
+    public THIS at(Comparator<Map.Entry<String, String>> position) {
+        return (THIS) new AddElementTransformer<P, T, THIS>(
                 profileSelector,
                 profileToParentElement,
                 createChild,
@@ -111,34 +111,66 @@ public class AddGavtcsTransformer<P extends ContainerElement, T extends GavtcsEl
     }
 
     /**
-     * @param  gavtcs the {@link Gavtcs} after which the new element should be added; if there is no such
-     *                element, the new element is added at the last position
-     * @return        a copy of this {@link AddGavtcsTransformer} instance with the
-     *                {@link #comparator} adjusted
-     * @since         5.0.0
+     * @param  elementName the name of the XML element after which the new element should be added; if there is no such
+     *                     element, the new element is added at the last position
+     * @return             a copy of this {@link AddElementTransformer} instance with the
+     *                     {@link #position} {@link Comparator} adjusted
+     * @since              5.0.0
      */
-    public AddGavtcsTransformer<P, T, THIS> after(Gavtcs gavtcs) {
-        return new AddGavtcsTransformer<P, T, THIS>(
+    public AddElementTransformer<P, T, THIS> afterElement(String elementName) {
+        return new AddElementTransformer<>(
                 profileSelector,
                 profileToParentElement,
                 createChild,
-                Comparators.after(gavtcs),
+                Comparators.elementName(Comparators.after(elementName)),
                 postprocessors);
     }
 
     /**
-     * @param  gavtcs the {@link Gavtcs} before which the new element should be added; if there is no such
-     *                element, the new element is added at the last position
-     * @return        a copy of this {@link AddGavtcsTransformer} instance with the
-     *                {@link #comparator} adjusted
-     * @since         5.0.0
+     * @param  elementName the name of the XML element before which the new element should be added; if there is no such
+     *                     element, the new element is added at the last position
+     * @return             a copy of this {@link AddElementTransformer} instance with the
+     *                     {@link #position} {@link Comparator} adjusted
+     * @since              5.0.0
      */
-    public AddGavtcsTransformer<P, T, THIS> before(Gavtcs gavtcs) {
-        return new AddGavtcsTransformer<P, T, THIS>(
+    public AddElementTransformer<P, T, THIS> beforeElement(String elementName) {
+        return new AddElementTransformer<>(
                 profileSelector,
                 profileToParentElement,
                 createChild,
-                Comparators.before(gavtcs),
+                Comparators.elementName(Comparators.before(elementName)),
+                postprocessors);
+    }
+
+    /**
+     * @param  elementName the text content of the XML element after which the new element should be added; if there is no
+     *                     such element, the new element is added at the last position
+     * @return             a copy of this {@link AddElementTransformer} instance with the
+     *                     {@link #position} {@link Comparator} adjusted
+     * @since              5.0.0
+     */
+    public AddElementTransformer<P, T, THIS> afterTextContent(String textContent) {
+        return new AddElementTransformer<>(
+                profileSelector,
+                profileToParentElement,
+                createChild,
+                Comparators.textContent(Comparators.after(textContent)),
+                postprocessors);
+    }
+
+    /**
+     * @param  elementName the text content of the XML element before which the new element should be added; if there is no
+     *                     such element, the new element is added at the last position
+     * @return             a copy of this {@link AddElementTransformer} instance with the
+     *                     {@link #position} {@link Comparator} adjusted
+     * @since              5.0.0
+     */
+    public AddElementTransformer<P, T, THIS> beforeTextContent(String textContent) {
+        return new AddElementTransformer<>(
+                profileSelector,
+                profileToParentElement,
+                createChild,
+                Comparators.textContent(Comparators.before(textContent)),
                 postprocessors);
     }
 
