@@ -53,7 +53,7 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
      *
      * @since       5.0.0
      */
-    public static Function<ProfileElement, Stream<ContainerElement>> containerElementsMapper(String elementName,
+    static Function<ProfileElement, Stream<ContainerElement>> containerElementsMapper(String elementName,
             String... otherElementNames) {
         return profile -> profile.getChildContainerElement(elementName, otherElementNames)
                 .map(Stream::of)
@@ -71,7 +71,7 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
      *
      * @since       5.0.0
      */
-    public static Function<ProfileElement, Stream<TextElement>> textGrandChildrenMapper(String name) {
+    static Function<ProfileElement, Stream<TextElement>> textGrandChildrenMapper(String name) {
         return profile -> profile.childElementsStream()
                 .filter(ch -> name.equals(ch.getElementName()))
                 .findFirst()
@@ -90,7 +90,7 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
      *
      * @since                    5.0.0
      */
-    public static Function<ProfileElement, Stream<GavtcsElement>> gavtcsElementsMapper(String elementName,
+    static Function<ProfileElement, Stream<GavtcsElement>> gavtcsElementsMapper(String elementName,
             String... otherElementNames) {
         return profile -> profile.getChildContainerElement(elementName, otherElementNames)
                 .map(ContainerElement::childElementsStream)
@@ -109,7 +109,7 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
      *
      * @since                    5.0.0
      */
-    public static Function<ProfileElement, Stream<GavtcsElement>> pluginDependenciesMapper(String elementName,
+    static Function<ProfileElement, Stream<GavtcsElement>> pluginDependenciesMapper(String elementName,
             String... otherElementNames) {
         return profile -> profile.getChildContainerElement(elementName, otherElementNames)
                 .map(ContainerElement::childElementsStream)
@@ -129,7 +129,7 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
         super(profileSelector, profileToTextElements, elementSelector, siblingsSelectors, immutableSiblingsSelectors);
     }
 
-    public RemoveElementsTransformer(
+    RemoveElementsTransformer(
             Function<ProfileElement, Stream<T>> profileToTextElements,
             Predicate<T> elementSelector) {
         this(

@@ -47,7 +47,7 @@ public class AddGavtcsTransformer<P extends ContainerElement, T extends GavtcsEl
         super(profileSelector, profileToParentElement, createChild, comparator, postprocessors);
     }
 
-    public AddGavtcsTransformer(
+    AddGavtcsTransformer(
             Function<ProfileElement, P> profileToParentElement,
             BiFunction<ContainerElement, Comparator<Gavtcs>, T> createChild,
             Comparator<Gavtcs> comparator) {

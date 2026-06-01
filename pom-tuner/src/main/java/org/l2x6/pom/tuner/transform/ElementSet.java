@@ -35,7 +35,7 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
      *
      * @since       5.0.0
      */
-    public static Function<ProfileElement, Stream<TextElement>> textGrandChildrenMapper(String name) {
+    static Function<ProfileElement, Stream<TextElement>> textGrandChildrenMapper(String name) {
         return profile -> profile.childElementsStream()
                 .filter(ch -> name.equals(ch.getElementName()))
                 .findFirst()
@@ -47,13 +47,13 @@ public class ElementSet<T extends TextElement, THIS extends ElementSet<T, THIS>>
     protected final Function<ProfileElement, Stream<T>> getNodes;
     protected final Predicate<T> nodeSelector;
 
-    public ElementSet(Function<ProfileElement, Stream<T>> getNodes, Predicate<T> nodeSelector) {
+    ElementSet(Function<ProfileElement, Stream<T>> getNodes, Predicate<T> nodeSelector) {
         this.profileSelector = ProfileId.main();
         this.getNodes = getNodes;
         this.nodeSelector = nodeSelector;
     }
 
-    public ElementSet(Predicate<String> profileSelector, Function<ProfileElement, Stream<T>> getNodes,
+    ElementSet(Predicate<String> profileSelector, Function<ProfileElement, Stream<T>> getNodes,
             Predicate<T> nodeSelector) {
         this.profileSelector = profileSelector;
         this.getNodes = getNodes;

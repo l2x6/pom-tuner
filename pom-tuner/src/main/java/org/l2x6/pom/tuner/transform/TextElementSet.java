@@ -9,11 +9,11 @@ import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
 
 public class TextElementSet extends ElementSet<TextElement, TextElementSet> {
-    public TextElementSet(Function<ProfileElement, Stream<TextElement>> getNodes, Predicate<TextElement> nodeSelector) {
+    TextElementSet(Function<ProfileElement, Stream<TextElement>> getNodes, Predicate<TextElement> nodeSelector) {
         super(getNodes, nodeSelector);
     }
 
-    public TextElementSet(Predicate<String> profileSelector, Function<ProfileElement, Stream<TextElement>> getNodes,
+    TextElementSet(Predicate<String> profileSelector, Function<ProfileElement, Stream<TextElement>> getNodes,
             Predicate<TextElement> nodeSelector) {
         super(profileSelector, getNodes, nodeSelector);
     }
