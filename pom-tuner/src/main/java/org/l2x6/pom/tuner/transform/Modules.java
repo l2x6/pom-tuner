@@ -210,10 +210,25 @@ public interface Modules {
         return new TextElementSet(ElementSet.textGrandChildrenMapper(ELEMENT_NAME), textElement -> true);
     }
 
+    /**
+     * Select some comment nodes under {@code <modules>} for modification.
+     *
+     * @param  commentSelector a {@link Predicate} selecting comment nodes
+     * @return                 a new {@link CommentSet}
+     * @since                  5.0.0
+     */
     public static CommentSet selectComments(Predicate<ParsedComment> commentSelector) {
         return new CommentSet(ProfileId.all(), CommentSet.commentGrandChildrenMapper(ELEMENT_NAME), commentSelector);
     }
 
+    /**
+     * Select some comment nodes under {@code <modules>} matching the given trailing text predicate.
+     *
+     * @param  commentTextPredicate a {@link Predicate} selecting comment nodes by the text content
+     *                              of their last child node
+     * @return                      a new {@link CommentSet}
+     * @since                       5.0.0
+     */
     public static CommentSet selectCommentsByTrailingText(Predicate<String> commentTextPredicate) {
         return new CommentSet(
                 ProfileId.all(),
@@ -227,10 +242,23 @@ public interface Modules {
                         .orElse(false));
     }
 
+    /**
+     * Select some comment nodes under {@code <modules>} having the given trailing text.
+     *
+     * @param  commentText the trailing text to match
+     * @return             a new {@link CommentSet}
+     * @since              5.0.0
+     */
     public static CommentSet selectCommentsByTrailingText(String commentText) {
         return selectCommentsByTrailingText(commentText::equals);
     }
 
+    /**
+     * Select all comment nodes under {@code <modules>} for modification.
+     *
+     * @return a new {@link CommentSet}
+     * @since  5.0.0
+     */
     public static CommentSet selectAllComments() {
         return new CommentSet(ProfileId.all(), CommentSet.commentGrandChildrenMapper(ELEMENT_NAME), c -> true);
     }

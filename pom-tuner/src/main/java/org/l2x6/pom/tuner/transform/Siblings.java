@@ -27,10 +27,23 @@ import org.l2x6.pom.tuner.PomTransformer.RemovableNode;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 
 public interface Siblings {
+    /**
+     * Returns a sibling selector that selects no siblings.
+     *
+     * @return a {@link Function} always returning an empty list
+     * @since  5.0.0
+     */
     static Function<Node, List<Node>> none() {
         return node -> Collections.emptyList();
     }
 
+    /**
+     * Returns a sibling selector that selects both previous and next siblings matching the given {@code nodeSelector}.
+     *
+     * @param  nodeSelector a {@link Predicate} to match sibling nodes
+     * @return              a {@link Function} selecting matching previous and next siblings
+     * @since               5.0.0
+     */
     static Function<Node, List<RemovableNode>> previousOrNext(Predicate<Node> nodeSelector) {
         return node -> {
             final List<RemovableNode> prev = previous(nodeSelector).apply(node);
@@ -40,10 +53,24 @@ public interface Siblings {
         };
     }
 
+    /**
+     * Returns a sibling selector that selects previous siblings that are comments or whitespace.
+     *
+     * @return a {@link Function} selecting previous comment and whitespace siblings
+     * @since  5.0.0
+     */
     static Function<Node, List<RemovableNode>> previousCommentsOrWhitespace() {
         return previous(commentsOrWhitespace());
     }
 
+    /**
+     * Returns a sibling selector that selects previous siblings matching the given {@code nodeSelector}.
+     * The selection continues as long as consecutive previous siblings match.
+     *
+     * @param  nodeSelector a {@link Predicate} to match sibling nodes
+     * @return              a {@link Function} selecting matching previous siblings
+     * @since               5.0.0
+     */
     static Function<Node, List<RemovableNode>> previous(Predicate<Node> nodeSelector) {
         return node -> {
             final List<RemovableNode> result = new ArrayList<>();
@@ -56,6 +83,14 @@ public interface Siblings {
         };
     }
 
+    /**
+     * Returns a sibling selector that selects next siblings matching the given {@code nodeSelector}.
+     * The selection continues as long as consecutive next siblings match.
+     *
+     * @param  nodeSelector a {@link Predicate} to match sibling nodes
+     * @return              a {@link Function} selecting matching next siblings
+     * @since               5.0.0
+     */
     static Function<Node, List<RemovableNode>> next(Predicate<Node> nodeSelector) {
         return node -> {
             final List<RemovableNode> result = new ArrayList<>();
@@ -68,14 +103,32 @@ public interface Siblings {
         };
     }
 
+    /**
+     * Returns a {@link Predicate} matching comment nodes.
+     *
+     * @return a {@link Predicate} matching {@link NodeType#COMMENT} nodes
+     * @since  5.0.0
+     */
     static Predicate<Node> comments() {
         return n -> n.type() == NodeType.COMMENT;
     }
 
+    /**
+     * Returns a {@link Predicate} matching comment or whitespace nodes.
+     *
+     * @return a {@link Predicate} matching comment or whitespace nodes
+     * @since  5.0.0
+     */
     static Predicate<Node> commentsOrWhitespace() {
         return comments().or(whitespace());
     }
 
+    /**
+     * Returns a {@link Predicate} matching whitespace-only text nodes.
+     *
+     * @return a {@link Predicate} matching whitespace nodes
+     * @since  5.0.0
+     */
     static Predicate<Node> whitespace() {
         return TransformationContext::isWhiteSpaceNode;
     }

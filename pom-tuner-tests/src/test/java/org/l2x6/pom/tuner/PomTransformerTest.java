@@ -2249,7 +2249,7 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singletonList(
-                        DependencyManagement.select("org.acme:dep1").modify(dep -> dep.setVersion("${dep1-new.version}"))),
+                        DependencyManagement.select("org.acme:dep1").forEach(dep -> dep.setVersion("${dep1-new.version}"))),
                 expected);
     }
 
@@ -2300,8 +2300,8 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source,
                 Arrays.asList(
-                        Dependencies.select("org.acme:dep1").modify(dep -> dep.setVersion("${dep1-new.version}")),
-                        Dependencies.select("org.acme:dep2").modify(dep -> dep.setVersion(null))),
+                        Dependencies.select("org.acme:dep1").forEach(dep -> dep.setVersion("${dep1-new.version}")),
+                        Dependencies.select("org.acme:dep2").forEach(dep -> dep.setVersion(null))),
                 expected);
     }
 
@@ -2430,7 +2430,7 @@ public class PomTransformerTest {
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singletonList(
                         DependencyManagement.select("org.acme:dep2").fromProfilesOnly("profile1")
-                                .modify(dep -> dep.setVersion("${dep2-new.version}"))),
+                                .forEach(dep -> dep.setVersion("${dep2-new.version}"))),
                 expected);
     }
 

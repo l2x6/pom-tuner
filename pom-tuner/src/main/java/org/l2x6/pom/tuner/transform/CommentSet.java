@@ -12,6 +12,12 @@ import java.util.stream.Stream;
 import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
 
+/**
+ * A set of {@code pom.xml} comments selected for modification.
+ *
+ * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
+ *
+ */
 public class CommentSet {
 
     /**
@@ -111,14 +117,21 @@ public class CommentSet {
     }
 
     public Transformation uncomment() {
-        return modify(parsedComment -> {
+        return forEach(parsedComment -> {
             final Element replacement = parsedComment.getParsedContent().root();
             replacement.precedingWhitespace(parsedComment.getSource().precedingWhitespace());
             parsedComment.getSource().parent().replaceChild(parsedComment.getSource(), replacement);
         });
     }
 
-    public Transformation modify(Consumer<ParsedComment> parsedCommentConsumer) {
+    /**
+     * Returns a {@link Transformation} that applies the given {@code action} to each element of this CommentSet.
+     *
+     * @param  action the consumer to apply to each element
+     * @return         a new {@link Transformation}
+     * @since          5.0.0
+     */
+    public Transformation forEach(Consumer<ParsedComment> action) {
         return context -> {
             context.getProfilesStream()
                     .filter(profile -> profileSelector.test(profile.getId()))
@@ -127,14 +140,23 @@ public class CommentSet {
                     .filter(nodeSelector)
                     .collect(Collectors.toList()) // create a temporary list to allow deletions, etc.
                     .stream()
-                    .forEach(parsedCommentConsumer);
+                    .forEach(action);
         };
     }
 
+    /**
+     * A comment containing commented out XML that can be accessed as parsed DOM.
+     *
+     * @since           5.0.0
+     */
     public static class ParsedComment {
         private final Comment source;
         private final Document parsedContent;
 
+        /**
+         * @param comment the Comment to create this {@link ParsedComment} from
+         * @return a new {@link ParsedComment}
+         */
         static ParsedComment of(Comment comment) {
             return new ParsedComment(comment, Document.of(comment.content()));
         }
@@ -144,10 +166,16 @@ public class CommentSet {
             this.parsedContent = parsedContent;
         }
 
+        /**
+         * @return the source {@link Comment} node
+         */
         public Comment getSource() {
             return source;
         }
 
+        /**
+         * @return the XML that was enclosed in the {@link #getSource() source} comment.
+         */
         public Document getParsedContent() {
             return parsedContent;
         }
