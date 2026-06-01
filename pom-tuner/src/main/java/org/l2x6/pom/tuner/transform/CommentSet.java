@@ -1,4 +1,4 @@
-package org.l2x6.pom.tuner.transform.api;
+package org.l2x6.pom.tuner.transform;
 
 import eu.maveniverse.domtrip.Comment;
 import eu.maveniverse.domtrip.Document;

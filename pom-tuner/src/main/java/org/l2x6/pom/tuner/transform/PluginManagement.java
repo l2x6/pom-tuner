@@ -28,9 +28,6 @@ import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.model.GavPattern;
 import org.l2x6.pom.tuner.model.GavSet;
 import org.l2x6.pom.tuner.model.Gavtcs;
-import org.l2x6.pom.tuner.transform.api.AddGavTransformer;
-import org.l2x6.pom.tuner.transform.api.ElementSet;
-import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 
 /**
  * Operations on {@code pom.xml} {@code pluginManagement} entries usable with
@@ -283,96 +280,6 @@ public interface PluginManagement {
      */
     public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> selectAll() {
         return new ElementSet<>(RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
-                textElement -> true);
-    }
-
-    /**
-     * Select {@code <dependency>} nodes of the specified {@code pluginManagement} entries for modification.
-     * <p>
-     * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual
-     * modification operation.
-     * <p>
-     * Tip: {@link GavSet} implements {@code Predicate<Gav>} and can be used as an argument for this method.
-     * <p>
-     * If none of the {@code from*(*)} methods of the returned {@link ElementSet} is called,
-     * the default behavior is to select the matching elements only from under the {@code <project>} element
-     * and ignore any matching elements under {@code <profile>} elements.
-     *
-     * @param  <THIS>    type of the returned {@link ElementSet}
-     * @param  predicate a {@link Predicate} {@code pluginManagement} entries whose descendant dependency nodes will be
-     *                   selected for modification
-     * @return           a new {@link ElementSet} having its node selector set as specified
-     * @since            5.0.0
-     */
-    public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> selectPluginDependencies(
-            Predicate<Gav> predicate) {
-        return new ElementSet<>(RemoveElementsTransformer.pluginDependenciesMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
-                gavtcsElement -> predicate.test(gavtcsElement.getGavtcs().toGavtc().toGav()));
-    }
-
-    /**
-     * Select {@code <dependency>} nodes of the specified {@code pluginManagement} entries for modification.
-     * The {@code pluginManagement} entries are selected by an array of {@code groupId[:artifactId[:version]]} patterns.
-     * In addition to syntax specified in {@link GavPattern#of(String)}, the entries can be prefixed with {@code !} to be
-     * interpreted as excludes.
-     * This method is a shorthand for {@link #selectPluginDependencies(Predicate)
-     * selectPluginDependencies(GavSet.builder().includes(patterns).build())}.
-     * <p>
-     * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual
-     * modification operation.
-     * <p>
-     * If none of the {@code from*(*)} methods of the returned {@link ElementSet} is called,
-     * the default behavior is to select the matching elements only from under the {@code <project>} element
-     * and ignore any matching elements under {@code <profile>} elements.
-     *
-     * @param  <THIS>   type of the returned {@link ElementSet}
-     * @param  patterns an array of strings parseable by {@link GavPattern#of(String)}
-     * @return          a new {@link ElementSet} having its node selector set as specified
-     * @since           5.0.0
-     */
-    public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> selectPluginDependencies(
-            String... patterns) {
-        return selectPluginDependencies(GavSet.builder().includes(patterns).build());
-    }
-
-    /**
-     * Select {@code <dependency>} nodes of the specified {@code pluginManagement} entries for modification.
-     * <p>
-     * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual
-     * modification operation.
-     * <p>
-     * If none of the {@code from*(*)} methods of the returned {@link ElementSet} is called,
-     * the default behavior is to select the matching elements only from under the {@code <project>} element
-     * and ignore any matching elements under {@code <profile>} elements.
-     *
-     * @param  <THIS>  type of the returned {@link ElementSet}
-     * @param  plugins to select for modification
-     * @return         a new {@link ElementSet} having its node selector set as specified
-     * @since          5.0.0
-     */
-    public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> selectPluginDependencies(
-            Gav... plugins) {
-        final Set<Gav> set = PomTunerUtils.toLinkedHashSet(plugins);
-        return new ElementSet<>(RemoveElementsTransformer.pluginDependenciesMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
-                gavtcsElement -> set.contains(gavtcsElement.getGavtcs().toGavtc().toGav()));
-    }
-
-    /**
-     * Select {@code <dependency>} nodes of all {@code pluginManagement} entries for modification.
-     * <p>
-     * The returned {@link ElementSet} instance can be further customized to select profiles and/or specify the actual
-     * modification operation.
-     * <p>
-     * If none of the {@code from*(*)} methods of the returned {@link ElementSet} is called,
-     * the default behavior is to select the matching elements only from under the {@code <project>} element
-     * and ignore any matching elements under {@code <profile>} elements.
-     *
-     * @param  <THIS> type of the returned {@link ElementSet}
-     * @return        a new {@link ElementSet} having its node selector set as specified
-     * @since         5.0.0
-     */
-    public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> selectAllPluginDependencies() {
-        return new ElementSet<>(RemoveElementsTransformer.pluginDependenciesMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
                 textElement -> true);
     }
 }

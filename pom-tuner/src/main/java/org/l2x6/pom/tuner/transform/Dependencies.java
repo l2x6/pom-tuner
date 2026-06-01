@@ -28,9 +28,6 @@ import org.l2x6.pom.tuner.PomTunerUtils;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.model.GavtcsPattern;
 import org.l2x6.pom.tuner.model.GavtcsSet;
-import org.l2x6.pom.tuner.transform.api.AddGavtcsTransformer;
-import org.l2x6.pom.tuner.transform.api.ElementSet;
-import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 
 /**
  * Operations on {@code pom.xml} {@code dependencies} usable with {@link PomTransformer#transform(Transformation...)}.

@@ -28,9 +28,6 @@ import org.l2x6.pom.tuner.PomTunerUtils;
 import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.model.GavPattern;
 import org.l2x6.pom.tuner.model.GavSet;
-import org.l2x6.pom.tuner.transform.api.AddGavTransformer;
-import org.l2x6.pom.tuner.transform.api.ElementSet;
-import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
 
 /**
  * Operations on {@code pom.xml} extensions usable with {@link PomTransformer#transform(Transformation...)}.

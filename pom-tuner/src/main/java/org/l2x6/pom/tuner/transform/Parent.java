@@ -19,9 +19,6 @@ package org.l2x6.pom.tuner.transform;
 import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
-import org.l2x6.pom.tuner.transform.api.ParentTransformer;
-import org.l2x6.pom.tuner.transform.api.RemoveElementsTransformer;
-import org.l2x6.pom.tuner.transform.api.RemoveTransformer;
 
 /**
  * Operations on {@code pom.xml} {@code parent} usable with {@link PomTransformer#transform(Transformation...)}.

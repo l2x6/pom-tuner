@@ -44,6 +44,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.l2x6.pom.tuner.ExpressionEvaluator.ConstantOnlyExpressionEvaluator;
+import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.DomTripUtils;
 import org.l2x6.pom.tuner.PomTransformer.GavtcsElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
@@ -854,9 +855,10 @@ public class MavenSourceTree {
             edits.add(
                     module.getPomPath(),
                     Plugins
-                            .selectPluginDependencies(
-                                    gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
+                            .selectAll()
                             .from(profileIds::contains)
+                            .flatMapGavtcs("dependencies")
+                            .filter(gavtcsElememt -> isOwnVersionedDepenency(moduleGa, gavtcsElememt.getGavtcs().toGavtc().toGav(), evaluator))
                             .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
                                     edits)));
 
@@ -870,9 +872,10 @@ public class MavenSourceTree {
             edits.add(
                     module.getPomPath(),
                     PluginManagement
-                            .selectPluginDependencies(
-                                    gavtcsElement -> isOwnVersionedDepenency(moduleGa, gavtcsElement, evaluator))
+                            .selectAll()
                             .from(profileIds::contains)
+                            .flatMapGavtcs("dependencies")
+                            .filter(gavtcsElememt -> isOwnVersionedDepenency(moduleGa, gavtcsElememt.getGavtcs().toGavtc().toGav(), evaluator))
                             .modify(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
                                     edits)));
 
