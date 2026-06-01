@@ -39,7 +39,7 @@ public class CommentSet {
     private final Function<ProfileElement, Stream<Comment>> getComments;
     private final Predicate<ParsedComment> nodeSelector;
 
-    public CommentSet(Predicate<String> profileSelector, Function<ProfileElement, Stream<Comment>> getComments,
+    CommentSet(Predicate<String> profileSelector, Function<ProfileElement, Stream<Comment>> getComments,
             Predicate<ParsedComment> nodeSelector) {
         this.profileSelector = profileSelector;
         this.getComments = getComments;

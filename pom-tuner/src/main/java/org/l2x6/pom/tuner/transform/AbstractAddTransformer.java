@@ -56,7 +56,7 @@ abstract class AbstractAddTransformer<P extends ContainerElement, T extends Text
         this.postprocessors = postprocessors;
     }
 
-    public AbstractAddTransformer(
+    AbstractAddTransformer(
             Function<ProfileElement, P> profileToParentElement,
             BiFunction<ContainerElement, Comparator<C>, T> createChild,
             Comparator<C> comparator) {

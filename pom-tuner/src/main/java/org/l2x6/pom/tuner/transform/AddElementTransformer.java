@@ -47,7 +47,7 @@ public class AddElementTransformer<P extends ContainerElement, T extends TextEle
         super(profileSelector, profileToParentElement, createChild, comparator, postprocessors);
     }
 
-    public AddElementTransformer(
+    AddElementTransformer(
             Function<ProfileElement, P> profileToParentElement,
             BiFunction<ContainerElement, Comparator<Map.Entry<String, String>>, T> createChild,
             Comparator<Map.Entry<String, String>> comparator) {
