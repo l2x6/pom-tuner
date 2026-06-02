@@ -53,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class MavenSourceTreeTest {
     private static final Path BASEDIR = Paths.get(System.getProperty("project.basedir", "."));
+    private static final Path SETTINGS_XML = Paths.get(System.getProperty("mrm.settings.xml"));
     private static final Path MVN_LOCAL_REPO;
 
     static {
@@ -67,6 +68,7 @@ public class MavenSourceTreeTest {
                         "org.apache.maven.plugins:maven-help-plugin:3.2.0:evaluate",
                         "-Dexpression=" + propertyName,
                         "-Dartifact=" + ga.toString(),
+                        "-s", SETTINGS_XML.toString(),
                         "-Dmaven.repo.local=" + MVN_LOCAL_REPO.toString(),
                         "-q",
                         "-DforceStdout")
@@ -158,8 +160,14 @@ public class MavenSourceTreeTest {
                 m8.findPropertyDefinition("prop1", ActiveProfiles.of("p1", "p2")).getValue());
 
         Mvn.fromMvnw().assertInstalled()
-                .args("clean", "install", "-Dmaven.repo.local=" + MVN_LOCAL_REPO.toString(), "-B")
+                .args(
+                        "clean",
+                        "install",
+                        "-s", SETTINGS_XML.toString(),
+                        "-Dmaven.repo.local=" + MVN_LOCAL_REPO.toString(),
+                        "-B")
                 .cd(root)
+                .stderrToStdout()
                 .execute()
                 .assertSuccess();
 
