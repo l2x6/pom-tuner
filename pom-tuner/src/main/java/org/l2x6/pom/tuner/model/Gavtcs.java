@@ -45,6 +45,15 @@ public class Gavtcs {
             .thenComparing(Gavtcs::getScope, SCOPE_COMPARATOR)
             .thenComparing(Gavtcs::getExclusions, new ListComparator<Ga>());
 
+    private static final Comparator<Gavtcs> SCOPE_AND_GROUP_FIRST_COMPARATOR = Comparator
+            .comparing(Gavtcs::getScope, SCOPE_COMPARATOR)
+            .thenComparing(Gavtcs::getGroupId, Gavtc.SAFE_STRING_COMPARATOR)
+            .thenComparing(Gavtcs::getArtifactId, Gavtc.SAFE_STRING_COMPARATOR)
+            .thenComparing(Gavtcs::getVersion, Gavtc.SAFE_STRING_COMPARATOR)
+            .thenComparing(Gavtcs::getType, Gavtc.TYPE_COMPARATOR)
+            .thenComparing(Gavtcs::getClassifier, Gavtc.SAFE_STRING_COMPARATOR)
+            .thenComparing(Gavtcs::getExclusions, new ListComparator<Ga>());
+
     private static final Comparator<Gavtcs> SCOPE_AND_TYPE_FIRST_COMPARATOR = Comparator
             .comparing(Gavtcs::getScope, SCOPE_COMPARATOR)
             .thenComparing(Gavtcs::getType, Gavtc.TYPE_COMPARATOR)
@@ -142,6 +151,10 @@ public class Gavtcs {
 
     public static Comparator<Gavtcs> scopeAndTypeFirstComparator() {
         return SCOPE_AND_TYPE_FIRST_COMPARATOR;
+    }
+
+    public static Comparator<Gavtcs> scopeAndGroupFirstComparator() {
+        return SCOPE_AND_GROUP_FIRST_COMPARATOR;
     }
 
     public static Predicate<Gavtcs> equalGroupIdAndArtifactId(String groupId, String artifactId) {

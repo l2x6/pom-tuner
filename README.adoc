@@ -6,32 +6,41 @@ Its two main parts are `PomTransformer` and `MavenSourceTree`
 
 == `PomTransformer`
 
-Transform a single `pom.xml` file by using any of the pre-cooked ``Transformation``s or by writing your own.
+Transform a single `pom.xml` file by using any of the ready-made ``Transformation``s
+from the `org.l2x6.pom.tuner.transform` package or by writing your own.
 
 A basic usage example:
 
 [source,java]
 ----
-import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.PomTransformer;
-import org.l2x6.pom.tuner.PomTransformer.SimpleElementWhitespace;
-import org.l2x6.pom.tuner.PomTransformer.Transformation;
+import org.l2x6.pom.tuner.model.Gavtcs;
+import org.l2x6.pom.tuner.transform.Dependencies;
+import org.l2x6.pom.tuner.transform.Modules;
+import org.l2x6.pom.tuner.transform.Properties;
 
-new PomTransformer(Paths.get("pom.xml"), StandardCharsets.UTF_8, SimpleElementWhitespace.AUTODETECT_PREFER_EMPTY)
-        .transform(
-            Transformation.addModuleIfNeeded("my-new-module", String::compareTo),
-            Transformation.addOrSetProperty("my-prop", "new-value"),
-            Transformation.addDependencyIfNeeded(new Gavtcs("org.acme", "a1", "1.2.3"),
-                    Gavtcs.scopeAndTypeFirstComparator())
-        );
+PomTransformer.of(
+        /* Create or set <my-prop>new-value</my-prop>; when creating put it after <existing-property>...</existing-property> */
+        Properties.set("my-prop", "new-value").afterElement("existing-property"),
+
+        /* Remove all properties with names ending with ".version" */
+        Properties.remove(textElement -> textElement.getElementName().endsWith(".version")),
+
+        /* Add org.acme:acme:1.2.3 dependency at a proper position (runtime dependencies first, test dependencies last, then by groupId:artifactId, etc.) */
+        Dependencies.add(Gavtcs.of("org.acme:acme:1.2.3")).at(Gavtcs.scopeAndGroupFirstComparator())
+
+        /* Set version of org.foo:bar to 2.3.4 */
+        Dependencies.select("org.foo:bar").forEach(gavtcsElement -> gavtcsElement.setVersion("2.3.4"))
+
+).transform(Path.of("pom.xml"));
 ----
 
 Characteristics:
 
-* Parses the given `pom.xml` file once into a DOM, applies one or more ``Transformation``s and writes the file back to the disk.
-* Generally keeps all formatting and whitespace, including end of line (EOL) characters (unlike many DOM writers which use the current platform's default EOLs).
+* Parses the given `pom.xml` file once using https://github.com/maveniverse/domtrip[DOM Trip], applies one or more ``Transformation``s and writes the file back to the disk.
+* Keeps all formatting and whitespace, including end of line (EOL) characters (unlike many DOM writers which use the current platform's default EOLs).
 * Indentation for newly added elements is auto-detected based on the first indent available in the file.
-* Respects the http://maven.apache.org/developers/conventions/code.html#POM_Code_Convention[canonical ordering] when adding new elements under `<project>`.
+* Respects the http://maven.apache.org/developers/conventions/code.html#POM_Code_Convention[canonical ordering] when adding new elements under `<project>` and `<profile>`.
 
 == `MavenSourceTree`
 
