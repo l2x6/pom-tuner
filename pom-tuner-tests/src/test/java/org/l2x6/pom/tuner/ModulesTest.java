@@ -359,8 +359,7 @@ public class ModulesTest {
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 Modules
                         .remove(te -> te.getTextContent().equals("module-2"))
-                        .alsoRemoveNone()
-                        .alsoRemoveNext(Siblings.commentsOrWhitespace())),
+                        .alsoRemove(Siblings.next(Siblings.commentsOrWhitespace()))),
                 expected);
     }
 
@@ -398,7 +397,7 @@ public class ModulesTest {
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 Modules
                         .remove("module-1", "module-2")
-                        .alsoRemoveNext(Siblings.commentsOrWhitespace())),
+                        .alsoRemove(Siblings.previousOrNext(Siblings.commentsOrWhitespace()))),
                 expected);
     }
 
@@ -433,8 +432,7 @@ public class ModulesTest {
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 Modules
                         .removeAll()
-                        .alsoRemoveNone()
-                        .alsoRemovePrevious(Siblings.whitespace())),
+                        .alsoRemove(Siblings.previous(Siblings.whitespace()))),
                 expected);
     }
 

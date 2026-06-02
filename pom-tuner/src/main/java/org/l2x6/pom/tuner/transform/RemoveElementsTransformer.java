@@ -221,99 +221,32 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
                 true);
     }
 
+
     /**
      * Select some nodes around the removed node to be removed too.
      * Handy to remove any preceding or subsequent whitespace, comments, and/or empty parent elements.
      * <p>
-     * This is a cumulative operation: the specified {@code siblingsSelector} is added to sibling selectors currently
-     * available in {@link #siblingsSelectors}.
-     * Use {@link #alsoRemoveNone()} to remove the default sibling selectors.
+     * Calling this method replaces the default siblings selector ({@link Siblings#previousCommentsOrWhitespace()}).
+     * <p>
+     * Call {@code alsoRemove()} without arguments to remove the default siblings selector.
      *
-     * @param  siblingsSelector a {@link Function} that for given removed node returns a list of nodes that should also be
-     *                          removed.
-     * @return                  a copy of this {@link RemoveElementsTransformer} instance with
+     * @param  siblings one, many or none {@link Siblings} to also remove in addition to primary nodes selected for removal.
+     * @return                  a copy of this {@link RemoveTransformer} instance with
      *                          {@link #siblingsSelectors} adjusted
      * @since                   5.0.0
      * @see                     Siblings
      */
     @SuppressWarnings("unchecked")
-    public THIS alsoRemove(Function<Node, List<RemovableNode>> siblingsSelector) {
+    public THIS alsoRemove(Siblings... siblings) {
+        List<Siblings> sSelectors = new ArrayList<>();
+        for (Siblings s : siblings) {
+            sSelectors.add(s);
+        }
         return (THIS) new RemoveElementsTransformer<>(
                 profileSelector,
                 profileToRemovedElements,
                 elementSelector,
-                add(siblingsSelectors, siblingsSelector),
-                true);
-    }
-
-    /**
-     * Select some nodes preceding the removed node to be removed too.
-     * Handy to remove any preceding sibling whitespace and/or comments.
-     * <p>
-     * This is a cumulative operation: {@code Siblings.previous(nodeSelector)} is added to sibling selectors currently
-     * available in {@link #siblingsSelectors}.
-     * Use {@link #alsoRemoveNone()} to remove the default sibling selectors.
-     *
-     * @param  nodeSelector a {@link Predicate} deciding which of the preceding siblings should be removed; the siblings are
-     *                      iterated while {@code nodeSelector} returns {@code true}
-     * @return              a copy of this {@link RemoveElementsTransformer} instance with
-     *                      {@link #siblingsSelectors} adjusted
-     * @since               5.0.0
-     * @see                 Siblings#previous(Predicate)
-     */
-    @SuppressWarnings("unchecked")
-    public THIS alsoRemovePrevious(Predicate<Node> nodeSelector) {
-        return (THIS) new RemoveElementsTransformer<>(
-                profileSelector,
-                profileToRemovedElements,
-                elementSelector,
-                add(siblingsSelectors, Siblings.previous(nodeSelector)),
-                true);
-    }
-
-    /**
-     * Select some nodes following the removed node to be removed too.
-     * Handy to remove any subsequent sibling whitespace and/or comments.
-     * <p>
-     * This is a cumulative operation: {@code Siblings.next(nodeSelector)} is added to sibling selectors currently available
-     * in {@link #siblingsSelectors}.
-     * Use {@link #alsoRemoveNone()} to remove the default sibling selectors.
-     *
-     * @param  nodeSelector a {@link Predicate} deciding which of the following siblings should be removed; the siblings are
-     *                      iterated while {@code nodeSelector} returns {@code true}
-     * @return              a copy of this {@link RemoveElementsTransformer} instance with
-     *                      {@link #siblingsSelectors} adjusted
-     * @since               5.0.0
-     * @see                 Siblings#next(Predicate)
-     */
-    @SuppressWarnings("unchecked")
-    public THIS alsoRemoveNext(Predicate<Node> nodeSelector) {
-        return (THIS) new RemoveElementsTransformer<>(
-                profileSelector,
-                profileToRemovedElements,
-                elementSelector,
-                add(siblingsSelectors, Siblings.next(nodeSelector)),
-                true);
-    }
-
-    /**
-     * Do not select any nodes following or preceding the removed node (such as whitespace or comments) for removal.
-     * <p>
-     * Use {@link #alsoRemove(Function)} {@link #alsoRemoveNext(Predicate)} or {@link #alsoRemovePrevious(Predicate)}
-     * to select additional neighbor nodes for removal.
-     *
-     * @return a copy of this {@link RemoveElementsTransformer} instance with
-     *         {@link #siblingsSelectors} adjusted
-     * @since  5.0.0
-     * @see    Siblings
-     */
-    @SuppressWarnings("unchecked")
-    public THIS alsoRemoveNone() {
-        return (THIS) new RemoveElementsTransformer<>(
-                profileSelector,
-                profileToRemovedElements,
-                elementSelector,
-                Collections.emptyList(),
+                Collections.unmodifiableList(sSelectors),
                 true);
     }
 

@@ -1233,7 +1233,13 @@ public class PomTransformer {
             try {
                 this.gavtcs = new Gavtcs(groupId, artifactId, version, type, classifier, scope, exclusions);
             } catch (RuntimeException e) {
-                throw new RuntimeException("Could not create Gavtcs out of element " + containerElement, e);
+                ArrayList<String> path = new ArrayList<>();
+                ContainerNode n = containerElement.parent();
+                while (n != null && n instanceof Element) {
+                    path.add(0, ((Element) n).name());
+                    n = n.parent();
+                }
+                throw new RuntimeException("Could not create Gavtcs out of element " + containerElement + " under " + path.stream().collect(Collectors.joining("/")) + " in " + context.getPomXmlPath(), e);
             }
         }
 

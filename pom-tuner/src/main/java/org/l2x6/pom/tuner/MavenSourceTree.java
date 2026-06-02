@@ -857,7 +857,8 @@ public class MavenSourceTree {
                     Plugins
                             .selectAll()
                             .from(profileIds::contains)
-                            .flatMapGavtcs("dependencies")
+                            .mapFirst("dependencies")
+                            .flatMapGavtcs()
                             .filter(gavtcsElememt -> isOwnVersionedDepenency(moduleGa, gavtcsElememt.getGavtcs().toGavtc().toGav(), evaluator))
                             .forEach(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
                                     edits)));
@@ -874,7 +875,8 @@ public class MavenSourceTree {
                     PluginManagement
                             .selectAll()
                             .from(profileIds::contains)
-                            .flatMapGavtcs("dependencies")
+                            .mapFirst("dependencies")
+                            .flatMapGavtcs()
                             .filter(gavtcsElememt -> isOwnVersionedDepenency(moduleGa, gavtcsElememt.getGavtcs().toGavtc().toGav(), evaluator))
                             .forEach(gavtcsElement -> setVersion(moduleGa, pomPath, gavtcsElement, newVersion, evaluator,
                                     edits)));

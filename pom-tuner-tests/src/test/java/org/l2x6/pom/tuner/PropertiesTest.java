@@ -353,8 +353,7 @@ public class PropertiesTest {
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 Properties
                         .remove(te -> te.getTextContent().equals("v2"))
-                        .alsoRemoveNone()
-                        .alsoRemoveNext(Siblings.commentsOrWhitespace())),
+                        .alsoRemove(Siblings.nextCommentsOrWhitespace())),
                 expected);
     }
 
@@ -392,7 +391,7 @@ public class PropertiesTest {
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 Properties
                         .remove("p1", "p2")
-                        .alsoRemoveNext(Siblings.commentsOrWhitespace())),
+                        .alsoRemove(Siblings.previousOrNext(Siblings.commentsOrWhitespace()))),
                 expected);
     }
 
@@ -427,8 +426,7 @@ public class PropertiesTest {
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
                 Properties
                         .removeAll()
-                        .alsoRemoveNone()
-                        .alsoRemovePrevious(Siblings.whitespace())),
+                        .alsoRemove(Siblings.previous(Siblings.whitespace()))),
                 expected);
     }
 

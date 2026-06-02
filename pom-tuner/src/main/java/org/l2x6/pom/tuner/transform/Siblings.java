@@ -26,16 +26,13 @@ import java.util.function.Predicate;
 import org.l2x6.pom.tuner.PomTransformer.RemovableNode;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 
-public interface Siblings {
-    /**
-     * Returns a sibling selector that selects no siblings.
-     *
-     * @return a {@link Function} always returning an empty list
-     * @since  5.0.0
-     */
-    static Function<Node, List<Node>> none() {
-        return node -> Collections.emptyList();
-    }
+/**
+ * A sector of sibling XML nodes of some specific XML node.
+ *
+ * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
+ * @since 5.0.0
+ */
+public interface Siblings extends Function<Node, List<RemovableNode>> {
 
     /**
      * Returns a sibling selector that selects both previous and next siblings matching the given {@code nodeSelector}.
@@ -44,7 +41,7 @@ public interface Siblings {
      * @return              a {@link Function} selecting matching previous and next siblings
      * @since               5.0.0
      */
-    static Function<Node, List<RemovableNode>> previousOrNext(Predicate<Node> nodeSelector) {
+    static Siblings previousOrNext(Predicate<Node> nodeSelector) {
         return node -> {
             final List<RemovableNode> prev = previous(nodeSelector).apply(node);
             final List<RemovableNode> result = new ArrayList<>(prev);
@@ -59,7 +56,7 @@ public interface Siblings {
      * @return a {@link Function} selecting previous comment and whitespace siblings
      * @since  5.0.0
      */
-    static Function<Node, List<RemovableNode>> previousCommentsOrWhitespace() {
+    static Siblings previousCommentsOrWhitespace() {
         return previous(commentsOrWhitespace());
     }
 
@@ -71,7 +68,7 @@ public interface Siblings {
      * @return              a {@link Function} selecting matching previous siblings
      * @since               5.0.0
      */
-    static Function<Node, List<RemovableNode>> previous(Predicate<Node> nodeSelector) {
+    static Siblings previous(Predicate<Node> nodeSelector) {
         return node -> {
             final List<RemovableNode> result = new ArrayList<>();
             RemovableNode prevSibling = RemovableNode.of(node);
@@ -84,6 +81,16 @@ public interface Siblings {
     }
 
     /**
+     * Returns a sibling selector that selects next siblings that are comments or whitespace.
+     *
+     * @return a {@link Function} selecting next comment and whitespace siblings
+     * @since  5.0.0
+     */
+    static Siblings nextCommentsOrWhitespace() {
+        return next(commentsOrWhitespace());
+    }
+
+    /**
      * Returns a sibling selector that selects next siblings matching the given {@code nodeSelector}.
      * The selection continues as long as consecutive next siblings match.
      *
@@ -91,7 +98,7 @@ public interface Siblings {
      * @return              a {@link Function} selecting matching next siblings
      * @since               5.0.0
      */
-    static Function<Node, List<RemovableNode>> next(Predicate<Node> nodeSelector) {
+    static Siblings next(Predicate<Node> nodeSelector) {
         return node -> {
             final List<RemovableNode> result = new ArrayList<>();
             RemovableNode nextSibling = RemovableNode.of(node);

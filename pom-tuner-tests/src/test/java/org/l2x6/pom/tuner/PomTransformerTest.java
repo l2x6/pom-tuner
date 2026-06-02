@@ -1340,7 +1340,9 @@ public class PomTransformerTest {
                 + "    </modules>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source,
-                Collections.singletonList(Modules.remove("module-2").alsoRemoveNone().alsoRemoveNext(Siblings.comments())),
+                Collections.singletonList(
+                        Modules.remove("module-2")
+                                .alsoRemove(Siblings.next(Siblings.comments()))),
                 expected);
     }
 
