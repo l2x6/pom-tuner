@@ -137,7 +137,7 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
      *                    otherwise
      * @since             4.8.0
      */
-    boolean contains(String groupId, String artifactId, String version, String type, String classifier);
+    boolean contains(String groupId, String artifactId, String version, OptionalWithDefault type, String classifier);
 
     /**
      * Shorthand for
@@ -182,7 +182,8 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
      *                    otherwise
      * @since             4.5.0
      */
-    boolean contains(String groupId, String artifactId, String version, String type, String classifier, String scope);
+    boolean contains(String groupId, String artifactId, String version, OptionalWithDefault type, String classifier,
+            String scope);
 
     /**
      * Shorthand for
@@ -241,13 +242,14 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
         }
 
         @Override
-        public boolean contains(String groupId, String artifactId, String version, String type, String classifier) {
+        public boolean contains(String groupId, String artifactId, String version, OptionalWithDefault type,
+                String classifier) {
             return gavtcsSets.stream()
                     .anyMatch(gavtcsSet -> gavtcsSet.contains(groupId, artifactId, version, type, classifier));
         }
 
         @Override
-        public boolean contains(String groupId, String artifactId, String version, String type, String classifier,
+        public boolean contains(String groupId, String artifactId, String version, OptionalWithDefault type, String classifier,
                 String scope) {
             return gavtcsSets.stream().anyMatch(gavtcsSet -> gavtcsSet.contains(groupId, artifactId, version, type, classifier,
                     scope));
@@ -621,7 +623,8 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
             return false;
         }
 
-        private static boolean matches(String groupId, String artifactId, String version, String type, String classifier,
+        private static boolean matches(String groupId, String artifactId, String version, OptionalWithDefault type,
+                String classifier,
                 List<GavtcsPattern> patterns) {
             for (GavtcsPattern pattern : patterns) {
                 if (pattern.matches(groupId, artifactId, version, type, classifier)) {
@@ -631,7 +634,8 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
             return false;
         }
 
-        private static boolean matches(String groupId, String artifactId, String version, String type, String classifier,
+        private static boolean matches(String groupId, String artifactId, String version, OptionalWithDefault type,
+                String classifier,
                 String scope, List<GavtcsPattern> patterns) {
             for (GavtcsPattern pattern : patterns) {
                 if (pattern.matches(groupId, artifactId, version, type, classifier, scope)) {
@@ -697,13 +701,14 @@ public interface GavtcsSet extends Predicate<Gavtcs> {
         }
 
         @Override
-        public boolean contains(String groupId, String artifactId, String version, String type, String classifier) {
+        public boolean contains(String groupId, String artifactId, String version, OptionalWithDefault type,
+                String classifier) {
             return matches(groupId, artifactId, version, type, classifier, includes)
                     && !matches(groupId, artifactId, version, type, classifier, excludes);
         }
 
         @Override
-        public boolean contains(String groupId, String artifactId, String version, String type, String classifier,
+        public boolean contains(String groupId, String artifactId, String version, OptionalWithDefault type, String classifier,
                 String scope) {
             return matches(groupId, artifactId, version, type, classifier, scope, includes)
                     && !matches(groupId, artifactId, version, type, classifier, scope, excludes);

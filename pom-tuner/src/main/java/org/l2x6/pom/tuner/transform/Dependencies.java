@@ -246,7 +246,7 @@ public interface Dependencies {
      * @since               5.0.0
      */
     public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> select(
-            Gavtcs... dependencies) {
+            @SuppressWarnings("unchecked") Gavtcs... dependencies) {
         final Set<Gavtcs> set = PomTunerUtils.toLinkedHashSet(dependencies);
         return new ElementSet<>(RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME),
                 gavtcsElement -> set.contains(gavtcsElement.getGavtcs()));

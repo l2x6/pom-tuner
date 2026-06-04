@@ -21,15 +21,15 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
-import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
+import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 
 /**
  * A set of {@code pom.xml} text elements selected for modification.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  *
- * @since           5.0.0
+ * @since  5.0.0
  */
 public class TextElementSet extends ElementSet<TextElement, TextElementSet> {
     TextElementSet(Function<ProfileElement, Stream<TextElement>> getNodes, Predicate<TextElement> nodeSelector) {

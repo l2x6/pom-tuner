@@ -19,7 +19,6 @@ package org.l2x6.pom.tuner.transform;
 import eu.maveniverse.domtrip.Element;
 import eu.maveniverse.domtrip.Node;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
@@ -31,8 +30,8 @@ import org.l2x6.pom.tuner.PomTransformer.NodeGavtcs;
 import org.l2x6.pom.tuner.PomTransformer.ProfileElement;
 import org.l2x6.pom.tuner.PomTransformer.RemovableNode;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
-import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
+import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
 
 /**
  * A generic remover of {@code pom.xml} elements such as {@code <properties>}, their child properties,
@@ -138,10 +137,10 @@ public class RemoveTransformer<T extends TextElement, THIS extends RemoveTransfo
      * Call {@code alsoRemove()} without arguments to remove the default siblings selector.
      *
      * @param  siblings one, many or none {@link Siblings} to also remove in addition to primary nodes selected for removal.
-     * @return                  a copy of this {@link RemoveTransformer} instance with
-     *                          {@link #siblingsSelectors} adjusted
-     * @since                   5.0.0
-     * @see                     Siblings
+     * @return          a copy of this {@link RemoveTransformer} instance with
+     *                  {@link #siblingsSelectors} adjusted
+     * @since           5.0.0
+     * @see             Siblings
      */
     @SuppressWarnings("unchecked")
     public THIS alsoRemove(Siblings... siblings) {

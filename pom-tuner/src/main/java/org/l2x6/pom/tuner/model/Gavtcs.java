@@ -25,6 +25,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import org.l2x6.pom.tuner.model.Gavtc.Type;
 
 /**
  * A Maven dependency defined by {@code groupId}, {@code artifactId}, {@code version}, {@code type} and
@@ -36,32 +37,6 @@ public class Gavtcs {
     private static final Comparator<String> SCOPE_COMPARATOR = (a, b) -> scopeOrdinal(a) - scopeOrdinal(b);
     private static final String DEFAULT_SCOPE = "compile";
 
-    private static final Comparator<Gavtcs> GROUP_FIRST_COMPARATOR = Comparator
-            .comparing(Gavtcs::getGroupId, Gavtc.SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getArtifactId, Gavtc.SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getVersion, Gavtc.SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getType, Gavtc.TYPE_COMPARATOR)
-            .thenComparing(Gavtcs::getClassifier, Gavtc.SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getScope, SCOPE_COMPARATOR)
-            .thenComparing(Gavtcs::getExclusions, new ListComparator<Ga>());
-
-    private static final Comparator<Gavtcs> SCOPE_AND_GROUP_FIRST_COMPARATOR = Comparator
-            .comparing(Gavtcs::getScope, SCOPE_COMPARATOR)
-            .thenComparing(Gavtcs::getGroupId, Gavtc.SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getArtifactId, Gavtc.SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getVersion, Gavtc.SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getType, Gavtc.TYPE_COMPARATOR)
-            .thenComparing(Gavtcs::getClassifier, Gavtc.SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getExclusions, new ListComparator<Ga>());
-
-    private static final Comparator<Gavtcs> SCOPE_AND_TYPE_FIRST_COMPARATOR = Comparator
-            .comparing(Gavtcs::getScope, SCOPE_COMPARATOR)
-            .thenComparing(Gavtcs::getType, Gavtc.TYPE_COMPARATOR)
-            .thenComparing(Gavtcs::getGroupId, Gavtc.SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getArtifactId, Gavtc.SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getVersion, Gavtc.SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getClassifier, Gavtc.SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtcs::getExclusions, new ListComparator<Ga>());
     private static final String DEFAULT_TYPE = "jar";
 
     static class ListComparator<T extends Comparable<? super T>> implements Comparator<SortedSet<T>> {
@@ -91,7 +66,7 @@ public class Gavtcs {
     }
 
     public static Gavtcs importBom(String groupId, String artifactId, String version) {
-        return new Gavtcs(groupId, artifactId, version, "pom", null, "import");
+        return new Gavtcs(groupId, artifactId, version, Type.pom(), null, "import");
     }
 
     private static int scopeOrdinal(String scope) {
@@ -118,11 +93,11 @@ public class Gavtcs {
     }
 
     public static Gavtcs virtual(String groupId, String artifactId, String version) {
-        return new Gavtcs(groupId, artifactId, version, "pom", null, "test", Ga.excludeAll());
+        return new Gavtcs(groupId, artifactId, version, Type.pom(), null, "test", Ga.excludeAll());
     }
 
     public static Gavtcs testJar(String groupId, String artifactId, String version) {
-        return new Gavtcs(groupId, artifactId, version, null, null, "test");
+        return new Gavtcs(groupId, artifactId, version, Type.empty(), null, "test");
     }
 
     public static Gavtcs of(String rawGavtcs) {
@@ -142,19 +117,52 @@ public class Gavtcs {
         final String type = i < gavtcArr.length ? Gavtc.emptyToNull(gavtcArr[i++]) : null;
         final String classifier = i < gavtcArr.length ? Gavtc.emptyToNull(gavtcArr[i++]) : null;
         final String scope = i < gavtcArr.length ? Gavtc.emptyToNull(gavtcArr[i++]) : null;
-        return new Gavtcs(groupId, artifactId, version, type, classifier, scope);
+        return new Gavtcs(groupId, artifactId, version, Type.of(type), classifier, scope);
     }
 
     public static Comparator<Gavtcs> groupFirstComparator() {
-        return GROUP_FIRST_COMPARATOR;
+        return groupFirstComparator(OptionalWithDefault.valueOrDefaultComparator());
+    }
+
+    public static Comparator<Gavtcs> groupFirstComparator(Comparator<OptionalWithDefault> typeComparator) {
+        return Comparator
+                .<Gavtcs, String> comparing(Gavtcs::getGroupId, Gavtc.SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtcs::getArtifactId, Gavtc.SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtcs::getVersion, Gavtc.SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtcs::getType, typeComparator)
+                .thenComparing(Gavtcs::getClassifier, Gavtc.SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtcs::getScope, SCOPE_COMPARATOR)
+                .thenComparing(Gavtcs::getExclusions, new ListComparator<Ga>());
     }
 
     public static Comparator<Gavtcs> scopeAndTypeFirstComparator() {
-        return SCOPE_AND_TYPE_FIRST_COMPARATOR;
+        return scopeAndTypeFirstComparator(OptionalWithDefault.valueOrDefaultComparator());
+    }
+
+    public static Comparator<Gavtcs> scopeAndTypeFirstComparator(Comparator<OptionalWithDefault> typeComparator) {
+        return Comparator
+                .<Gavtcs, String> comparing(Gavtcs::getScope, SCOPE_COMPARATOR)
+                .thenComparing(Gavtcs::getType, typeComparator)
+                .thenComparing(Gavtcs::getGroupId, Gavtc.SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtcs::getArtifactId, Gavtc.SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtcs::getVersion, Gavtc.SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtcs::getClassifier, Gavtc.SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtcs::getExclusions, new ListComparator<Ga>());
     }
 
     public static Comparator<Gavtcs> scopeAndGroupFirstComparator() {
-        return SCOPE_AND_GROUP_FIRST_COMPARATOR;
+        return scopeAndGroupFirstComparator(OptionalWithDefault.valueOrDefaultComparator());
+    }
+
+    public static Comparator<Gavtcs> scopeAndGroupFirstComparator(Comparator<OptionalWithDefault> typeComparator) {
+        return Comparator
+                .<Gavtcs, String> comparing(Gavtcs::getScope, SCOPE_COMPARATOR)
+                .thenComparing(Gavtcs::getGroupId, Gavtc.SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtcs::getArtifactId, Gavtc.SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtcs::getVersion, Gavtc.SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtcs::getType, typeComparator)
+                .thenComparing(Gavtcs::getClassifier, Gavtc.SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtcs::getExclusions, new ListComparator<Ga>());
     }
 
     public static Predicate<Gavtcs> equalGroupIdAndArtifactId(String groupId, String artifactId) {
@@ -175,10 +183,15 @@ public class Gavtcs {
     private final int hashCode;
 
     public Gavtcs(String groupId, String artifactId, String version) {
-        this(groupId, artifactId, version, null, null, null);
+        this(groupId, artifactId, version, Type.empty());
     }
 
-    public Gavtcs(String groupId, String artifactId, String version, String type, String classifier, String scope) {
+    public Gavtcs(String groupId, String artifactId, String version, OptionalWithDefault type) {
+        this(groupId, artifactId, version, type, null, null);
+    }
+
+    public Gavtcs(String groupId, String artifactId, String version, OptionalWithDefault type, String classifier,
+            String scope) {
         this(new Gavtc(groupId, artifactId, version, type, classifier), scope);
     }
 
@@ -211,12 +224,12 @@ public class Gavtcs {
         this.hashCode = hc();
     }
 
-    public Gavtcs(String groupId, String artifactId, String version, String type, String classifier, String scope,
+    public Gavtcs(String groupId, String artifactId, String version, OptionalWithDefault type, String classifier, String scope,
             Ga exclusion) {
         this(new Gavtc(groupId, artifactId, version, type, classifier), scope, exclusion);
     }
 
-    public Gavtcs(String groupId, String artifactId, String version, String type, String classifier, String scope,
+    public Gavtcs(String groupId, String artifactId, String version, OptionalWithDefault type, String classifier, String scope,
             Collection<Ga> exclusions) {
         this(new Gavtc(groupId, artifactId, version, type, classifier), scope, exclusions);
     }
@@ -261,7 +274,7 @@ public class Gavtcs {
     /**
      * @return the artifact type (sometimes called extension), such as `pom`, `jar`, `war`, etc.
      */
-    public String getType() {
+    public OptionalWithDefault getType() {
         return gavtc.getType();
     }
 
@@ -288,7 +301,7 @@ public class Gavtcs {
 
     public static Function<Gavtcs, Optional<Gavtcs>> deploymentVirtualMapper(Predicate<Gavtcs> isExtension) {
         return gavtcs -> isExtension.test(gavtcs)
-                ? Optional.of(gavtcs.toVirtualDeployment())
+                ? Optional.of((Gavtcs) gavtcs.toVirtualDeployment())
                 : Optional.empty();
     }
 
@@ -307,12 +320,12 @@ public class Gavtcs {
      */
     public StringBuilder toString(StringBuilder stringBuilder) {
         toGavtc().toGav().toString(stringBuilder);
-        final String type = getType();
+        final String typeValue = getType().getValue();
         final String classifier = getClassifier();
-        if (type != null || classifier != null || scope != null) {
+        if (typeValue != null || classifier != null || scope != null) {
             stringBuilder.append(':');
-            if (type != null) {
-                stringBuilder.append(type);
+            if (typeValue != null) {
+                stringBuilder.append(typeValue);
             }
             if (classifier != null || scope != null) {
                 stringBuilder.append(':');
@@ -367,11 +380,11 @@ public class Gavtcs {
     }
 
     public boolean isVirtual() {
-        return "pom".equals(getType()) && "test".equals(scope);
+        return "pom".equals(getType().getValue()) && "test".equals(scope);
     }
 
     public boolean isVirtualDeployment() {
-        return "pom".equals(getType()) && "test".equals(scope) && getArtifactId().endsWith("-deployment");
+        return "pom".equals(getType().getValue()) && "test".equals(scope) && getArtifactId().endsWith("-deployment");
     }
 
     /**

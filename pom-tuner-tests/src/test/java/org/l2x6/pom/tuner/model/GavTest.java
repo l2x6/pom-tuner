@@ -49,15 +49,6 @@ public class GavTest {
         Assertions.assertThat(new Gav("g", "a", null).toString()).isEqualTo("g:a:");
     }
 
-    static final Gavtcs jffiNative = Gavtcs.of("com.github.jnr:jffi:1.3.10:jar:native");
-    static final Gavtcs jffi = Gavtcs.of("com.github.jnr:jffi:1.3.10:jar");
-
-    @Test
-    void groupFirstComparator() {
-        Assertions.assertThat(Gavtcs.groupFirstComparator().compare(jffi, jffiNative)).isEqualTo(-1);
-        Assertions.assertThat(Gavtcs.groupFirstComparator().compare(jffiNative, jffi)).isEqualTo(1);
-    }
-
     @Test
     public void comparable() {
         Assertions.assertThat(new Gav("g", "a", "1").compareTo(new Gav("g", "a", "1"))).isEqualTo(0);

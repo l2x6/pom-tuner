@@ -41,6 +41,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.NodeGavtcs;
 import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
+import org.l2x6.pom.tuner.model.Gavtc.Type;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.transform.Dependencies;
 import org.l2x6.pom.tuner.transform.DependencyManagement;
@@ -1702,7 +1703,7 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singletonList(
-                        DependencyManagement.add(new Gavtcs("org.acme", "my-ext", "${project.version}"))),
+                        DependencyManagement.add(new Gavtcs("org.acme", "my-ext", "${project.version}", Type.empty()))),
                 expected);
     }
 
@@ -1763,7 +1764,8 @@ public class PomTransformerTest {
                 Collections.singletonList(
                         (TransformationContext context) -> {
                             final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
-                            plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p2", "1.0.0"), Gavtcs.groupFirstComparator());
+                            plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p2", "1.0.0", Type.empty()),
+                                    Gavtcs.groupFirstComparator());
                         }),
                 expected);
     }
@@ -1835,7 +1837,8 @@ public class PomTransformerTest {
                 Collections.singletonList(
                         (TransformationContext context) -> {
                             final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
-                            plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p3", "1.0.0"), Gavtcs.groupFirstComparator());
+                            plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p3", "1.0.0", Type.empty()),
+                                    Gavtcs.groupFirstComparator());
                         }),
                 expected);
     }
@@ -1897,7 +1900,8 @@ public class PomTransformerTest {
                 Collections.singletonList(
                         (TransformationContext context) -> {
                             final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
-                            plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p0", "1.0.0"), Gavtcs.groupFirstComparator());
+                            plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p0", "1.0.0", Type.empty()),
+                                    Gavtcs.groupFirstComparator());
                         }),
                 expected);
     }
@@ -1961,7 +1965,8 @@ public class PomTransformerTest {
                 Collections.singletonList(
                         (TransformationContext context) -> {
                             final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
-                            plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p0", "1.0.0"), Gavtcs.groupFirstComparator());
+                            plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p0", "1.0.0", Type.empty()),
+                                    Gavtcs.groupFirstComparator());
                         }),
                 expected);
     }
@@ -2028,7 +2033,8 @@ public class PomTransformerTest {
                 Collections.singletonList(
                         (TransformationContext context) -> {
                             final ContainerElement plugins = context.getOrAddContainerElements("build", "plugins");
-                            plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p0", "1.0.0"), Gavtcs.groupFirstComparator());
+                            plugins.addGavtcsIfNeeded(new Gavtcs("org.acme", "p0", "1.0.0", Type.empty()),
+                                    Gavtcs.groupFirstComparator());
                         }),
                 expected);
     }
@@ -2091,7 +2097,7 @@ public class PomTransformerTest {
                 Collections.singletonList(
                         DependencyManagement.add(
                                 new Gavtcs("${quarkus.platform.group-id}", "${quarkus.platform.artifact-id}",
-                                        "${quarkus.platform.version}", "pom", null, "import"))),
+                                        "${quarkus.platform.version}", Type.of("pom"), null, "import"))),
                 expected);
     }
 
@@ -2597,7 +2603,8 @@ public class PomTransformerTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source,
                 Collections.singletonList(
-                        Dependencies.add(new Gavtcs("org.acme", "a1", "1.2.3")).at(Gavtcs.scopeAndTypeFirstComparator())),
+                        Dependencies.add(new Gavtcs("org.acme", "a1", "1.2.3", Type.empty()))
+                                .at(Gavtcs.scopeAndTypeFirstComparator())),
                 expected);
     }
 

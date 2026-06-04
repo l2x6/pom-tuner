@@ -54,6 +54,7 @@ import java.util.stream.Stream;
 import javax.xml.xpath.XPath;
 import org.l2x6.pom.tuner.model.Ga;
 import org.l2x6.pom.tuner.model.Gav;
+import org.l2x6.pom.tuner.model.Gavtc.Type;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.transform.Siblings;
 import org.w3c.dom.DocumentFragment;
@@ -237,7 +238,7 @@ public class PomTransformer {
             return this;
         }
 
-        public <T extends Transformation> Builder transformers(T... transformers) {
+        public <T extends Transformation> Builder transformers(@SuppressWarnings("unchecked") T... transformers) {
             for (T t : transformers) {
                 this.transformers.add(t);
             }
@@ -258,7 +259,7 @@ public class PomTransformer {
 
         NodeGavtcs(String groupId, String artifactId, String version, String type, String classifier, String scope,
                 Collection<Ga> exclusions, ContainerElement node) {
-            super(groupId, artifactId, version, type, classifier, scope, exclusions);
+            super(groupId, artifactId, version, Type.of(type), classifier, scope, exclusions);
             this.node = node;
         }
 
@@ -301,7 +302,7 @@ public class PomTransformer {
             }
             i--;
             while (i >= 0) {
-                Node ch = parent.getNode(i);
+                Node ch = parent.child(i);
                 switch (ch.type()) {
                 case COMMENT:
                     return (Comment) ch;
@@ -820,8 +821,9 @@ public class PomTransformer {
             dep.addChildTextElement("groupId", gavtcs.getGroupId());
             dep.addChildTextElement("artifactId", gavtcs.getArtifactId());
             dep.addChildTextElement("version", gavtcs.getVersion());
-            if (!"jar".equals(gavtcs.getType())) {
-                dep.addChildTextElement("type", gavtcs.getType());
+            final String type = gavtcs.getType().getValue();
+            if (type != null) {
+                dep.addChildTextElement("type", type);
             }
             dep.addChildTextElement("classifier", gavtcs.getClassifier());
             dep.addChildTextElement("scope", gavtcs.getScope());
@@ -894,7 +896,7 @@ public class PomTransformer {
             if (refNode == null) {
                 ensureClosingTagIndented();
             }
-            return addGavtcs(gav.toGavtc(null, null).toGavtcs(null), refNode);
+            return addGavtcs(gav.toGavtc(Type.empty(), null).toGavtcs(null), refNode);
         }
 
         /**
@@ -1231,7 +1233,7 @@ public class PomTransformer {
                 String artifactId, String version, String type, String classifier, String scope, Collection<Ga> exclusions) {
             super(context, containerElement, indentLevel);
             try {
-                this.gavtcs = new Gavtcs(groupId, artifactId, version, type, classifier, scope, exclusions);
+                this.gavtcs = new Gavtcs(groupId, artifactId, version, Type.of(type), classifier, scope, exclusions);
             } catch (RuntimeException e) {
                 ArrayList<String> path = new ArrayList<>();
                 ContainerNode n = containerElement.parent();
@@ -1239,7 +1241,8 @@ public class PomTransformer {
                     path.add(0, ((Element) n).name());
                     n = n.parent();
                 }
-                throw new RuntimeException("Could not create Gavtcs out of element " + containerElement + " under " + path.stream().collect(Collectors.joining("/")) + " in " + context.getPomXmlPath(), e);
+                throw new RuntimeException("Could not create Gavtcs out of element " + containerElement + " under "
+                        + path.stream().collect(Collectors.joining("/")) + " in " + context.getPomXmlPath(), e);
             }
         }
 
@@ -1665,7 +1668,7 @@ public class PomTransformer {
                     return false;
                 }
                 for (int i = 0; i < cnt; i++) {
-                    final Node child = cn.getNode(i);
+                    final Node child = cn.child(i);
                     if (child.type() != NodeType.COMMENT && !isWhiteSpaceNode(child)) {
                         return true;
                     }

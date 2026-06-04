@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
+import org.l2x6.pom.tuner.model.Gavtc.Type;
 import org.l2x6.pom.tuner.model.GavtcsSet.IncludeExcludeGavSet.Builder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,6 +81,11 @@ public class GavtcsSetTest extends AbstractSetTest<GavtcsSet> {
     }
 
     void containsGav(boolean expected, GavtcsSet set, String g, String a, String v, String type, String classifier,
+            String scope) {
+        containsGav(expected, set, g, a, v, Type.of(v), classifier, scope);
+    }
+
+    void containsGav(boolean expected, GavtcsSet set, String g, String a, String v, OptionalWithDefault type, String classifier,
             String scope) {
         assertThat(set.contains(g, a, v, type, classifier, scope)).isEqualTo(expected);
         final Gavtcs gavtcs = new Gavtcs(g, a, v, type, classifier, scope);

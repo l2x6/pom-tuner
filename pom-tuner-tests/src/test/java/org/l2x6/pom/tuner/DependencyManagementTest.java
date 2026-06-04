@@ -19,6 +19,7 @@ package org.l2x6.pom.tuner;
 import java.util.Arrays;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
+import org.l2x6.pom.tuner.model.Gavtc.Type;
 import org.l2x6.pom.tuner.model.Gavtcs;
 import org.l2x6.pom.tuner.model.GavtcsSet;
 import org.l2x6.pom.tuner.transform.DependencyManagement;
@@ -71,7 +72,7 @@ public class DependencyManagementTest {
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null))), expected);
+                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null, Type.empty()))), expected);
     }
 
     @Test
@@ -123,7 +124,7 @@ public class DependencyManagementTest {
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null))), expected);
+                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null, Type.empty()))), expected);
     }
 
     @Test
@@ -156,7 +157,7 @@ public class DependencyManagementTest {
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null))), expected);
+                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null, Type.empty()))), expected);
     }
 
     @Test
@@ -212,8 +213,8 @@ public class DependencyManagementTest {
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null))
-                        .at(Comparators.after(new Gavtcs("org.acme", "dep1", null)))),
+                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null, Type.empty()))
+                        .at(Comparators.after(new Gavtcs("org.acme", "dep1", null, Type.empty())))),
                 expected);
     }
 
@@ -270,8 +271,8 @@ public class DependencyManagementTest {
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null))
-                        .before(new Gavtcs("org.acme", "dep3", null))),
+                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null, Type.empty()))
+                        .before(new Gavtcs("org.acme", "dep3", null, Type.empty()))),
                 expected);
     }
 
@@ -328,8 +329,8 @@ public class DependencyManagementTest {
                 + "    </dependencyManagement>\n" //
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Arrays.asList(
-                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null))
-                        .after(new Gavtcs("org.acme", "dep1", null))),
+                DependencyManagement.add(new Gavtcs("org.acme", "dep2", null, Type.empty()))
+                        .after(new Gavtcs("org.acme", "dep1", null, Type.empty()))),
                 expected);
     }
 
@@ -434,9 +435,9 @@ public class DependencyManagementTest {
                 + "</project>\n";
         PomTransformerTestUtils.assertTransformer(source, Collections.singletonList(
 
-                DependencyManagement.add(new Gavtcs("org.acme", "dep5", "1.2.3"))
+                DependencyManagement.add(new Gavtcs("org.acme", "dep5", "1.2.3", Type.empty()))
                         .intoProfile("profile1")
-                        .after(new Gavtcs("org.acme", "dep3", "1.2.3"))
+                        .after(new Gavtcs("org.acme", "dep3", "1.2.3", Type.empty()))
 
         ),
                 expected);

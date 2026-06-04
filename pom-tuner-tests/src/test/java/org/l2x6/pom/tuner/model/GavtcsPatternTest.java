@@ -67,7 +67,7 @@ public class GavtcsPatternTest {
                 (pat, gav) -> pat.matches(gav[0], gav[1], gav[2], gav[3], gav[4], gav[5]));
     }
 
-    static <T> void assertMatchesGavtc(
+    static <T, U extends OptionalWithDefault> void assertMatchesGavtc(
             Function<String, T> of,
             BiFunction<T, Gavtc, Boolean> matches1,
             BiFunction<T, String[], Boolean> matches2) {
@@ -103,7 +103,7 @@ public class GavtcsPatternTest {
 
     }
 
-    static <T> void assertMatchesGavtc(
+    static <T, U extends OptionalWithDefault> void assertMatchesGavtc(
             Function<String, T> of,
             BiFunction<T, Gavtc, Boolean> matches1,
             BiFunction<T, String[], Boolean> matches2,
@@ -119,12 +119,12 @@ public class GavtcsPatternTest {
                         gav.getGroupId(),
                         gav.getArtifactId(),
                         gav.getVersion(),
-                        gav.getType(),
+                        gav.getType().getValue(),
                         gav.getClassifier()
                 })).isEqualTo(expected);
     }
 
-    static <T> void assertMatchesGavtcs(
+    static <T, U extends OptionalWithDefault> void assertMatchesGavtcs(
             Function<String, T> of,
             BiFunction<T, Gavtcs, Boolean> matches1,
             BiFunction<T, String[], Boolean> matches2) {
@@ -161,7 +161,7 @@ public class GavtcsPatternTest {
 
     }
 
-    static <T> void assertMatchesGavtcs(
+    static <T, U extends OptionalWithDefault> void assertMatchesGavtcs(
             Function<String, T> of,
             BiFunction<T, Gavtcs, Boolean> matches1,
             BiFunction<T, String[], Boolean> matches2,
@@ -177,7 +177,7 @@ public class GavtcsPatternTest {
                         gav.getGroupId(),
                         gav.getArtifactId(),
                         gav.getVersion(),
-                        gav.getType(),
+                        gav.getType().getValue(),
                         gav.getClassifier(),
                         gav.getScope()
                 })).isEqualTo(expected);
