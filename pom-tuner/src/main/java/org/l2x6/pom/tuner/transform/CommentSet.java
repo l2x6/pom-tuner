@@ -144,8 +144,8 @@ public class CommentSet {
      * Returns a {@link Transformation} that applies the given {@code action} to each element of this CommentSet.
      *
      * @param  action the consumer to apply to each element
-     * @return         a new {@link Transformation}
-     * @since          5.0.0
+     * @return        a new {@link Transformation}
+     * @since         5.0.0
      */
     public Transformation forEach(Consumer<ParsedComment> action) {
         return context -> {
@@ -163,15 +163,15 @@ public class CommentSet {
     /**
      * A comment containing commented out XML that can be accessed as parsed DOM.
      *
-     * @since           5.0.0
+     * @since 5.0.0
      */
     public static class ParsedComment {
         private final Comment source;
         private final Document parsedContent;
 
         /**
-         * @param comment the Comment to create this {@link ParsedComment} from
-         * @return a new {@link ParsedComment}
+         * @param  comment the Comment to create this {@link ParsedComment} from
+         * @return         a new {@link ParsedComment}
          */
         static ParsedComment of(Comment comment) {
             return new ParsedComment(comment, Document.of(comment.content()));

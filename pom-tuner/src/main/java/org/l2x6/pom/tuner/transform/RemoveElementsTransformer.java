@@ -221,7 +221,6 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
                 true);
     }
 
-
     /**
      * Select some nodes around the removed node to be removed too.
      * Handy to remove any preceding or subsequent whitespace, comments, and/or empty parent elements.
@@ -231,10 +230,10 @@ public class RemoveElementsTransformer<T extends TextElement, THIS extends Remov
      * Call {@code alsoRemove()} without arguments to remove the default siblings selector.
      *
      * @param  siblings one, many or none {@link Siblings} to also remove in addition to primary nodes selected for removal.
-     * @return                  a copy of this {@link RemoveTransformer} instance with
-     *                          {@link #siblingsSelectors} adjusted
-     * @since                   5.0.0
-     * @see                     Siblings
+     * @return          a copy of this {@link RemoveTransformer} instance with
+     *                  {@link #siblingsSelectors} adjusted
+     * @since           5.0.0
+     * @see             Siblings
      */
     @SuppressWarnings("unchecked")
     public THIS alsoRemove(Siblings... siblings) {
