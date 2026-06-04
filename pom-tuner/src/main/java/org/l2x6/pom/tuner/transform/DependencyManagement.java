@@ -112,7 +112,7 @@ public interface DependencyManagement {
      * @since               5.0.0
      */
     public static <THIS extends RemoveElementsTransformer<GavtcsElement, THIS>> RemoveElementsTransformer<GavtcsElement, THIS> remove(
-            Gavtcs... dependencies) {
+            @SuppressWarnings("unchecked") Gavtcs... dependencies) {
         final Set<Gavtcs> set = PomTunerUtils.toLinkedHashSet(dependencies);
         return new RemoveElementsTransformer<>(
                 RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
@@ -258,7 +258,7 @@ public interface DependencyManagement {
      * @since               5.0.0
      */
     public static <THIS extends ElementSet<GavtcsElement, THIS>> ElementSet<GavtcsElement, THIS> select(
-            Gavtcs... dependencies) {
+            @SuppressWarnings("unchecked") Gavtcs... dependencies) {
         final Set<Gavtcs> set = PomTunerUtils.toLinkedHashSet(dependencies);
         return new ElementSet<>(RemoveElementsTransformer.gavtcsElementsMapper(ELEMENT_NAME, OTHER_ELEMENT_NAMES),
                 gavtcsElement -> set.contains(gavtcsElement.getGavtcs()));

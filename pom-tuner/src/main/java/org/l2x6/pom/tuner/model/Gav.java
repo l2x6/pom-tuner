@@ -181,7 +181,7 @@ public class Gav implements Comparable<Gav> {
      *
      * @since             4.8.0
      */
-    public Gavtc toGavtc(String type, String classifier) {
+    public Gavtc toGavtc(OptionalWithDefault type, String classifier) {
         return new Gavtc(this, type, classifier);
     }
 

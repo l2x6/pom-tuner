@@ -16,18 +16,33 @@
  */
 package org.l2x6.pom.tuner.model;
 
+import java.util.Comparator;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.l2x6.pom.tuner.model.Gavtc.Type;
 
 public class GavtcTest {
-    static final Gavtc jffiNative = Gavtc.of("com.github.jnr:jffi:1.3.10:jar:native");
-    static final Gavtc jffi = Gavtc.of("com.github.jnr:jffi:1.3.10:jar");
+
+    @Test
+    void groupFirstComparator() {
+        assertOrdering(OptionalWithDefault.rawValueComparator());
+        assertOrdering(OptionalWithDefault.valueOrDefaultComparator());
+    }
+
+    public void assertOrdering(Comparator<OptionalWithDefault> c) {
+        final Gavtc jffiNative = Gavtc.of("com.github.jnr:jffi:1.3.10:jar:native");
+        final Gavtc jffi = Gavtc.of("com.github.jnr:jffi:1.3.10:jar");
+
+        Assertions.assertThat(Gavtc.groupFirstComparator(c).compare(jffi, jffiNative)).isEqualTo(-1);
+        Assertions.assertThat(Gavtc.groupFirstComparator(c).compare(jffiNative, jffi)).isEqualTo(1);
+    }
 
     @Test
     public void of() {
-        Assertions.assertThat(Gavtc.of("g:a:v")).isEqualTo(new Gavtc("g", "a", "v"));
-        Assertions.assertThat(Gavtc.of("g:a:v:t")).isEqualTo(new Gavtc("g", "a", "v", "t", null));
-        Assertions.assertThat(Gavtc.of("g:a:v:t:c")).isEqualTo(new Gavtc("g", "a", "v", "t", "c"));
+        Assertions.assertThat(Gavtc.of("g:a:v")).isEqualTo(new Gavtc("g", "a", "v", Type.empty()));
+        final OptionalWithDefault t = Type.of("t");
+        Assertions.assertThat(Gavtc.of("g:a:v:t")).isEqualTo(new Gavtc("g", "a", "v", t, null));
+        Assertions.assertThat(Gavtc.of("g:a:v:t:c")).isEqualTo(new Gavtc("g", "a", "v", t, "c"));
     }
 
     @Test
@@ -41,16 +56,11 @@ public class GavtcTest {
     }
 
     @Test
-    void groupFirstComparator() {
-        Assertions.assertThat(Gavtc.groupFirstComparator().compare(jffi, jffiNative)).isEqualTo(-1);
-        Assertions.assertThat(Gavtc.groupFirstComparator().compare(jffiNative, jffi)).isEqualTo(1);
-    }
-
-    @Test
     public void toStringTest() {
-        Assertions.assertThat(new Gavtc("g", "a", "v").toString()).isEqualTo("g:a:v");
-        Assertions.assertThat(new Gavtc("g", "a", null).toString()).isEqualTo("g:a:");
-        Assertions.assertThat(new Gavtc("g", "a", "v", "t", "c").toString()).isEqualTo("g:a:v:t:c");
+        Assertions.assertThat(new Gavtc("g", "a", "v", Type.empty()).toString()).isEqualTo("g:a:v");
+        Assertions.assertThat(new Gavtc("g", "a", null, Type.empty()).toString()).isEqualTo("g:a:");
+        final OptionalWithDefault t = Type.of("t");
+        Assertions.assertThat(new Gavtc("g", "a", "v", t, "c").toString()).isEqualTo("g:a:v:t:c");
     }
 
     @Test

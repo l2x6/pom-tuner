@@ -21,6 +21,7 @@ import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Objects;
 import org.l2x6.pom.tuner.Comparators;
 
 /**
@@ -31,24 +32,33 @@ import org.l2x6.pom.tuner.Comparators;
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
 public class Gavtc {
+    /**
+     * Utility methods for artifact type, such as {@code jar} or {@code pom}
+     *
+     * @since 5.0.0
+     */
+    public static final class Type {
+
+        static final OptionalWithDefault EMPTY = new OptionalWithDefault(null, Gavtc.DEFAULT_TYPE);
+        static final OptionalWithDefault POM = new OptionalWithDefault("pom", Gavtc.DEFAULT_TYPE);
+
+        public static OptionalWithDefault of(String value) {
+            return (value == null || value.isEmpty() ? EMPTY
+                    : ("pom".equals(value) ? POM : new OptionalWithDefault(value, Gavtc.DEFAULT_TYPE)));
+        }
+
+        public static OptionalWithDefault empty() {
+            return EMPTY;
+        }
+
+        public static OptionalWithDefault pom() {
+            return POM;
+        }
+
+    }
+
     static final String DEFAULT_TYPE = "jar";
-    static final Comparator<String> TYPE_COMPARATOR = (a, b) -> (a == null ? "jar" : a)
-            .compareTo(b == null ? DEFAULT_TYPE : b);
     static final Comparator<String> SAFE_STRING_COMPARATOR = Comparators.safeStringComparator();
-
-    static final Comparator<Gavtc> GROUP_FIRST_COMPARATOR = Comparator
-            .comparing(Gavtc::getGroupId, SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtc::getArtifactId, SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtc::getVersion, SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtc::getType, TYPE_COMPARATOR)
-            .thenComparing(Gavtc::getClassifier, SAFE_STRING_COMPARATOR);
-
-    static final Comparator<Gavtc> TYPE_FIRST_COMPARATOR = Comparator
-            .comparing(Gavtc::getType, TYPE_COMPARATOR)
-            .thenComparing(Gavtc::getGroupId, SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtc::getArtifactId, SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtc::getVersion, SAFE_STRING_COMPARATOR)
-            .thenComparing(Gavtc::getClassifier, SAFE_STRING_COMPARATOR);
 
     /**
      * Parse the given {@code <groupId>:<artifactId>:<version>[:<type>[:<classifier>]]} {@code rawGavtcs} and return a new
@@ -76,7 +86,7 @@ public class Gavtc {
         final String version = gavtcArr[i++];
         final String type = i < gavtcArr.length ? emptyToNull(gavtcArr[i++]) : null;
         final String classifier = i < gavtcArr.length ? emptyToNull(gavtcArr[i++]) : null;
-        return new Gavtc(groupId, artifactId, version, type, classifier);
+        return new Gavtc(groupId, artifactId, version, Type.of(type), classifier);
     }
 
     /**
@@ -85,51 +95,73 @@ public class Gavtc {
      *
      * @see    #typeFirstComparator()
      */
-    public static Comparator<Gavtc> groupFirstComparator() {
-        return GROUP_FIRST_COMPARATOR;
+    public static Comparator<Gavtc> groupFirstComparator(Comparator<OptionalWithDefault> typeComparator) {
+        return Comparator
+                .<Gavtc, String> comparing(Gavtc::getGroupId, SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtc::getArtifactId, SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtc::getVersion, SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtc::getType, typeComparator)
+                .thenComparing(Gavtc::getClassifier, SAFE_STRING_COMPARATOR);
     }
 
     /**
-     * @return a {@link Comparator} that compares on {@link #getType()}, {@link #getGroupId()}, {@link #getArtifactId()},
+     * @return a {@link Comparator} that compares on {@link #getType()} (using
+     *         {@link OptionalWithDefault#valueOrDefaultComparator()}), {@link #getGroupId()}, {@link #getArtifactId()},
      *         {@link #getVersion()} and {@link #getClassifier()} respectively.
      */
     public static Comparator<Gavtc> typeFirstComparator() {
-        return TYPE_FIRST_COMPARATOR;
+        return typeFirstComparator(OptionalWithDefault.valueOrDefaultComparator());
+    }
+
+    /**
+     * @param  typeComparator a {@link Comparator} to use for comparing {@link #getType()}
+     * @return                a {@link Comparator} that compares on {@link #getType()} (using the specified
+     *                        {@code typeComparator} {@link #getGroupId()}, {@link #getArtifactId()},
+     *                        {@link #getVersion()} and {@link #getClassifier()} respectively.
+     * @since                 5.0.0
+     * @see                   OptionalWithDefault#rawValueComparator()
+     */
+    public static Comparator<Gavtc> typeFirstComparator(Comparator<OptionalWithDefault> typeComparator) {
+        return Comparator
+                .comparing(Gavtc::getType, typeComparator)
+                .thenComparing(Gavtc::getGroupId, SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtc::getArtifactId, SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtc::getVersion, SAFE_STRING_COMPARATOR)
+                .thenComparing(Gavtc::getClassifier, SAFE_STRING_COMPARATOR);
     }
 
     static String emptyToNull(String string) {
         return string != null && !string.isEmpty() ? string : null;
     }
 
-    static String nullOrEmptyToDefault(String string) {
-        return string == null || string.isEmpty() ? DEFAULT_TYPE : string;
-    }
-
     private final Gav gav;
-    private final String type;
+    private final OptionalWithDefault type;
     private final String classifier;
     private final int hashCode;
 
     public Gavtc(String groupId, String artifactId, String version) {
-        this(groupId, artifactId, version, null, null);
+        this(groupId, artifactId, version, Type.empty());
     }
 
-    public Gavtc(String groupId, String artifactId, String version, String type, String classifier) {
+    public Gavtc(String groupId, String artifactId, String version, OptionalWithDefault type) {
+        this(groupId, artifactId, version, type, null);
+    }
+
+    public Gavtc(String groupId, String artifactId, String version, OptionalWithDefault type, String classifier) {
         this(new Gav(groupId, artifactId, version), type, classifier);
     }
 
-    public Gavtc(Ga ga, String version, String type, String classifier) {
+    public Gavtc(Ga ga, String version, OptionalWithDefault type, String classifier) {
         this(ga.toGav(version), type, classifier);
     }
 
-    public Gavtc(Gav gav, String type, String classifier) {
-        this.gav = gav;
-        this.type = type == null || type.isEmpty() ? null : type;
+    public Gavtc(Gav gav, OptionalWithDefault type, String classifier) {
+        this.gav = Objects.requireNonNull(gav, "gav");
+        this.type = Objects.requireNonNull(type, "type");
         this.classifier = classifier == null || classifier.isEmpty() ? null : classifier;
 
-        final String useType = DEFAULT_TYPE.equals(type) ? null : type;
         int h = 31 * gav.hashCode() + ((classifier == null) ? 0 : classifier.hashCode());
-        h = 31 * h + ((useType == null) ? 0 : useType.hashCode());
+        h = 31 * h + type.hashCode();
         this.hashCode = h;
     }
 
@@ -165,7 +197,7 @@ public class Gavtc {
      *
      * @since  4.8.0
      */
-    public String getType() {
+    public OptionalWithDefault getType() {
         return type;
     }
 
@@ -194,10 +226,10 @@ public class Gavtc {
      */
     public StringBuilder toString(StringBuilder stringBuilder) {
         gav.toString(stringBuilder);
-        if (type != null || classifier != null) {
+        if (type.getValue() != null || classifier != null) {
             stringBuilder.append(':');
             if (type != null) {
-                stringBuilder.append(type);
+                stringBuilder.append(type.getValue());
             }
             if (classifier != null) {
                 stringBuilder.append(':');
@@ -231,12 +263,7 @@ public class Gavtc {
                 return false;
         } else if (!classifier.equals(other.classifier))
             return false;
-        final String useType = DEFAULT_TYPE.equals(type) ? null : type;
-        final String useOtherType = DEFAULT_TYPE.equals(other.type) ? null : other.type;
-        if (useType == null) {
-            if (useOtherType != null)
-                return false;
-        } else if (!useType.equals(useOtherType))
+        if (!type.equals(other.type))
             return false;
         return true;
     }
@@ -321,7 +348,7 @@ public class Gavtc {
             if (classifier != null && !classifier.isEmpty()) {
                 stringBuilder.append('-').append(classifier);
             }
-            stringBuilder.append('.').append(nullOrEmptyToDefault(type));
+            stringBuilder.append('.').append(type.getValueOrDefault());
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }

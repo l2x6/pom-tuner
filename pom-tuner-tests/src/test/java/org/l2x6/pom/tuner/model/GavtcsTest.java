@@ -16,16 +16,22 @@
  */
 package org.l2x6.pom.tuner.model;
 
+import java.util.Comparator;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 public class GavtcsTest {
-    static final Gavtcs jffiNative = Gavtcs.of("com.github.jnr:jffi:1.3.10:jar:native");
-    static final Gavtcs jffi = Gavtcs.of("com.github.jnr:jffi:1.3.10:jar");
-
     @Test
     void groupFirstComparator() {
-        Assertions.assertThat(Gavtcs.groupFirstComparator().compare(jffi, jffiNative)).isEqualTo(-1);
-        Assertions.assertThat(Gavtcs.groupFirstComparator().compare(jffiNative, jffi)).isEqualTo(1);
+        assertOrdering(OptionalWithDefault.rawValueComparator());
+        assertOrdering(OptionalWithDefault.valueOrDefaultComparator());
+    }
+
+    public void assertOrdering(Comparator<OptionalWithDefault> c) {
+        final Gavtcs jffiNative = Gavtcs.of("com.github.jnr:jffi:1.3.10:jar:native");
+        final Gavtcs jffi = Gavtcs.of("com.github.jnr:jffi:1.3.10:jar");
+
+        Assertions.assertThat(Gavtcs.groupFirstComparator(c).compare(jffi, jffiNative)).isEqualTo(-1);
+        Assertions.assertThat(Gavtcs.groupFirstComparator(c).compare(jffiNative, jffi)).isEqualTo(1);
     }
 }

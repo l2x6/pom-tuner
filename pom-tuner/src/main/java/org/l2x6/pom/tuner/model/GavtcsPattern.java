@@ -21,12 +21,13 @@ import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.function.Predicate;
 import org.l2x6.pom.tuner.model.GavPattern.GavSegmentPattern;
+import org.l2x6.pom.tuner.model.Gavtc.Type;
 
 /**
  * A general purpose pattern for matching sextuples consisting of {@code groupId}, {@code artifactId},
  * {@code version}, {@code type}, {@code classifier} and {@code scope}).
  * <p>
- * To create a new {@link GavtcsPattern}, use either {@link #of(String)} or {@link #builder()}, both of which accept
+ * To create a new {@link GavtcsPattern}, use either {@link Type#of(String)} or {@link #builder()}, both of which accept
  * wildcard patterns (rather than regular expression patterns). See the JavaDocs of the two respective methods for more
  * details.
  * <p>
@@ -332,15 +333,25 @@ public class GavtcsPattern implements Serializable, Comparable<GavtcsPattern>, P
             String groupId,
             String artifactId,
             String version,
-            String type,
+            OptionalWithDefault type,
             String classifier,
             String scope) {
         return groupIdPattern.matches(groupId) && //
                 artifactIdPattern.matches(artifactId) && //
                 versionPattern.matches(version) && //
-                typePattern.matches(Gavtcs.toEffectiveType(type)) && //
+                typePattern.matches(type.getValueOrDefault()) && //
                 classifierPattern.matches(classifier == null ? "" : classifier) && //
                 scopePattern.matches(Gavtcs.toEffectiveScope(scope));
+    }
+
+    public boolean matches(
+            String groupId,
+            String artifactId,
+            String version,
+            String type,
+            String classifier,
+            String scope) {
+        return matches(groupId, artifactId, version, Type.of(type), classifier, scope);
     }
 
     /**
@@ -356,7 +367,7 @@ public class GavtcsPattern implements Serializable, Comparable<GavtcsPattern>, P
         return groupIdPattern.matches(gavtcs.getGroupId()) && //
                 artifactIdPattern.matches(gavtcs.getArtifactId()) && //
                 versionPattern.matches(gavtcs.getVersion()) && //
-                typePattern.matches(gavtcs.getType()) && //
+                typePattern.matches(gavtcs.getType().getValueOrDefault()) && //
                 classifierPattern.matches(gavtcs.getClassifier()) && //
                 scopePattern.matches(gavtcs.getScope());
     }
@@ -379,13 +390,22 @@ public class GavtcsPattern implements Serializable, Comparable<GavtcsPattern>, P
             String groupId,
             String artifactId,
             String version,
-            String type,
+            OptionalWithDefault type,
             String classifier) {
         return groupIdPattern.matches(groupId) && //
                 artifactIdPattern.matches(artifactId) && //
                 versionPattern.matches(version) && //
-                typePattern.matches(Gavtcs.toEffectiveType(type)) && //
+                typePattern.matches(type.getValueOrDefault()) && //
                 classifierPattern.matches(classifier == null ? "" : classifier);
+    }
+
+    public boolean matches(
+            String groupId,
+            String artifactId,
+            String version,
+            String type,
+            String classifier) {
+        return matches(groupId, artifactId, version, Type.of(type), classifier);
     }
 
     /**
@@ -401,7 +421,7 @@ public class GavtcsPattern implements Serializable, Comparable<GavtcsPattern>, P
         return groupIdPattern.matches(gavtc.getGroupId()) && //
                 artifactIdPattern.matches(gavtc.getArtifactId()) && //
                 versionPattern.matches(gavtc.getVersion()) && //
-                typePattern.matches(gavtc.getType()) && //
+                typePattern.matches(gavtc.getType().getValueOrDefault()) && //
                 classifierPattern.matches(gavtc.getClassifier());
     }
 
