@@ -19,7 +19,7 @@ package org.l2x6.pom.tuner.model;
 import java.util.Objects;
 
 /**
- * A {@link Ga} combined with a version {@link Expression}.
+ * A tripple of {@link Expression}s representing {@link #groupId}, {@link #artifactId} and {@link #version}.
  */
 public class GavExpression {
 

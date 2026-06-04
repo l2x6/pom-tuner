@@ -129,7 +129,7 @@ public class Expression {
     /**
      * @return the {@link Ga} of the module where the resolution of this {@link Expression} should start. For expressions
      *         used in {@code <parent>} block, this would be the parent {@link Ga}. For all other cases, this is the
-     *         {@link Gav} of the {@code pom.xml} where this {@link Expression} occurs.
+     *         {@link Ga} of the {@code pom.xml} where this {@link Expression} occurs.
      */
     public Ga getGa() {
         return ga;
