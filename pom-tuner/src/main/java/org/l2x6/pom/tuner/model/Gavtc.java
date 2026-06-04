@@ -303,7 +303,7 @@ public class Gavtc {
      *
      * @since        4.8.0
      */
-    public Gavtcs toGavtcs(String scope, Ga exclusion) {
+    public Gavtcs toGavtcs(String scope, GaPattern exclusion) {
         return new Gavtcs(this, scope, exclusion);
     }
 
@@ -315,7 +315,7 @@ public class Gavtc {
      *
      * @since             4.8.0
      */
-    public Gavtcs toGavtcs(String scope, Collection<Ga> exclusions) {
+    public Gavtcs toGavtcs(String scope, Collection<GaPattern> exclusions) {
         return new Gavtcs(this, scope, exclusions);
     }
 

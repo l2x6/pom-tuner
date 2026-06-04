@@ -158,6 +158,13 @@ public class Ga implements Comparable<Ga> {
     }
 
     /**
+     * @return a new {@link GaPattern} created out of this Ga
+     */
+    public GaPattern toGaPattern() {
+        return GaPattern.of(groupId, artifactId);
+    }
+
+    /**
      * @return a {@code /}-separated path that, when resolved against a local Maven repository root directory
      *         (such as {@code ~/.m2/repository} or base URL (such as {@code https://repo1.maven.org/maven2}) can be used
      *         to access the versions of this {@link Ga}.

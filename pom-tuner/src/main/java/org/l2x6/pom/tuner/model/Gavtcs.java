@@ -93,7 +93,7 @@ public class Gavtcs {
     }
 
     public static Gavtcs virtual(String groupId, String artifactId, String version) {
-        return new Gavtcs(groupId, artifactId, version, Type.pom(), null, "test", Ga.excludeAll());
+        return new Gavtcs(groupId, artifactId, version, Type.pom(), null, "test", GaPattern.matchAll());
     }
 
     public static Gavtcs testJar(String groupId, String artifactId, String version) {
@@ -132,7 +132,7 @@ public class Gavtcs {
                 .thenComparing(Gavtcs::getType, typeComparator)
                 .thenComparing(Gavtcs::getClassifier, Gavtc.SAFE_STRING_COMPARATOR)
                 .thenComparing(Gavtcs::getScope, SCOPE_COMPARATOR)
-                .thenComparing(Gavtcs::getExclusions, new ListComparator<Ga>());
+                .thenComparing(Gavtcs::getExclusions, new ListComparator<GaPattern>());
     }
 
     public static Comparator<Gavtcs> scopeAndTypeFirstComparator() {
@@ -147,7 +147,7 @@ public class Gavtcs {
                 .thenComparing(Gavtcs::getArtifactId, Gavtc.SAFE_STRING_COMPARATOR)
                 .thenComparing(Gavtcs::getVersion, Gavtc.SAFE_STRING_COMPARATOR)
                 .thenComparing(Gavtcs::getClassifier, Gavtc.SAFE_STRING_COMPARATOR)
-                .thenComparing(Gavtcs::getExclusions, new ListComparator<Ga>());
+                .thenComparing(Gavtcs::getExclusions, new ListComparator<GaPattern>());
     }
 
     public static Comparator<Gavtcs> scopeAndGroupFirstComparator() {
@@ -162,7 +162,7 @@ public class Gavtcs {
                 .thenComparing(Gavtcs::getVersion, Gavtc.SAFE_STRING_COMPARATOR)
                 .thenComparing(Gavtcs::getType, typeComparator)
                 .thenComparing(Gavtcs::getClassifier, Gavtc.SAFE_STRING_COMPARATOR)
-                .thenComparing(Gavtcs::getExclusions, new ListComparator<Ga>());
+                .thenComparing(Gavtcs::getExclusions, new ListComparator<GaPattern>());
     }
 
     public static Predicate<Gavtcs> equalGroupIdAndArtifactId(String groupId, String artifactId) {
@@ -179,7 +179,7 @@ public class Gavtcs {
 
     private final Gavtc gavtc;
     private final String scope;
-    private final SortedSet<Ga> exclusions;
+    private final SortedSet<GaPattern> exclusions;
     private final int hashCode;
 
     public Gavtcs(String groupId, String artifactId, String version) {
@@ -215,22 +215,40 @@ public class Gavtcs {
      *
      * @since           4.8.0
      */
-    public Gavtcs(Gavtc gavtc, String scope, Ga exclusion) {
+    public Gavtcs(Gavtc gavtc, String scope, GaPattern exclusion) {
         this.gavtc = gavtc;
         this.scope = scope == null || scope.isEmpty() ? null : scope;
-        final TreeSet<Ga> set = new TreeSet<>();
+        final TreeSet<GaPattern> set = new TreeSet<>();
         set.add(exclusion);
         this.exclusions = Collections.unmodifiableSortedSet(set);
         this.hashCode = hc();
     }
 
+    /**
+     * @param groupId
+     * @param artifactId
+     * @param version
+     * @param type
+     * @param classifier
+     * @param scope
+     * @param exclusion  the {@link GaPattern} to exclude
+     */
     public Gavtcs(String groupId, String artifactId, String version, OptionalWithDefault type, String classifier, String scope,
-            Ga exclusion) {
+            GaPattern exclusion) {
         this(new Gavtc(groupId, artifactId, version, type, classifier), scope, exclusion);
     }
 
+    /**
+     * @param groupId
+     * @param artifactId
+     * @param version
+     * @param type
+     * @param classifier
+     * @param scope
+     * @param exclusions the {@link GaPattern}s to exclude
+     */
     public Gavtcs(String groupId, String artifactId, String version, OptionalWithDefault type, String classifier, String scope,
-            Collection<Ga> exclusions) {
+            Collection<GaPattern> exclusions) {
         this(new Gavtc(groupId, artifactId, version, type, classifier), scope, exclusions);
     }
 
@@ -241,7 +259,7 @@ public class Gavtcs {
      *
      * @since            4.8.0
      */
-    public Gavtcs(Gavtc gavtc, String scope, Collection<Ga> exclusions) {
+    public Gavtcs(Gavtc gavtc, String scope, Collection<GaPattern> exclusions) {
         super();
         this.gavtc = gavtc;
         this.scope = scope == null || scope.isEmpty() ? null : scope;
@@ -295,7 +313,7 @@ public class Gavtcs {
     /**
      * @return the exclusions, never {@code null}
      */
-    public SortedSet<Ga> getExclusions() {
+    public SortedSet<GaPattern> getExclusions() {
         return exclusions;
     }
 
