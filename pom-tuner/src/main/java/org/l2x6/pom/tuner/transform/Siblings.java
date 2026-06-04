@@ -30,7 +30,7 @@ import org.l2x6.pom.tuner.PomTransformer.TransformationContext;
  * A sector of sibling XML nodes of some specific XML node.
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
- * @since 5.0.0
+ * @since  5.0.0
  */
 public interface Siblings extends Function<Node, List<RemovableNode>> {
 

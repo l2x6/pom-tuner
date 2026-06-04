@@ -27,8 +27,8 @@ import org.l2x6.pom.tuner.PomTransformer;
 import org.l2x6.pom.tuner.PomTransformer.ContainerElement;
 import org.l2x6.pom.tuner.PomTransformer.TextElement;
 import org.l2x6.pom.tuner.PomTransformer.Transformation;
-import org.l2x6.pom.tuner.transform.CommentSet.ParsedComment;
 import org.l2x6.pom.tuner.PomTunerUtils;
+import org.l2x6.pom.tuner.transform.CommentSet.ParsedComment;
 
 /**
  * Operations on {@code pom.xml} modules usable with {@link PomTransformer#transform(Transformation...)}.
