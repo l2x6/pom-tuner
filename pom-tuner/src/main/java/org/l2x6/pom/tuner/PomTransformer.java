@@ -52,7 +52,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import javax.xml.xpath.XPath;
-import org.l2x6.pom.tuner.model.Ga;
+import org.l2x6.pom.tuner.model.GaPattern;
 import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.model.Gavtc.Type;
 import org.l2x6.pom.tuner.model.Gavtcs;
@@ -258,7 +258,7 @@ public class PomTransformer {
         private final ContainerElement node;
 
         NodeGavtcs(String groupId, String artifactId, String version, String type, String classifier, String scope,
-                Collection<Ga> exclusions, ContainerElement node) {
+                Collection<GaPattern> exclusions, ContainerElement node) {
             super(groupId, artifactId, version, Type.of(type), classifier, scope, exclusions);
             this.node = node;
         }
@@ -827,13 +827,13 @@ public class PomTransformer {
             }
             dep.addChildTextElement("classifier", gavtcs.getClassifier());
             dep.addChildTextElement("scope", gavtcs.getScope());
-            final SortedSet<Ga> exclusions = gavtcs.getExclusions();
+            final SortedSet<GaPattern> exclusions = gavtcs.getExclusions();
             if (!exclusions.isEmpty()) {
                 final ContainerElement exclusionsNode = dep.addChildContainerElement("exclusions");
-                for (Ga ga : exclusions) {
+                for (GaPattern ga : exclusions) {
                     final ContainerElement exclusionNode = exclusionsNode.addChildContainerElement("exclusion");
-                    exclusionNode.addChildTextElement("groupId", ga.getGroupId());
-                    exclusionNode.addChildTextElement("artifactId", ga.getArtifactId());
+                    exclusionNode.addChildTextElement("groupId", ga.getGroupIdPattern());
+                    exclusionNode.addChildTextElement("artifactId", ga.getArtifactIdPattern());
                 }
             }
             return dep.asGavtcsElement();
@@ -912,7 +912,7 @@ public class PomTransformer {
             String type = null;
             String classifier = null;
             String scope = null;
-            List<Ga> exclusions = null;
+            List<GaPattern> exclusions = null;
             for (ContainerElement depChild : childElements()) {
                 switch (depChild.node.name()) {
                 case "groupId":
@@ -934,28 +934,32 @@ public class PomTransformer {
                     scope = depChild.node.textContent();
                     break;
                 case "exclusions":
-                    exclusions = new ArrayList<>();
-                    for (ContainerElement excl : depChild.childElements()) {
-                        String exclGroupId = null;
-                        String exclArtifactId = null;
-                        for (ContainerElement exclChild : excl.childElements()) {
-                            switch (exclChild.node.name()) {
-                            case "groupId":
-                                exclGroupId = exclChild.node.textContent();
-                                break;
-                            case "artifactId":
-                                exclArtifactId = exclChild.node.textContent();
-                                break;
-                            }
-                        }
-                        exclusions.add(Ga.of(exclGroupId, exclArtifactId));
-                    }
+                    exclusions = parseExclusions(depChild);
                     break;
                 default:
                     break;
                 }
             }
             return new NodeGavtcs(groupId, artifactId, version, type, classifier, scope, exclusions, this);
+        }
+
+        static List<GaPattern> parseExclusions(ContainerElement exclusionsElement) {
+            List<GaPattern> exclusions = new ArrayList<>();
+            for (ContainerElement excl : exclusionsElement.childElements()) {
+                final org.l2x6.pom.tuner.model.GaPattern.Builder gaPatternBuilder = GaPattern.builder();
+                for (ContainerElement exclChild : excl.childElements()) {
+                    switch (exclChild.node.name()) {
+                    case "groupId":
+                        gaPatternBuilder.groupIdPattern(exclChild.node.textContent());
+                        break;
+                    case "artifactId":
+                        gaPatternBuilder.artifactIdPattern(exclChild.node.textContent());
+                        break;
+                    }
+                }
+                exclusions.add(gaPatternBuilder.build());
+            }
+            return exclusions;
         }
 
         public ProfileElement asProfileElement() {
@@ -969,7 +973,7 @@ public class PomTransformer {
             String type = null;
             String classifier = null;
             String scope = null;
-            List<Ga> exclusions = null;
+            List<GaPattern> exclusions = null;
             for (ContainerElement depChild : childElements()) {
                 switch (depChild.node.name()) {
                 case "groupId":
@@ -991,22 +995,7 @@ public class PomTransformer {
                     scope = depChild.node.textContent();
                     break;
                 case "exclusions":
-                    exclusions = new ArrayList<>();
-                    for (ContainerElement excl : depChild.childElements()) {
-                        String exclGroupId = null;
-                        String exclArtifactId = null;
-                        for (ContainerElement exclChild : excl.childElements()) {
-                            switch (exclChild.node.name()) {
-                            case "groupId":
-                                exclGroupId = exclChild.node.textContent();
-                                break;
-                            case "artifactId":
-                                exclArtifactId = exclChild.node.textContent();
-                                break;
-                            }
-                        }
-                        exclusions.add(Ga.of(exclGroupId, exclArtifactId));
-                    }
+                    exclusions = parseExclusions(depChild);
                     break;
                 default:
                     break;
@@ -1230,7 +1219,8 @@ public class PomTransformer {
 
         GavtcsElement(
                 TransformationContext context, Element containerElement, int indentLevel, String groupId,
-                String artifactId, String version, String type, String classifier, String scope, Collection<Ga> exclusions) {
+                String artifactId, String version, String type, String classifier, String scope,
+                Collection<GaPattern> exclusions) {
             super(context, containerElement, indentLevel);
             try {
                 this.gavtcs = new Gavtcs(groupId, artifactId, version, Type.of(type), classifier, scope, exclusions);
