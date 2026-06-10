@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.cliassured.CommandSpec;
@@ -46,7 +45,6 @@ import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.model.GavExpression;
 import org.l2x6.pom.tuner.model.GavSet;
 import org.l2x6.pom.tuner.model.Module;
-import org.l2x6.pom.tuner.model.Profile;
 import org.l2x6.pom.tuner.model.Profile.PropertyBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -119,7 +117,7 @@ public class MavenSourceTreeTest {
     @Test
     public void filterDependencies() throws IOException {
         final Path root = BASEDIR.resolve("target/test-classes/MavenSourceTree/set-versions");
-        final MavenSourceTree t = new Builder(root, StandardCharsets.UTF_8).pomXml(root.resolve("pom.xml")).build();
+        final MavenSourceTree t = new Builder(root.resolve("pom.xml")).build();
         final GavSet gavSet = GavSet.builder().include("org.srcdeps.external").build();
         final Set<Ga> actual = t.filterDependencies(gavSet, ActiveProfiles.of());
         final Set<Ga> expected = new TreeSet<Ga>(Arrays.asList( //
@@ -133,31 +131,20 @@ public class MavenSourceTreeTest {
     }
 
     @Test
-    public void ofArgs() {
-        Assertions.assertEquals(ActiveProfiles.EMPTY, ActiveProfiles.ofArgs(Arrays.asList()));
-        Assertions.assertEquals(ActiveProfiles.of("p1"), ActiveProfiles.ofArgs(Arrays.asList("-Pp1")));
-        Assertions.assertEquals(ActiveProfiles.of("p1", "p2"), ActiveProfiles.ofArgs(Arrays.asList("-Pp1,p2")));
-        Assertions.assertEquals(ActiveProfiles.of("p1"), ActiveProfiles.ofArgs(Arrays.asList("-P", "p1")));
-        Assertions.assertEquals(ActiveProfiles.of("p1", "p2"), ActiveProfiles.ofArgs(Arrays.asList("-P", "p1,p2")));
-        Assertions.assertEquals(ActiveProfiles.of("p1"), ActiveProfiles.ofArgs(Arrays.asList("--activate-profiles", "p1")));
-        Assertions.assertEquals(ActiveProfiles.of("p1", "p2"),
-                ActiveProfiles.ofArgs(Arrays.asList("--activate-profiles", "p1,p2")));
-    }
-
-    @Test
     public void propertyEval() {
         final Path root = BASEDIR.resolve("target/test-classes/MavenSourceTree/properties");
-        final MavenSourceTree t = new Builder(root, StandardCharsets.UTF_8).pomXml(root.resolve("pom.xml")).build();
+        final MavenSourceTree t = new Builder(root.resolve("pom.xml")).build();
 
-        final Module m8 = t.getModulesByGa().get(Ga.of("org.srcdeps.properties:module-1"));
-        Assertions.assertEquals(new Expression("val-1/main", new Ga("org.srcdeps.properties", "module-1")),
-                m8.findPropertyDefinition("prop1", ActiveProfiles.of()).getValue());
-        Assertions.assertEquals(new Expression("val-1/p1", new Ga("org.srcdeps.properties", "module-1")),
-                m8.findPropertyDefinition("prop1", ActiveProfiles.of("p1")).getValue());
-        Assertions.assertEquals(new Expression("val-1/p2", new Ga("org.srcdeps.properties", "module-1")),
-                m8.findPropertyDefinition("prop1", ActiveProfiles.of("p2")).getValue());
-        Assertions.assertEquals(new Expression("val-1/p2", new Ga("org.srcdeps.properties", "module-1")),
-                m8.findPropertyDefinition("prop1", ActiveProfiles.of("p1", "p2")).getValue());
+        final Ga ga1 = Ga.of("org.srcdeps.properties:module-1");
+        final Module m8 = t.getModulesByGa().get(ga1);
+        Assertions.assertEquals(new Expression("val-1/main", ga1),
+                m8.findPropertyDefinition("prop1", ActiveProfiles.of().forModule(ga1)).getValue());
+        Assertions.assertEquals(new Expression("val-1/p1", ga1),
+                m8.findPropertyDefinition("prop1", ActiveProfiles.of("p1").forModule(ga1)).getValue());
+        Assertions.assertEquals(new Expression("val-1/p2", ga1),
+                m8.findPropertyDefinition("prop1", ActiveProfiles.of("p2").forModule(ga1)).getValue());
+        Assertions.assertEquals(new Expression("val-1/p2", ga1),
+                m8.findPropertyDefinition("prop1", ActiveProfiles.of("p1", "p2").forModule(ga1)).getValue());
 
         Mvn.fromMvnw().assertInstalled()
                 .args(
@@ -171,10 +158,10 @@ public class MavenSourceTreeTest {
                 .execute()
                 .assertSuccess();
 
-        assertProperty(t, "prop1", Ga.of("org.srcdeps.properties:module-1"), "val-1/main");
-        assertProperty(t, "prop1", Ga.of("org.srcdeps.properties:module-1"), "val-1/p1", "p1");
-        assertProperty(t, "prop1", Ga.of("org.srcdeps.properties:module-1"), "val-1/p2", "p2");
-        assertProperty(t, "prop1", Ga.of("org.srcdeps.properties:module-1"), "val-1/p2", "p1", "p2");
+        assertProperty(t, "prop1", ga1, "val-1/main");
+        assertProperty(t, "prop1", ga1, "val-1/p1", "p1");
+        assertProperty(t, "prop1", ga1, "val-1/p2", "p2");
+        assertProperty(t, "prop1", ga1, "val-1/p2", "p1", "p2");
         assertProperty(t, "empty1", Ga.of("org.srcdeps.properties:tree-parent"), "");
         assertProperty(t, "empty2", Ga.of("org.srcdeps.properties:tree-parent"), "");
 
@@ -186,7 +173,7 @@ public class MavenSourceTreeTest {
 
         try {
             t.getExpressionEvaluator(ActiveProfiles.of())
-                    .evaluate(Expression.of("${non-existent}", Ga.of("org.srcdeps.properties:module-1")));
+                    .evaluate(Expression.of("${non-existent}", ga1));
             Assertions.fail("NoSuchPropertyException expected");
         } catch (NoSuchPropertyException expected) {
         }
@@ -196,7 +183,7 @@ public class MavenSourceTreeTest {
     public void setVersions() throws IOException {
         final Path root = BASEDIR.resolve("target/test-classes/MavenSourceTree/set-versions");
 
-        final MavenSourceTree t = new Builder(root, StandardCharsets.UTF_8).pomXml(root.resolve("pom.xml")).build();
+        final MavenSourceTree t = new Builder(root.resolve("pom.xml")).build();
         t.setVersions("2.2.2", ActiveProfiles.of());
 
         final Path expectedRoot = BASEDIR.resolve("target/test-classes/MavenSourceTree/set-versions-expected");
@@ -263,7 +250,7 @@ public class MavenSourceTreeTest {
         final Path root = BASEDIR.resolve("target/test-classes/MavenSourceTree/tree-1");
         MavenSourceTree t = MavenSourceTree.of(root.resolve("pom.xml"), StandardCharsets.UTF_8);
 
-        final Predicate<Profile> profiles = ActiveProfiles.of();
+        final ActiveProfiles profiles = ActiveProfiles.of();
         final Ga m1 = new Ga("org.srcdeps.tree-1", "tree-module-1");
         final ExpressionEvaluator evaluator = t.getExpressionEvaluator(profiles);
         assertThat(
@@ -288,7 +275,8 @@ public class MavenSourceTreeTest {
     @Test
     public void tree() throws IOException {
         final Path root = BASEDIR.resolve("target/test-classes/MavenSourceTree/tree-1");
-        final Builder b = new Builder(root, StandardCharsets.UTF_8).pomXml(root.resolve("pom.xml"));
+        final Path rootPomXml = root.resolve("pom.xml");
+        final Builder b = new Builder(rootPomXml).pomXml(rootPomXml);
 
         Assertions.assertEquals(12, b.modulesByGa.size());
         Assertions.assertEquals(12, b.modulesByPath.size());
@@ -402,23 +390,25 @@ public class MavenSourceTreeTest {
         }
 
         final MavenSourceTree t = b.build();
-        Assertions.assertEquals(new Expression("val-parent", new Ga("org.srcdeps.tree-1", "tree-parent")),
-                t.getRootModule().findPropertyDefinition("prop1", ActiveProfiles.of()).getValue());
+        final Ga parentGa = new Ga("org.srcdeps.tree-1", "tree-parent");
+        Assertions.assertEquals(new Expression("val-parent", parentGa),
+                t.getRootModule().findPropertyDefinition("prop1", ActiveProfiles.of().forModule(parentGa)).getValue());
         {
             final Module m8 = t.getModulesByGa().get(Ga.of("org.srcdeps.tree-1:tree-module-8"));
-            Assertions.assertEquals(new Expression("val-8/main", new Ga("org.srcdeps.tree-1", "tree-module-8")),
-                    m8.findPropertyDefinition("prop2", ActiveProfiles.of()).getValue());
-            Assertions.assertEquals(new Expression("val-8/p1", new Ga("org.srcdeps.tree-1", "tree-module-8")),
-                    m8.findPropertyDefinition("prop2", ActiveProfiles.of("p1")).getValue());
-            Assertions.assertEquals(new Expression("val-8/p2", new Ga("org.srcdeps.tree-1", "tree-module-8")),
-                    m8.findPropertyDefinition("prop2", ActiveProfiles.of("p2")).getValue());
-            Assertions.assertEquals(new Expression("val-8/p2", new Ga("org.srcdeps.tree-1", "tree-module-8")),
-                    m8.findPropertyDefinition("prop2", ActiveProfiles.of("p1", "p2")).getValue());
-            Assertions.assertEquals(new Expression("val-8/p2", new Ga("org.srcdeps.tree-1", "tree-module-8")),
-                    m8.findPropertyDefinition("prop2", ActiveProfiles.of("p1", "p2")).getValue());
+            final Ga ga8 = new Ga("org.srcdeps.tree-1", "tree-module-8");
+            Assertions.assertEquals(new Expression("val-8/main", ga8),
+                    m8.findPropertyDefinition("prop2", ActiveProfiles.of().forModule(ga8)).getValue());
+            Assertions.assertEquals(new Expression("val-8/p1", ga8),
+                    m8.findPropertyDefinition("prop2", ActiveProfiles.of("p1").forModule(ga8)).getValue());
+            Assertions.assertEquals(new Expression("val-8/p2", ga8),
+                    m8.findPropertyDefinition("prop2", ActiveProfiles.of("p2").forModule(ga8)).getValue());
+            Assertions.assertEquals(new Expression("val-8/p2", ga8),
+                    m8.findPropertyDefinition("prop2", ActiveProfiles.of("p1", "p2").forModule(ga8)).getValue());
+            Assertions.assertEquals(new Expression("val-8/p2", ga8),
+                    m8.findPropertyDefinition("prop2", ActiveProfiles.of("p1", "p2").forModule(ga8)).getValue());
         }
 
-        final Predicate<Profile> profileSelector = p -> true;
+        final ActiveProfiles profileSelector = ActiveProfiles.all();
         final Set<Ga> expandedIncludes = t
                 .findRequiredModules(Arrays.asList(Ga.of("org.srcdeps.tree-1:tree-module-2")), profileSelector);
         Assertions.assertEquals(Arrays

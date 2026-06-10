@@ -20,6 +20,7 @@ import eu.maveniverse.domtrip.Document;
 import eu.maveniverse.domtrip.Element;
 import eu.maveniverse.domtrip.Text;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -34,9 +35,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -51,6 +54,7 @@ import org.l2x6.pom.tuner.model.Dependency;
 import org.l2x6.pom.tuner.model.Expression;
 import org.l2x6.pom.tuner.model.Expression.NoSuchPropertyException;
 import org.l2x6.pom.tuner.model.Ga;
+import org.l2x6.pom.tuner.model.GaPattern;
 import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.model.GavExpression;
 import org.l2x6.pom.tuner.model.GavSet;
@@ -87,15 +91,130 @@ public class MavenSourceTree {
             .childElement("version").orElseThrow(() -> new IllegalStateException("Cannot find /project/version"))
             .textChild().orElseThrow(() -> new IllegalStateException("/project/version has no text content"));
 
-    public static class ActiveProfiles implements Predicate<Profile> {
+    /**
+     * A selector of active profiles.
+     */
+    public static class ActiveProfiles implements BiPredicate<Ga, Profile> {
 
-        static final Predicate<Profile> EMPTY = new ActiveProfiles();
+        /**
+         * {@link ActiveProfiles} builder.
+         */
+        public static class Builder {
+            private List<ModuleProfiles> profileIdsByGa = new ArrayList<>();
+
+            /**
+             * Add the given {@code profilesSelector} for modules satisfying the given {@code moduleSelector}.
+             *
+             * @param  moduleSelector   a {@link Predicate} selecting modules for which the given {@code activeProfiles} should
+             *                          be applied
+             * @param  profilesSelector a {@link Predicate} deciding whether some given profile is active
+             * @return                  this {@link Builder}
+             * @since                   5.0.0
+             */
+            public Builder add(Predicate<Ga> moduleSelector, Predicate<Profile> profilesSelector) {
+                profileIdsByGa.add(new ModuleProfiles(moduleSelector, profilesSelector));
+                return this;
+            }
+
+            /**
+             * Declare the given {@code activeProfiles} as active for modules satisfying the given {@code moduleSelector}.
+             *
+             * @param  moduleSelector a {@link Predicate} selecting modules for which the given {@code activeProfiles} should be
+             *                        applied
+             * @param  activeProfiles {@code id}s of profiles to be considered active
+             * @return                this {@link Builder}
+             * @since                 5.0.0
+             */
+            public Builder add(Predicate<Ga> moduleSelector, String... activeProfiles) {
+                profileIdsByGa.add(new ModuleProfiles(moduleSelector, activeProfiles));
+                return this;
+            }
+
+            /**
+             * Declare the given {@code activeProfiles} as active for modules satisfying the given {@code moduleSelector}.
+             *
+             * @param  moduleSelector a {@link Predicate} selecting modules for which the given {@code activeProfiles} should be
+             *                        applied
+             * @param  activeProfiles {@code id}s of profiles to be considered active
+             * @return                this {@link Builder}
+             * @since                 5.0.0
+             */
+            public Builder add(Predicate<Ga> moduleSelector, List<String> activeProfiles) {
+                profileIdsByGa.add(new ModuleProfiles(moduleSelector, activeProfiles));
+                return this;
+            }
+
+            /**
+             * Declare the given {@code activeProfiles} as active for modules whose {@code groupId:artifactId} matches the given
+             * {@code gaPattern}
+             *
+             * @param  gaPattern      a {@code groupId:artifactId} pattern possibly containing {@code *} wildcards
+             * @param  activeProfiles {@code id}s of profiles to be considered active
+             * @return                this {@link Builder}
+             * @since                 5.0.0
+             */
+            public Builder add(String gaPattern, String... activeProfiles) {
+                profileIdsByGa.add(new ModuleProfiles(GaPattern.of(gaPattern), activeProfiles));
+                return this;
+            }
+
+            /**
+             * Declare the given {@code activeProfiles} as active for modules whose {@code groupId:artifactId} matches the given
+             * {@code gaPattern}
+             *
+             * @param  gaPattern      a {@code groupId:artifactId} pattern possibly containing {@code *} wildcards
+             * @param  activeProfiles {@code id}s of profiles to be considered active
+             * @return                this {@link Builder}
+             * @since                 5.0.0
+             */
+            public Builder add(String gaPattern, List<String> activeProfiles) {
+                profileIdsByGa.add(new ModuleProfiles(GaPattern.of(gaPattern), activeProfiles));
+                return this;
+            }
+
+            /**
+             * A shorthand for {@code add(GaPattern.matchAll(), p -> false).build()}.
+             *
+             * @return new {@link ActiveProfiles}
+             * @since  5.0.0
+             */
+            public ActiveProfiles otherwiseNone() {
+                profileIdsByGa.add(new ModuleProfiles(GaPattern.matchAll(), p -> false));
+                return build();
+            }
+
+            /**
+             * A shorthand for {@code add(GaPattern.matchAll(), p -> true).build()}.
+             *
+             * @return new {@link ActiveProfiles}
+             * @since  5.0.0
+             */
+            public ActiveProfiles otherwiseAll() {
+                profileIdsByGa.add(new ModuleProfiles(GaPattern.matchAll(), p -> true));
+                return build();
+            }
+
+            /**
+             * @return new {@link ActiveProfiles}
+             * @since  5.0.0
+             */
+            public ActiveProfiles build() {
+                final List<ModuleProfiles> useList = Collections.unmodifiableList(profileIdsByGa);
+                profileIdsByGa = null;
+                return new ActiveProfiles(useList);
+            }
+
+        }
+
+        static final ActiveProfiles EMPTY = new ActiveProfiles();
+        static final ActiveProfiles ALL = new ActiveProfiles(
+                Collections.singletonList(new ModuleProfiles(ga -> true, profile -> true, Integer.MAX_VALUE, "* -> true")));
 
         /**
          * @param  profileIds the active profiles (can be empty)
          * @return            a new {@link Profile} filter which will hold the named {@code profileIds} for active
          */
-        public static Predicate<Profile> of(String... profileIds) {
+        public static ActiveProfiles of(String... profileIds) {
             return profileIds.length == 0 ? EMPTY : new ActiveProfiles(profileIds);
         }
 
@@ -103,7 +222,7 @@ public class MavenSourceTree {
          * @param  args Maven command line arguments
          * @return      a new {@link Predicate}
          */
-        public static Predicate<Profile> ofArgs(List<String> args) {
+        public static ActiveProfiles ofArgs(List<String> args) {
             for (Iterator<String> it = args.iterator(); it.hasNext();) {
                 final String arg = it.next();
                 if ("-P".equals(arg) || "--activate-profiles".equals(arg)) {
@@ -116,21 +235,31 @@ public class MavenSourceTree {
         }
 
         /**
-         * @return a {@link Predicate} returning always {@code true}
+         * @return an {@link ActiveProfiles} instance returning {@code true} for all profiles and modules
          */
-        public static Predicate<Profile> all() {
-            return profile -> true;
+        public static ActiveProfiles all() {
+            return ALL;
         }
 
-        final Set<String> profileIds;
+        /**
+         * @return a new {@link Builder}
+         * @since  5.0.0
+         */
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        private final List<ModuleProfiles> profileIdsByGa;
+
+        ActiveProfiles(List<ModuleProfiles> profileIdsByGa) {
+            this.profileIdsByGa = profileIdsByGa;
+        }
 
         ActiveProfiles(String... profileIds) {
             super();
-            Set<String> m = new LinkedHashSet<>(profileIds.length);
-            for (String profileId : profileIds) {
-                m.add(profileId);
-            }
-            this.profileIds = m;
+            this.profileIdsByGa = Collections
+                    .singletonList(
+                            new ModuleProfiles(GaPattern.matchAll(), profileIds));
         }
 
         @Override
@@ -142,25 +271,132 @@ public class MavenSourceTree {
             if (getClass() != obj.getClass())
                 return false;
             ActiveProfiles other = (ActiveProfiles) obj;
-            if (profileIds == null) {
-                if (other.profileIds != null)
+            if (profileIdsByGa == null) {
+                if (other.profileIdsByGa != null)
                     return false;
-            } else if (!profileIds.equals(other.profileIds))
+            } else if (!profileIdsByGa.equals(other.profileIdsByGa))
                 return false;
             return true;
         }
 
         @Override
         public int hashCode() {
-            final int prime = 31;
-            int result = 1;
-            result = prime * result + ((profileIds == null) ? 0 : profileIds.hashCode());
-            return result;
+            return profileIdsByGa.hashCode();
         }
 
         @Override
-        public boolean test(Profile t) {
-            return t.getId() == null || profileIds.contains(t.getId());
+        public String toString() {
+            return profileIdsByGa.toString();
+        }
+
+        /**
+         * @return {@code true} if the given {@code profile} is active in the given {@code module} or {@code false} otherwise
+         * @since  5.0.0
+         */
+        @Override
+        public boolean test(Ga module, Profile profile) {
+            return profile.getId() == null
+                    || profileIdsByGa.stream()
+                            .filter(mp -> mp.modulePredicate.test(module))
+                            .findFirst()
+                            .map(mp -> mp.profilePredicate)
+                            .map(profilePredicate -> profilePredicate.test(profile))
+                            .orElse(false);
+        }
+
+        /**
+         * @param  module the module for which the {@link Profile} selector should be found
+         * @return        a {@link Profile} {@link Predicate} for the given {@code module}
+         * @since         5.0.0
+         */
+        public Predicate<Profile> forModule(Ga module) {
+            Predicate<Profile> modulePredicate = profileIdsByGa.stream()
+                    .filter(mp -> mp.modulePredicate.test(module))
+                    .map(mp -> mp.profilePredicate)
+                    .findFirst()
+                    .orElse((Predicate<Profile>) p -> false);
+            return profile -> profile.getId() == null || modulePredicate.test(profile);
+        }
+
+        static class ModuleProfiles {
+            private final Predicate<Ga> modulePredicate;
+            private final Predicate<Profile> profilePredicate;
+            private final int hashCode;
+            private final String toString;
+
+            private ModuleProfiles(Predicate<Ga> modulePredicate, Predicate<Profile> profilePredicate) {
+                this.modulePredicate = modulePredicate;
+                this.profilePredicate = profilePredicate;
+                this.hashCode = modulePredicate.hashCode() + 31 * profilePredicate.hashCode();
+                this.toString = modulePredicate.toString() + " -> " + profilePredicate.toString();
+            }
+
+            private ModuleProfiles(Predicate<Ga> modulePredicate, String... profileIds) {
+                Set<String> m = new LinkedHashSet<>(profileIds.length);
+                StringBuilder sb = new StringBuilder(modulePredicate.toString()).append(" -> (");
+                final int initialLength = sb.length();
+                for (String profileId : profileIds) {
+                    m.add(profileId);
+                    if (sb.length() > initialLength) {
+                        sb.append(", ");
+                    }
+                    sb.append(profileId);
+                }
+                sb.append(")");
+                this.modulePredicate = modulePredicate;
+                this.profilePredicate = p -> m.contains(p.getId());
+                this.hashCode = modulePredicate.hashCode() + 31 * m.hashCode();
+                this.toString = sb.toString();
+            }
+
+            private ModuleProfiles(Predicate<Ga> modulePredicate, Collection<String> profileIds) {
+                Set<String> m = new LinkedHashSet<>(profileIds.size());
+                StringBuilder sb = new StringBuilder(modulePredicate.toString()).append(" -> (");
+                final int initialLength = sb.length();
+                for (String profileId : profileIds) {
+                    m.add(profileId);
+                    if (sb.length() > initialLength) {
+                        sb.append(", ");
+                    }
+                    sb.append(profileId);
+                }
+                sb.append(")");
+                this.modulePredicate = modulePredicate;
+                this.profilePredicate = p -> m.contains(p.getId());
+                this.hashCode = modulePredicate.hashCode() + 31 * m.hashCode();
+                this.toString = sb.toString();
+            }
+
+            private ModuleProfiles(Predicate<Ga> modulePredicate, Predicate<Profile> profilePredicate, int hashCode,
+                    String toString) {
+                this.modulePredicate = modulePredicate;
+                this.profilePredicate = profilePredicate;
+                this.hashCode = hashCode;
+                this.toString = toString;
+            }
+
+            @Override
+            public int hashCode() {
+                return hashCode;
+            }
+
+            @Override
+            public boolean equals(Object obj) {
+                if (this == obj)
+                    return true;
+                if (obj == null)
+                    return false;
+                if (getClass() != obj.getClass())
+                    return false;
+                ModuleProfiles other = (ModuleProfiles) obj;
+                return modulePredicate.equals(other.modulePredicate) && profilePredicate.equals(other.profilePredicate);
+            }
+
+            @Override
+            public String toString() {
+                return toString;
+            }
+
         }
 
     }
@@ -170,30 +406,36 @@ public class MavenSourceTree {
      */
     static class Builder {
 
-        private final Charset encoding;
+        private final Path rootDirectory;
+        private final Path rootPomXml;
+        private Charset encoding = StandardCharsets.UTF_8;
+        private ActiveProfiles activeProfiles = ActiveProfiles.all();
 
         final Map<Ga, Module.Builder> modulesByGa = new LinkedHashMap<>();
 
         /** By pom.xml path relative to {@link MavenSourceTree#rootDirectory} */
         final Map<String, Module.Builder> modulesByPath = new LinkedHashMap<>();
 
-        private final Path rootDirectory;
         private Predicate<Dependency> dependencyExcludes = dep -> false;
 
-        private final Predicate<Profile> activeProfiles;
-
-        Builder(Path rootDirectory, Charset encoding) {
-            this(rootDirectory, encoding, ActiveProfiles.all());
+        Builder(Path rootPomXml) {
+            this.rootPomXml = rootPomXml;
+            this.rootDirectory = rootPomXml.getParent();
         }
 
-        Builder(Path rootDirectory, Charset encoding, Predicate<Profile> activeProfiles) {
-            super();
-            this.rootDirectory = rootDirectory;
-            this.encoding = encoding;
+        public Builder encoding(Charset encoding) {
+            this.encoding = Objects.requireNonNull(encoding, "encoding");
+            return this;
+        }
+
+        public Builder activeProfiles(ActiveProfiles activeProfiles) {
             this.activeProfiles = activeProfiles;
+            return this;
         }
 
         public MavenSourceTree build() {
+
+            pomXml(rootPomXml);
 
             final Map<String, Module> byPath = new LinkedHashMap<>(modulesByPath.size());
             final Map<Ga, Module> byGa = new LinkedHashMap<>(modulesByPath.size());
@@ -220,14 +462,18 @@ public class MavenSourceTree {
         Builder pomXml(final Path pomXml, ModuleCallback callback) {
             final Module.Builder module = new Module.Builder(rootDirectory, pomXml, encoding, dependencyExcludes);
             final String pomPath = module.getPomPath();
+            if (modulesByPath.get(pomPath) != null) {
+                return this;
+            }
             if (callback != null) {
                 callback.enter(pomPath);
             }
             modulesByPath.put(pomPath, module);
-            modulesByGa.put(module.getModuleGav().getGa(), module);
+            final Ga ga = module.getModuleGav().getGa();
+            modulesByGa.put(ga, module);
             try {
                 for (Profile.Builder profile : module.getProfiles()) {
-                    if (activeProfiles.test(profile.build()))
+                    if (activeProfiles.test(ga, profile.build()))
                         for (String path : profile.getChildren()) {
                             if (!modulesByPath.containsKey(path)) {
                                 pomXml(rootDirectory.resolve(path), callback);
@@ -242,6 +488,7 @@ public class MavenSourceTree {
             }
             return this;
         }
+
     }
 
     /**
@@ -340,10 +587,10 @@ public class MavenSourceTree {
 
     class SourceTreeExpressionEvaluator implements ExpressionEvaluator {
 
-        private final Predicate<Profile> isProfileActive;
+        private final ActiveProfiles isProfileActive;
         private final Map<Expression, String> cache = new HashMap<>();
 
-        public SourceTreeExpressionEvaluator(Predicate<Profile> isProfileActive) {
+        public SourceTreeExpressionEvaluator(ActiveProfiles isProfileActive) {
             this.isProfileActive = isProfileActive;
         }
 
@@ -404,8 +651,9 @@ public class MavenSourceTree {
                 consumer.accept(
                         new ValueDefinition(context, PROJECT_ARTIFACT_ID_XPATH, context.getGav().getArtifactId()));
             } else {
+                final Ga moduleGa = evaluateGa(context.getGav());
                 final ValueDefinition propertyDefinition = context.findPropertyDefinition(propertyName,
-                        isProfileActive);
+                        isProfileActive.forModule(moduleGa));
                 if (propertyDefinition == null) {
                     /* No such property: climb up */
                     final Module parent = MavenSourceTree.this.getDeclaredParentModule(context);
@@ -428,11 +676,19 @@ public class MavenSourceTree {
 
     /**
      * @param  rootPomXml the path to the {@code pom.xml} file of the root Maven module
+     * @return            a new {@link MavenSourceTree}
+     */
+    public static MavenSourceTree of(Path rootPomXml) {
+        return new Builder(rootPomXml).build();
+    }
+
+    /**
+     * @param  rootPomXml the path to the {@code pom.xml} file of the root Maven module
      * @param  encoding   the encoding to use when reading {@code pom.xml} files in the given file tree
      * @return            a new {@link MavenSourceTree}
      */
     public static MavenSourceTree of(Path rootPomXml, Charset encoding) {
-        return new Builder(rootPomXml.getParent(), encoding).pomXml(rootPomXml).build();
+        return new Builder(rootPomXml).encoding(encoding).build();
     }
 
     /**
@@ -443,8 +699,7 @@ public class MavenSourceTree {
      * @return                    a new {@link MavenSourceTree}
      */
     public static MavenSourceTree of(Path rootPomXml, Charset encoding, Predicate<Dependency> dependencyExcludes) {
-        return new Builder(rootPomXml.getParent(), encoding).dependencyExcludes(dependencyExcludes)
-                .pomXml(rootPomXml, new ModuleCallback()).build();
+        return new Builder(rootPomXml).encoding(encoding).dependencyExcludes(dependencyExcludes).build();
     }
 
     /**
@@ -458,9 +713,9 @@ public class MavenSourceTree {
      * @return
      */
     public static MavenSourceTree of(Path rootPomXml, Charset encoding, Predicate<Dependency> dependencyExcludes,
-            Predicate<Profile> profiles) {
-        return new Builder(rootPomXml.getParent(), encoding, profiles).dependencyExcludes(dependencyExcludes)
-                .pomXml(rootPomXml).build();
+            ActiveProfiles profiles) {
+        return new Builder(rootPomXml).encoding(encoding).dependencyExcludes(dependencyExcludes).activeProfiles(profiles)
+                .build();
     }
 
     public static Function<Document, Optional<Element>> xPathProfile(String id, String... elements) {
@@ -478,7 +733,7 @@ public class MavenSourceTree {
 
     private final Predicate<Dependency> dependencyExcludes;
 
-    private final Map<Predicate<Profile>, ExpressionEvaluator> evaluators = new HashMap<>();
+    private final Map<ActiveProfiles, ExpressionEvaluator> evaluators = new HashMap<>();
 
     MavenSourceTree(Path rootDirectory, Charset encoding, Map<String, Module> modulesByPath,
             Map<Ga, Module> modulesByGa, Predicate<Dependency> dependencyExcludes) {
@@ -490,7 +745,7 @@ public class MavenSourceTree {
     }
 
     private void addDeclaredParents(final Module module, final Set<Ga> result, Set<Ga> visited,
-            Predicate<Profile> isProfileActive, ExpressionEvaluator evaluator) {
+            ActiveProfiles isProfileActive, ExpressionEvaluator evaluator) {
         Module parent;
         Module child = module;
         while ((parent = getDeclaredParentModule(child)) != null) {
@@ -499,7 +754,7 @@ public class MavenSourceTree {
         }
     }
 
-    private void addModule(Ga includeGa, Set<Ga> result, Set<Ga> visited, Predicate<Profile> isProfileActive,
+    private void addModule(Ga includeGa, Set<Ga> result, Set<Ga> visited, ActiveProfiles isProfileActive,
             ExpressionEvaluator evaluator) {
         final Module module = modulesByGa.get(includeGa);
         if (module != null && !visited.contains(includeGa)) {
@@ -508,7 +763,7 @@ public class MavenSourceTree {
             addProperParents(module, result, visited, isProfileActive, evaluator);
             addDeclaredParents(module, result, visited, isProfileActive, evaluator);
             for (Profile p : module.getProfiles()) {
-                if (isProfileActive.test(p)) {
+                if (isProfileActive.test(includeGa, p)) {
                     for (GavExpression dep : p.getDependencies()) {
                         addModule(evaluator.evaluateGa(dep), result, visited, isProfileActive, evaluator);
                     }
@@ -526,7 +781,7 @@ public class MavenSourceTree {
     }
 
     private void addProperParents(final Module module, final Set<Ga> result, Set<Ga> visited,
-            Predicate<Profile> isProfileActive, ExpressionEvaluator evaluator) {
+            ActiveProfiles isProfileActive, ExpressionEvaluator evaluator) {
         Module parent;
         Module child = module;
         while ((parent = getProperParentModule(child, isProfileActive, evaluator)) != null) {
@@ -544,7 +799,7 @@ public class MavenSourceTree {
      * @param  initialModules
      * @return                {@link Set} of {@code groupId:artifactId}
      */
-    public Set<Ga> findRequiredModules(Collection<Ga> initialModules, Predicate<Profile> isProfileActive) {
+    public Set<Ga> findRequiredModules(Collection<Ga> initialModules, ActiveProfiles isProfileActive) {
         final Set<Ga> visited = new HashSet<>();
         final Set<Ga> result = new LinkedHashSet<>();
         final ExpressionEvaluator evaluator = getExpressionEvaluator(isProfileActive);
@@ -579,10 +834,12 @@ public class MavenSourceTree {
      * @param  isProfileActive
      * @return                 a
      */
-    public Set<Ga> filterDependencies(GavSet gavSet, final Predicate<Profile> isProfileActive) {
+    public Set<Ga> filterDependencies(GavSet gavSet, final ActiveProfiles isProfileActive) {
         final Set<Ga> result = new TreeSet<>();
         final ExpressionEvaluator evaluator = getExpressionEvaluator(isProfileActive);
-        for (Module module : getModulesByGa().values()) {
+        for (Entry<Ga, Module> moduleEn : getModulesByGa().entrySet()) {
+            final Ga moduleGa = moduleEn.getKey();
+            final Module module = moduleEn.getValue();
             final GavExpression parentGav = module.getParentGav();
             if (parentGav != null) {
                 final Ga ga = evaluator.evaluateGa(parentGav);
@@ -591,7 +848,7 @@ public class MavenSourceTree {
                 }
             }
             for (Profile p : module.getProfiles()) {
-                if (isProfileActive.test(p)) {
+                if (isProfileActive.test(moduleGa, p)) {
                     for (Dependency depGa : p.getDependencies()) {
                         final Ga ga = evaluator.evaluateGa(depGa);
                         if (gavSet.contains(ga.getGroupId(), ga.getArtifactId())) {
@@ -662,7 +919,7 @@ public class MavenSourceTree {
      * @param  profiles
      * @return          a {@link Set}
      */
-    public Set<Dependency> collectOwnDependencies(Ga module, Predicate<Profile> profiles) {
+    public Set<Dependency> collectOwnDependencies(Ga module, ActiveProfiles profiles) {
         ExpressionEvaluator evaluator = getExpressionEvaluator(profiles);
         Set<Dependency> result = new LinkedHashSet<>();
         Module m = modulesByGa.get(module);
@@ -671,7 +928,7 @@ public class MavenSourceTree {
                     "Can collect own dependencies only for modules available in this tree; " + module + " was not found here");
         }
         do {
-            m.streamOwnDependencies(profiles).forEach(result::add);
+            m.streamOwnDependencies(profile -> profiles.test(module, profile)).forEach(result::add);
             final GavExpression parentGav = m.getParentGav();
             if (parentGav == null) {
                 break;
@@ -692,7 +949,7 @@ public class MavenSourceTree {
      * @param  profiles
      * @return          a {@link Set}
      */
-    public Set<Dependency> collectTransitiveDependencies(Ga module, Predicate<Profile> profiles) {
+    public Set<Dependency> collectTransitiveDependencies(Ga module, ActiveProfiles profiles) {
         Module m = modulesByGa.get(module);
         if (m == null) {
             throw new IllegalArgumentException(
@@ -704,7 +961,7 @@ public class MavenSourceTree {
         return result;
     }
 
-    void collectTransitiveDependencies(Ga module, Predicate<Profile> profiles, Set<Dependency> result, Set<Ga> visited,
+    void collectTransitiveDependencies(Ga module, ActiveProfiles profiles, Set<Dependency> result, Set<Ga> visited,
             ExpressionEvaluator evaluator) {
         if (visited.contains(module)) {
             return;
@@ -715,7 +972,7 @@ public class MavenSourceTree {
             return;
         }
         do {
-            m.streamOwnDependencies(profiles)
+            m.streamOwnDependencies(profiles.forModule(module))
                     .forEach(dep -> {
                         result.add(dep);
                         collectTransitiveDependencies(evaluator.evaluateGa(dep), profiles, result, visited, evaluator);
@@ -766,16 +1023,21 @@ public class MavenSourceTree {
 
     /**
      * @param  child
-     * @return       the {@link Module} having the given gild in its {@code <modules>}
+     * @return       the {@link Module} having the given child in its {@code <modules>}
      */
-    Module getProperParentModule(Module child, Predicate<Profile> isProfileActive, ExpressionEvaluator evaluator) {
-        final GavExpression parentGa = child.getParentGav();
-        if (parentGa != null) {
-            final Module declaredParent = modulesByGa.get(evaluator.evaluateGa(parentGa));
-            if (declaredParent != null && declaredParent.hasChild(child.getPomPath(), isProfileActive)) {
+    Module getProperParentModule(Module child, ActiveProfiles isProfileActive, ExpressionEvaluator evaluator) {
+        final GavExpression parentGavExpression = child.getParentGav();
+        if (parentGavExpression != null) {
+            final Ga parentGa = evaluator.evaluateGa(parentGavExpression);
+            final Module declaredParent = modulesByGa.get(parentGa);
+            if (declaredParent != null
+                    && declaredParent.hasChild(child.getPomPath(), profile -> isProfileActive.test(parentGa, profile))) {
                 return declaredParent;
             }
-            return modulesByGa.values().stream().filter(m -> m.hasChild(child.getPomPath(), isProfileActive)).findFirst()
+            return modulesByGa.values().stream().filter(m -> {
+                final Ga ga = evaluator.evaluateGa(m.getGav());
+                return m.hasChild(child.getPomPath(), profile -> isProfileActive.test(ga, profile));
+            }).findFirst()
                     .orElse(null);
         }
         return null;
@@ -801,11 +1063,12 @@ public class MavenSourceTree {
      * @param newVersion      the new version to set
      * @param isProfileActive a {@link Profile} filter, see {@link #from(String...)}
      */
-    public void setVersions(final String newVersion, final Predicate<Profile> isProfileActive) {
+    public void setVersions(final String newVersion, final ActiveProfiles isProfileActive) {
         final DomEdits edits = new DomEdits();
         final ExpressionEvaluator evaluator = getExpressionEvaluator(isProfileActive);
-        for (Module module : modulesByGa.values()) {
-
+        for (Entry<Ga, Module> moduleEn : modulesByGa.entrySet()) {
+            Ga moduleGa = moduleEn.getKey();
+            Module module = moduleEn.getValue();
             /* self */
             final GavExpression parentGav = module.getParentGav();
             final Expression moduleVersion = module.getGav().getVersion();
@@ -822,13 +1085,12 @@ public class MavenSourceTree {
             }
 
             final Set<String> profileIds = new HashSet<>();
+            final Predicate<Profile> activeModuleProfiles = isProfileActive.forModule(moduleGa);
             for (Profile profile : module.getProfiles()) {
-                if (isProfileActive.test(profile)) {
+                if (activeModuleProfiles.test(profile)) {
                     profileIds.add(profile.getId());
                 }
             }
-
-            Ga moduleGa = evaluator.evaluateGa(module.getGav());
             edits.add(
                     module.getPomPath(),
                     DependencyManagement
@@ -925,10 +1187,12 @@ public class MavenSourceTree {
     }
 
     Map<String, Set<Path>> unlinkModules(Set<Ga> includes, Module module,
-            Map<String, Set<Path>> removeChildPaths, Predicate<Profile> isProfileActive,
+            Map<String, Set<Path>> removeChildPaths, ActiveProfiles isProfileActive,
             ExpressionEvaluator evaluator) {
+        final Ga moduleGa = evaluator.evaluateGa(module.getGav());
+        final Predicate<Profile> activeModuleProfiles = isProfileActive.forModule(moduleGa);
         for (Profile p : module.getProfiles()) {
-            if (isProfileActive.test(p)) {
+            if (activeModuleProfiles.test(p)) {
                 for (String childPath : p.getChildren()) {
                     final Module childModule = modulesByPath.get(childPath);
                     final GavExpression childGa = childModule.getGav();
@@ -949,7 +1213,7 @@ public class MavenSourceTree {
     }
 
     /**
-     * Delegates to {@link #unlinkModules(Set, Predicate, Charset, boolean)} with
+     * Delegates to {@link #unlinkModules(Set, ActiveProfiles, Charset, boolean)} with
      * {@code remove} set to {@code false}.
      *
      * @param requiredModules a list of {@code groupId:artifactId}s
@@ -958,7 +1222,7 @@ public class MavenSourceTree {
      * @param commentText     for @{@code commentText} {@code "a comment"} the resulting snippet would look like
      *                        {@code <!-- <module>some-module</module> a comment --> }
      */
-    public void unlinkModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
+    public void unlinkModules(Set<Ga> requiredModules, ActiveProfiles isProfileActive, Charset encoding,
             String commentText) {
         unlinkModules(requiredModules, isProfileActive, encoding,
                 (Set<String> modulePaths) -> Modules.select(modulePaths::contains).commentOut(te -> commentText));
@@ -976,7 +1240,7 @@ public class MavenSourceTree {
      *                        {@code <module>my-module</module>} elements) and produces a {@link Transformation}
      *                        removing those elements.
      */
-    public void unlinkModules(Set<Ga> requiredModules, Predicate<Profile> isProfileActive, Charset encoding,
+    public void unlinkModules(Set<Ga> requiredModules, ActiveProfiles isProfileActive, Charset encoding,
             Function<Set<String>, PomTransformer.Transformation> remover) {
         final Module rootModule = modulesByPath.get("pom.xml");
         final ExpressionEvaluator evaluator = getExpressionEvaluator(isProfileActive);
@@ -1012,13 +1276,13 @@ public class MavenSourceTree {
 
     /**
      * Link back any modules anywhere in the source tree previously removed by
-     * {@link #unlinkModules(Set, Predicate, Charset, Function)}.
+     * {@link #unlinkModules(Set, ActiveProfiles, Charset, Function)}.
      * This variant handles only module elements that are not under any profile - see
-     * {@link #relinkModules(Charset, String, Predicate)} for a profile-aware alternative.
+     * {@link #relinkModules(Charset, String, ActiveProfiles)} for a profile-aware alternative.
      *
      * @param  encoding    the encoding for reading and writing pom.xml files
      * @param  commentText has to be the same as used in the previous
-     *                     {@link #unlinkModules(Set, Predicate, Charset, Function)}
+     *                     {@link #unlinkModules(Set, ActiveProfiles, Charset, Function)}
      *                     invocation
      * @return             either this {@link MavenSourceTree} if no relinking edits could be performed or a new
      *                     {@link MavenSourceTree} with all modules relinked
@@ -1029,11 +1293,11 @@ public class MavenSourceTree {
 
     /**
      * Link back any modules anywhere in the source tree previously removed by
-     * {@link #unlinkModules(Set, Predicate, Charset, Function)}.
+     * {@link #unlinkModules(Set, ActiveProfiles, Charset, Function)}.
      *
      * @param  encoding    the encoding for reading and writing pom.xml files
      * @param  commentText has to be the same as used in the previous
-     *                     {@link #unlinkModules(Set, Predicate, Charset, Function)}
+     *                     {@link #unlinkModules(Set, ActiveProfiles, Charset, Function)}
      *                     invocation
      * @param  profiles    a predicate selecting profiles whose modules should be transformed; the default
      *                     profile-less scope is always included
@@ -1043,11 +1307,28 @@ public class MavenSourceTree {
      * @since              4.6.0
      */
     public MavenSourceTree relinkModules(Charset encoding,
-            String commentText, Predicate<Profile> profiles) {
+            String commentText, ActiveProfiles profiles) {
         for (Entry<String, Module> en : modulesByPath.entrySet()) {
             final String relPath = en.getKey();
             final List<Transformation> transformations = new ArrayList<>();
-            final Set<String> profileIds = activeProfileIds(profiles, en);
+
+            final Module module = en.getValue();
+            final GavExpression gav = module.getGav();
+            final Expression gid = gav.getGroupId();
+            final Expression aid = gav.getArtifactId();
+            final Ga ga;
+            if (gid.isConstant() && aid.isConstant()) {
+                ga = new Ga(gid.asConstant(), aid.asConstant());
+            } else {
+                ga = modulesByGa.entrySet().stream()
+                        .filter(kv -> kv.getValue() == module)
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalStateException(
+                                "Module " + module + " from modulesByPath not found in modulesByGa"))
+                        .getKey();
+            }
+
+            final Set<String> profileIds = activeProfileIds(profiles, ga, module);
             transformations
                     .add(Modules.selectComments(comment -> comment.getSource().content().endsWith(" " + commentText + " "))
                             .from(profileIds::contains).uncomment());
@@ -1067,10 +1348,10 @@ public class MavenSourceTree {
         }
     }
 
-    static Set<String> activeProfileIds(Predicate<Profile> profiles, Entry<String, Module> en) {
+    static Set<String> activeProfileIds(ActiveProfiles profiles, Ga ga, Module module) {
         final Set<String> profileIds = new HashSet<>();
-        for (Profile p : en.getValue().getProfiles()) {
-            if (profiles.test(p)) {
+        for (Profile p : module.getProfiles()) {
+            if (profiles.test(ga, p)) {
                 profileIds.add(p.getId());
             }
         }
@@ -1083,11 +1364,10 @@ public class MavenSourceTree {
      * @return a new {@link MavenSourceTree};
      */
     public MavenSourceTree reload() {
-        return new Builder(rootDirectory, encoding).dependencyExcludes(dependencyExcludes)
-                .pomXml(rootDirectory.resolve("pom.xml")).build();
+        return new Builder(rootDirectory.resolve("pom.xml")).encoding(encoding).dependencyExcludes(dependencyExcludes).build();
     }
 
-    public ExpressionEvaluator getExpressionEvaluator(Predicate<Profile> profiles) {
+    public ExpressionEvaluator getExpressionEvaluator(ActiveProfiles profiles) {
         return evaluators.computeIfAbsent(profiles, SourceTreeExpressionEvaluator::new);
     }
 
