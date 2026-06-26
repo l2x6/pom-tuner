@@ -16,6 +16,7 @@
  */
 package org.l2x6.pom.tuner.model;
 
+import java.nio.file.Paths;
 import java.util.Comparator;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,18 @@ public class GavtcTest {
         final OptionalWithDefault t = Type.of("t");
         Assertions.assertThat(Gavtc.of("g:a:v:t")).isEqualTo(new Gavtc("g", "a", "v", t, null));
         Assertions.assertThat(Gavtc.of("g:a:v:t:c")).isEqualTo(new Gavtc("g", "a", "v", t, "c"));
+    }
+
+    @Test
+    public void ofPath() {
+        Assertions.assertThat(
+                Gavtc.of(
+                        Paths.get("org/l2x6/pom-tuner/pom-tuner/5.0.0/pom-tuner-5.0.0.jar")))
+                .isEqualTo(new Gavtc("org.l2x6.pom-tuner", "pom-tuner", "5.0.0", Type.of("jar"), null));
+        Assertions.assertThat(
+                Gavtc.of(
+                        Paths.get("org/l2x6/pom-tuner/pom-tuner/5.0.0/pom-tuner-5.0.0-sources.jar")))
+                .isEqualTo(new Gavtc("org.l2x6.pom-tuner", "pom-tuner", "5.0.0", Type.of("jar"), "sources"));
     }
 
     @Test
