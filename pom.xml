@@ -22,7 +22,7 @@
 
     <groupId>org.l2x6.pom-tuner</groupId>
     <artifactId>pom-tuner-parent</artifactId>
-    <version>5.0.0.Alpha3</version>
+    <version>5.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>${project.groupId}:${project.artifactId}</name>
@@ -49,7 +49,7 @@
         <connection>scm:git:git@github.com:l2x6/pom-tuner.git</connection>
         <developerConnection>scm:git:git@github.com:l2x6/pom-tuner.git</developerConnection>
         <url>https://github.com/l2x6/pom-tuner</url>
-        <tag>5.0.0.Alpha3</tag>
+        <tag>head</tag>
     </scm>
     <issueManagement>
         <system>GitHub Issues</system>
