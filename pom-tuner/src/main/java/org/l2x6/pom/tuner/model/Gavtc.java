@@ -19,8 +19,10 @@ package org.l2x6.pom.tuner.model;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.io.Writer;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.Objects;
 import org.l2x6.pom.tuner.Comparators;
 
@@ -87,6 +89,44 @@ public class Gavtc {
         final String type = i < gavtcArr.length ? emptyToNull(gavtcArr[i++]) : null;
         final String classifier = i < gavtcArr.length ? emptyToNull(gavtcArr[i++]) : null;
         return new Gavtc(groupId, artifactId, version, Type.of(type), classifier);
+    }
+
+    /**
+     * Split the given {@code artifactPath} into {@code groupId}, {@code artifactId}, {@code version}, {@code type} and
+     * {@code classifier} and return a new
+     * {@link Gavtc} instance. {@code artifactPath} must be a {@link Path} to an artifact realtive to Maven repository root.
+     * <p>
+     * Example:
+     * <p>
+     * {@code org/foo/bar/1.2.3/bar-sources-1.2.3.jar} would be parsed into an equivalent of
+     * {@code Gavtc.of("org.foo:bar:1.2.3:jar:sources")}
+     *
+     * @param  artifactPath          a path relative to Maven repository root
+     * @return                       a new {@link Gavtc} instance
+     * @throws IllegalStateException on any parse errors
+     *
+     * @since                        5.0.0
+     */
+    public static Gavtc of(Path artifactPath) {
+        final String fileName = artifactPath.getFileName().toString();
+        final int lastPeriodPos = fileName.lastIndexOf('.');
+        final String type = fileName.substring(lastPeriodPos + 1);
+        final Path versionDir = artifactPath.getParent();
+        final String version = versionDir.getFileName().toString();
+        final Path artifactDir = versionDir.getParent();
+        final String artifactId = artifactDir.getFileName().toString();
+        final Path groupDir = artifactDir.getParent();
+
+        Iterator<Path> it = groupDir.iterator();
+        final StringBuilder groupId = new StringBuilder(it.next().toString());
+        while (it.hasNext()) {
+            groupId.append('.').append(it.next().toString());
+        }
+        final int avLength = artifactId.length() + 1 + version.length() + 1;
+        final String classifier = (avLength - 1 == lastPeriodPos)
+                ? null
+                : fileName.substring(avLength, lastPeriodPos);
+        return new Gavtc(groupId.toString(), artifactId, version, Type.of(type), classifier);
     }
 
     /**
