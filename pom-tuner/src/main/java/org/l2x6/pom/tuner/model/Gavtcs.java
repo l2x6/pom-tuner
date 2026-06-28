@@ -28,8 +28,8 @@ import java.util.function.Predicate;
 import org.l2x6.pom.tuner.model.Gavtc.Type;
 
 /**
- * A Maven dependency defined by {@code groupId}, {@code artifactId}, {@code version}, {@code type} and
- * {@code classifier}.
+ * A Maven dependency defined by {@code groupId}, {@code artifactId}, {@code version}, {@code type},
+ * {@code classifier} and {@code scope}
  *
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
