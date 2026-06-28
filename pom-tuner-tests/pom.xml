@@ -23,7 +23,7 @@
     <parent>
         <groupId>org.l2x6.pom-tuner</groupId>
         <artifactId>pom-tuner-parent</artifactId>
-        <version>5.0.0.Alpha4</version>
+        <version>5.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>pom-tuner-tests</artifactId>
