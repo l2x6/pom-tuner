@@ -26,3 +26,9 @@ end_of_line = lf
 
 [*.cmd]
 end_of_line = crlf
+
+[**/src/test/resources/LocalMavenRepository/**]
+indent_style = unset
+indent_size = unset
+trim_trailing_whitespace = unset
+end_of_line = unset

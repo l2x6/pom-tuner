@@ -425,6 +425,7 @@ limitations under the License.</inlineHeader>
                                         <exclude>.sdkmanrc</exclude>
                                         <exclude>src/test/resources/expected/**</exclude>
                                         <exclude>src/test/resources/projects/**</exclude>
+                                        <exclude>src/test/resources/LocalMavenRepository/**</exclude>
                                     </excludes>
                                 </licenseSet>
                             </licenseSets>

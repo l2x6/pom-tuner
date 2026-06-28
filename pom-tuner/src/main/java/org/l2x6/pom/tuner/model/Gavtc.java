@@ -25,6 +25,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Objects;
 import org.l2x6.pom.tuner.Comparators;
+import org.l2x6.pom.tuner.PomTunerUtils;
 
 /**
  * A Maven artifact defined by {@code groupId}, {@code artifactId}, {@code version}, {@code type} and
@@ -43,10 +44,12 @@ public class Gavtc {
 
         static final OptionalWithDefault EMPTY = new OptionalWithDefault(null, Gavtc.DEFAULT_TYPE);
         static final OptionalWithDefault POM = new OptionalWithDefault("pom", Gavtc.DEFAULT_TYPE);
+        static final OptionalWithDefault JAR = new OptionalWithDefault(Gavtc.DEFAULT_TYPE, Gavtc.DEFAULT_TYPE);
 
         public static OptionalWithDefault of(String value) {
             return (value == null || value.isEmpty() ? EMPTY
-                    : ("pom".equals(value) ? POM : new OptionalWithDefault(value, Gavtc.DEFAULT_TYPE)));
+                    : ("pom".equals(value) ? POM
+                            : ("jar".equals(value) ? JAR : new OptionalWithDefault(value, Gavtc.DEFAULT_TYPE))));
         }
 
         public static OptionalWithDefault empty() {
@@ -55,6 +58,10 @@ public class Gavtc {
 
         public static OptionalWithDefault pom() {
             return POM;
+        }
+
+        public static OptionalWithDefault jar() {
+            return JAR;
         }
 
     }
@@ -357,6 +364,14 @@ public class Gavtc {
      */
     public Gavtcs toGavtcs(String scope, Collection<GaPattern> exclusions) {
         return new Gavtcs(this, scope, exclusions);
+    }
+
+    public Gavtcf toGavtcf(Path artifactPath) {
+        return new Gavtcf(this, PomTunerUtils.toUnixPath(artifactPath.toString()));
+    }
+
+    public Gavtcf toGavtcf(String artifactPath) {
+        return new Gavtcf(this, artifactPath);
     }
 
     /**
