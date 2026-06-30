@@ -37,18 +37,23 @@ public class LocalMavenRepositoryTest {
         Gav pt4100 = Gav.of("org.l2x6.pom-tuner:pom-tuner:4.10.0");
         Assertions.assertThat(found).containsExactlyInAnyOrder(
                 Gav.of("org.l2x6.pom-tuner:pom-tuner-parent:4.9.0").toGavtc(Type.pom(), null)
-                        .toGavtcf("org/l2x6/pom-tuner/pom-tuner-parent/4.9.0/pom-tuner-parent-4.9.0.pom"),
-                pt490.toGavtc(Type.pom(), null).toGavtcf("org/l2x6/pom-tuner/pom-tuner/4.9.0/pom-tuner-4.9.0.pom"),
-                pt490.toGavtc(Type.jar(), null).toGavtcf("org/l2x6/pom-tuner/pom-tuner/4.9.0/pom-tuner-4.9.0.jar"),
-                pt490.toGavtc(Type.jar(), "sources").toGavtcf("org/l2x6/pom-tuner/pom-tuner/4.9.0/pom-tuner-4.9.0-sources.jar"),
+                        .toGavtcf(root.resolve("org/l2x6/pom-tuner/pom-tuner-parent/4.9.0/pom-tuner-parent-4.9.0.pom")),
+                pt490.toGavtc(Type.pom(), null)
+                        .toGavtcf(root.resolve("org/l2x6/pom-tuner/pom-tuner/4.9.0/pom-tuner-4.9.0.pom")),
+                pt490.toGavtc(Type.jar(), null)
+                        .toGavtcf(root.resolve("org/l2x6/pom-tuner/pom-tuner/4.9.0/pom-tuner-4.9.0.jar")),
+                pt490.toGavtc(Type.jar(), "sources")
+                        .toGavtcf(root.resolve("org/l2x6/pom-tuner/pom-tuner/4.9.0/pom-tuner-4.9.0-sources.jar")),
 
                 Gav.of("org.l2x6.pom-tuner:pom-tuner-parent:4.10.0").toGavtc(Type.pom(), null)
-                        .toGavtcf("org/l2x6/pom-tuner/pom-tuner-parent/4.10.0/pom-tuner-parent-4.10.0.pom"),
-                pt4100.toGavtc(Type.pom(), null).toGavtcf("org/l2x6/pom-tuner/pom-tuner/4.10.0/pom-tuner-4.10.0.pom"),
-                pt4100.toGavtc(Type.jar(), null).toGavtcf("org/l2x6/pom-tuner/pom-tuner/4.10.0/pom-tuner-4.10.0.jar"),
+                        .toGavtcf(root.resolve("org/l2x6/pom-tuner/pom-tuner-parent/4.10.0/pom-tuner-parent-4.10.0.pom")),
+                pt4100.toGavtc(Type.pom(), null)
+                        .toGavtcf(root.resolve("org/l2x6/pom-tuner/pom-tuner/4.10.0/pom-tuner-4.10.0.pom")),
+                pt4100.toGavtc(Type.jar(), null)
+                        .toGavtcf(root.resolve("org/l2x6/pom-tuner/pom-tuner/4.10.0/pom-tuner-4.10.0.jar")),
                 pt4100.toGavtc(Type.jar(), "sources")
-                        .toGavtcf("org/l2x6/pom-tuner/pom-tuner/4.10.0/pom-tuner-4.10.0-sources.jar"),
+                        .toGavtcf(root.resolve("org/l2x6/pom-tuner/pom-tuner/4.10.0/pom-tuner-4.10.0-sources.jar")),
                 pt4100.toGavtc(Type.jar(), "javadoc")
-                        .toGavtcf("org/l2x6/pom-tuner/pom-tuner/4.10.0/pom-tuner-4.10.0-javadoc.jar"));
+                        .toGavtcf(root.resolve("org/l2x6/pom-tuner/pom-tuner/4.10.0/pom-tuner-4.10.0-javadoc.jar")));
     }
 }
