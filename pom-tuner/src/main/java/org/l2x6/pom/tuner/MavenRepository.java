@@ -92,20 +92,19 @@ public interface MavenRepository {
                         groupId.append('.').append(it.next().toString());
                     }
                     return Optional
-                            .of(new VersionDirectory(versionDirectory, relDir,
+                            .of(new VersionDirectory(
+                                    versionDirectory,
                                     new Gav(groupId.toString(), artifactId, version)));
                 }
                 return Optional.empty();
             }
 
-            private VersionDirectory(Path absPath, Path relPath, Gav gav) {
+            private VersionDirectory(Path absPath, Gav gav) {
                 this.absVersionDir = absPath;
-                this.relVersionDir = relPath;
                 this.gav = gav;
             }
 
             private final Path absVersionDir;
-            private final Path relVersionDir;
             private final Gav gav;
 
             public Stream<Gavtcf> artifacts() {
@@ -126,7 +125,7 @@ public interface MavenRepository {
                                         ? null
                                         : fileName.substring(prefix.length() + 1, lastPeriodPos);
                                 return gav.toGavtc(Type.of(type), classifier)
-                                        .toGavtcf(relVersionDir.resolve(file.getFileName()));
+                                        .toGavtcf(absVersionDir.resolve(file.getFileName()));
                             });
                 } catch (IOException e) {
                     throw new UncheckedIOException("Could not list " + absVersionDir, e);

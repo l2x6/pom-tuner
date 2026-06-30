@@ -18,7 +18,6 @@ package org.l2x6.pom.tuner.model;
 
 import java.nio.file.Path;
 import java.util.Objects;
-import org.l2x6.pom.tuner.PomTunerUtils;
 import org.l2x6.pom.tuner.model.Gavtc.Type;
 
 /**
@@ -31,23 +30,19 @@ import org.l2x6.pom.tuner.model.Gavtc.Type;
 public class Gavtcf {
 
     private final Gavtc gavtc;
-    private final String file;
+    private final Path file;
     private final int hashCode;
 
-    public static Gavtcf of(Path relPath) {
-        return Gavtc.of(relPath).toGavtcf(PomTunerUtils.toUnixPath(relPath.toString()));
-    }
-
-    public Gavtcf(String groupId, String artifactId, String version, String file) {
+    public Gavtcf(String groupId, String artifactId, String version, Path file) {
         this(groupId, artifactId, version, Type.empty(), file);
     }
 
-    public Gavtcf(String groupId, String artifactId, String version, OptionalWithDefault type, String file) {
+    public Gavtcf(String groupId, String artifactId, String version, OptionalWithDefault type, Path file) {
         this(groupId, artifactId, version, type, null, file);
     }
 
     public Gavtcf(String groupId, String artifactId, String version, OptionalWithDefault type, String classifier,
-            String file) {
+            Path file) {
         this(new Gavtc(groupId, artifactId, version, type, classifier), file);
     }
 
@@ -57,17 +52,9 @@ public class Gavtcf {
      *
      * @since       5.0.0
      */
-    public Gavtcf(Gavtc gavtc, String file) {
+    public Gavtcf(Gavtc gavtc, Path file) {
         this.gavtc = gavtc;
-        Objects.requireNonNull(file, "file");
-        if (file.startsWith("/")) {
-            throw new IllegalArgumentException(
-                    "File path must be a relative to a Maven repository root directory; found " + file);
-        }
-        if (file.contains("\\")) {
-            throw new IllegalArgumentException("Path must use Unix path separators '/'; found " + file);
-        }
-        this.file = file;
+        this.file = Objects.requireNonNull(file, "file");
 
         this.hashCode = hc();
     }
@@ -118,11 +105,12 @@ public class Gavtcf {
     }
 
     /**
-     * @return a path relative to a Maven repository root directory pointing at this artifact's file
+     * @return a path pointing at this artifact's file, either absolute or relative to the working directory of the current
+     *         JVM process
      *
      * @since  5.0.0
      */
-    public String getFile() {
+    public Path getFile() {
         return file;
     }
 

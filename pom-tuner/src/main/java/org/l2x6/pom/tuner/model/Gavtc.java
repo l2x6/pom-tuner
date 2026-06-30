@@ -25,7 +25,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Objects;
 import org.l2x6.pom.tuner.Comparators;
-import org.l2x6.pom.tuner.PomTunerUtils;
 
 /**
  * A Maven artifact defined by {@code groupId}, {@code artifactId}, {@code version}, {@code type} and
@@ -366,12 +365,13 @@ public class Gavtc {
         return new Gavtcs(this, scope, exclusions);
     }
 
-    public Gavtcf toGavtcf(Path artifactPath) {
-        return new Gavtcf(this, PomTunerUtils.toUnixPath(artifactPath.toString()));
-    }
-
-    public Gavtcf toGavtcf(String artifactPath) {
-        return new Gavtcf(this, artifactPath);
+    /**
+     * @param  file the file to use when creating {@link Gavtcf}
+     * @return      new {@link Gavtcf} embedding this {@link Gavtc} and having the given {@code file}
+     * @since       5.0.0
+     */
+    public Gavtcf toGavtcf(Path file) {
+        return new Gavtcf(this, file);
     }
 
     /**
