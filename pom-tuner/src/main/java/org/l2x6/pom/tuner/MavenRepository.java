@@ -115,7 +115,9 @@ public interface MavenRepository {
                         return fileName.startsWith(prefix)
                                 && !fileName.endsWith(".asc")
                                 && !fileName.endsWith(".md5")
-                                && !fileName.endsWith(".sha1");
+                                && !fileName.endsWith(".sha1")
+                                && !fileName.endsWith(".sha256")
+                                && !fileName.endsWith(".sha512");
                     })
                             .map(file -> {
                                 String fileName = file.getFileName().toString();
