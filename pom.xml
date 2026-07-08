@@ -55,14 +55,15 @@
         <system>GitHub Issues</system>
         <url>https://github.com/l2x6/pom-tuner/issues</url>
     </issueManagement>
+
     <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
-            <url>${snapshots.repo.url}</url>
+            <url>https://central.sonatype.com/repository/maven-snapshots</url>
         </snapshotRepository>
         <repository>
             <id>ossrh</id>
-            <url>${releases.repo.url}</url>
+            <url>https://repo.maven.apache.org/maven2</url>
         </repository>
     </distributionManagement>
 
@@ -77,7 +78,6 @@
 
         <!-- Plugins and their dependencies -->
         <buildnumber-maven-plugin.version>3.3.0</buildnumber-maven-plugin.version>
-        <central-publishing-maven-plugin.version>0.11.0</central-publishing-maven-plugin.version>
         <editorconfig-maven-plugin.version>0.2.0</editorconfig-maven-plugin.version>
         <formatter-maven-plugin.version>2.29.0</formatter-maven-plugin.version>
         <impsort-maven-plugin.version>1.13.0</impsort-maven-plugin.version>
@@ -98,6 +98,7 @@
         <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
         <maven-surefire-plugin.version>3.5.6</maven-surefire-plugin.version>
         <site-maven-plugin.version>0.12</site-maven-plugin.version>
+        <njord.version>0.9.9</njord.version>
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -117,6 +118,12 @@
 
         <!-- com.github.github:site-maven-plugin -->
         <github.global.server>github</github.global.server>
+
+        <!-- njord configuration -->
+        <njord.autoPublish>true</njord.autoPublish>
+        <njord.publishingType>automatic</njord.publishingType>
+        <njord.waitForStates>true</njord.waitForStates>
+        <njord.publisher>sonatype-cp</njord.publisher>
     </properties>
 
     <modules>
@@ -173,9 +180,21 @@
     </dependencyManagement>
 
     <build>
+        <extensions>
+            <extension>
+                <groupId>eu.maveniverse.maven.njord</groupId>
+                <artifactId>extension3</artifactId>
+                <version>${njord.version}</version>
+            </extension>
+        </extensions>
         <pluginManagement>
             <plugins>
                 <!-- Ordering: alphabetical by groupId and artifactId -->
+                <plugin>
+                    <groupId>eu.maveniverse.maven.plugins</groupId>
+                    <artifactId>njord</artifactId>
+                    <version>${njord.version}</version>
+                </plugin>
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -303,18 +322,6 @@
                 </plugin>
 
                 <plugin>
-                    <groupId>org.sonatype.central</groupId>
-                    <artifactId>central-publishing-maven-plugin</artifactId>
-                    <version>${central-publishing-maven-plugin.version}</version>
-                    <configuration>
-                        <publishingServerId>central</publishingServerId>
-                        <autoPublish>true</autoPublish>
-                        <waitUntil>published</waitUntil>
-                        <waitMaxTime>7200</waitMaxTime>
-                    </configuration>
-                </plugin>
-
-                <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
                     <version>${formatter-maven-plugin.version}</version>
@@ -371,12 +378,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-
-            <plugin>
-                <groupId>org.sonatype.central</groupId>
-                <artifactId>central-publishing-maven-plugin</artifactId>
-                <extensions>true</extensions>
             </plugin>
 
         </plugins>
