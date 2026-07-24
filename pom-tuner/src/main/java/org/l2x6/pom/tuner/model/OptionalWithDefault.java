@@ -37,10 +37,20 @@ public final class OptionalWithDefault implements Comparable<OptionalWithDefault
     protected final String value;
     protected final String defaultValue;
 
+    /**
+     * @return a {@link Comparator} comparing only by {@link #value}
+     *
+     * @since  5.0.0
+     */
     public static Comparator<OptionalWithDefault> rawValueComparator() {
         return RAW_VALUE_COMPARATOR;
     }
 
+    /**
+     * @return a {@link Comparator} comparing {@link #value} if it is set and otherwise by {@link #defaultValue}
+     *
+     * @since  5.0.0
+     */
     public static Comparator<OptionalWithDefault> valueOrDefaultComparator() {
         return VALUE_OR_DEFAULT_COMPARATOR;
     }
@@ -66,7 +76,7 @@ public final class OptionalWithDefault implements Comparable<OptionalWithDefault
      * @since  5.0.0
      */
     public String getValueOrDefault() {
-        return value == null ? Gavtc.DEFAULT_TYPE : value;
+        return value == null ? defaultValue : value;
     }
 
     @Override
@@ -94,6 +104,8 @@ public final class OptionalWithDefault implements Comparable<OptionalWithDefault
     /**
      * @param  other the {@link OptionalWithDefault} to compare with
      * @return       {@code true} if {@link #value} and {@code other.value} are the same or equal
+     *
+     * @since        5.0.0
      */
     public boolean equalsRaw(OptionalWithDefault other) {
         return this.value == other.value || (this.value != null && this.value.equals(other.value));
@@ -101,18 +113,40 @@ public final class OptionalWithDefault implements Comparable<OptionalWithDefault
 
     /**
      * @return {@code true} if {@link #value} is {@code null} or equal to default and {@code false} otherwise
+     *
+     * @since  5.0.0
      */
     public boolean isDefault() {
-        return value == null || value.equals(Gavtc.DEFAULT_TYPE);
+        return value == null || value.equals(defaultValue);
     }
 
     /**
      * @return {@code true} if {@link #value} is non-{@code null}
+     *
+     * @since  5.0.0
      */
     public boolean isSet() {
-        return value == null || value.equals(Gavtc.DEFAULT_TYPE);
+        return value != null;
     }
 
+    /**
+     * @return {@code new OptionalWithDefault(null, defaultValue)} if {@code value != null && value.equals(defaultValue)};
+     *         otherwise this {@link OptionalWithDefault}.
+     *
+     * @since  5.0.0
+     */
+    public OptionalWithDefault preferDefault() {
+        if (value != null && value.equals(defaultValue)) {
+            return new OptionalWithDefault(null, defaultValue);
+        }
+        return this;
+    }
+
+    /**
+     * Order given by {@link #valueOrDefaultComparator()}
+     *
+     * @since 5.0.0
+     */
     @Override
     public int compareTo(OptionalWithDefault other) {
         return VALUE_OR_DEFAULT_COMPARATOR.compare(this, other);
