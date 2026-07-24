@@ -33,7 +33,7 @@ import org.l2x6.pom.tuner.Comparators;
  * @since  4.8.0
  * @author <a href="https://github.com/ppalaga">Peter Palaga</a>
  */
-public class Gavtc {
+public class Gavtc implements Comparable<Gavtc> {
     /**
      * Utility methods for artifact type, such as {@code jar} or {@code pom}
      *
@@ -67,6 +67,8 @@ public class Gavtc {
 
     static final String DEFAULT_TYPE = "jar";
     static final Comparator<String> SAFE_STRING_COMPARATOR = Comparators.safeStringComparator();
+    private static final Comparator<Gavtc> GROUP_FIRST_COMPARATOR = groupFirstComparator(
+            OptionalWithDefault.valueOrDefaultComparator());
 
     /**
      * Parse the given {@code <groupId>:<artifactId>:<version>[:<type>[:<classifier>]]} {@code rawGavtcs} and return a new
@@ -137,7 +139,7 @@ public class Gavtc {
 
     /**
      * @return a {@link Comparator} that compares on {@link #getGroupId()}, {@link #getArtifactId()}, {@link #getVersion()},
-     *         {@link #getType()} and {@link #getClassifier()} respectively.
+     *         {@link #getType()} (using the specified {@code typeComparator}) and {@link #getClassifier()} respectively.
      *
      * @see    #typeFirstComparator()
      */
@@ -148,6 +150,17 @@ public class Gavtc {
                 .thenComparing(Gavtc::getVersion, SAFE_STRING_COMPARATOR)
                 .thenComparing(Gavtc::getType, typeComparator)
                 .thenComparing(Gavtc::getClassifier, SAFE_STRING_COMPARATOR);
+    }
+
+    /**
+     * @return a {@link Comparator} that compares on {@link #getGroupId()}, {@link #getArtifactId()}, {@link #getVersion()},
+     *         {@link #getType()} (using {@link OptionalWithDefault#valueOrDefaultComparator()}) and
+     *         {@link #getClassifier()} respectively.
+     *
+     * @see    #typeFirstComparator()
+     */
+    public static Comparator<Gavtc> groupFirstComparator() {
+        return GROUP_FIRST_COMPARATOR;
     }
 
     /**
@@ -408,5 +421,11 @@ public class Gavtc {
             throw new UncheckedIOException(e);
         }
         return stringBuilder;
+    }
+
+    /** Order given by {@link #groupFirstComparator()} */
+    @Override
+    public int compareTo(Gavtc other) {
+        return GROUP_FIRST_COMPARATOR.compare(this, other);
     }
 }
