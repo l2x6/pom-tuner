@@ -77,6 +77,19 @@ public class GavtcTest {
     }
 
     @Test
+    public void type() {
+        OptionalWithDefault empty = Type.of(null);
+        Assertions.assertThat(empty.preferDefault()).isSameAs(empty);
+        Assertions.assertThat(empty.isSet()).isFalse();
+        Assertions.assertThat(empty.isDefault()).isTrue();
+
+        OptionalWithDefault jar = Type.of("jar");
+        Assertions.assertThat(jar.preferDefault()).isEqualTo(empty);
+        Assertions.assertThat(jar.isSet()).isTrue();
+        Assertions.assertThat(jar.isDefault()).isTrue();
+    }
+
+    @Test
     void getRepositoryPath() {
         Assertions.assertThat(Gavtc.of("org.foo:bar:1.2.3").getRepositoryPath()).isEqualTo("org/foo/bar/1.2.3/bar-1.2.3.jar");
         Assertions.assertThat(Gavtc.of("org.foo:bar:1.2.3:pom").getRepositoryPath())
