@@ -73,7 +73,7 @@
         <cli-assured.version>0.1.1</cli-assured.version>
         <domtrip.version>1.6.0</domtrip.version>
         <junit.version>5.14.4</junit.version>
-        <slf4j.version>2.0.18</slf4j.version>
+        <slf4j.version>2.0.19</slf4j.version>
 
         <!-- Plugins and their dependencies -->
         <buildnumber-maven-plugin.version>3.3.0</buildnumber-maven-plugin.version>
