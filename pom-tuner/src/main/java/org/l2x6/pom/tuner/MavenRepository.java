@@ -18,10 +18,14 @@ package org.l2x6.pom.tuner;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.FileVisitOption;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Stream;
 import org.l2x6.pom.tuner.model.Gav;
 import org.l2x6.pom.tuner.model.Gavtc.Type;
@@ -52,6 +56,8 @@ public interface MavenRepository {
      * @since 5.0.0
      */
     static class LocalMavenRepository implements MavenRepository {
+        private static final Set<String> NON_ARTIFACT_EXTENSIONS = new HashSet<>(
+                Arrays.asList("asc", "md5", "sha1", "sha256", "sha512"));
         private final Path rootDirectory;
 
         private LocalMavenRepository(Path rootDirectory) {
@@ -61,7 +67,8 @@ public interface MavenRepository {
         @Override
         public Stream<Gavtcf> gavtcfStream() {
             try {
-                return Files.walk(rootDirectory).filter(Files::isDirectory)
+                return Files.walk(rootDirectory, FileVisitOption.FOLLOW_LINKS)
+                        .filter(Files::isDirectory)
                         .map(versionDir -> VersionDirectory.of(rootDirectory, versionDir))
                         .filter(Optional::isPresent)
                         .map(Optional::get)
@@ -110,28 +117,38 @@ public interface MavenRepository {
             public Stream<Gavtcf> artifacts() {
                 try {
                     String prefix = gav.getArtifactId() + "-" + gav.getVersion();
-                    return Files.list(absVersionDir).filter(file -> {
-                        String fileName = file.getFileName().toString();
-                        return fileName.startsWith(prefix)
-                                && !fileName.endsWith(".asc")
-                                && !fileName.endsWith(".md5")
-                                && !fileName.endsWith(".sha1")
-                                && !fileName.endsWith(".sha256")
-                                && !fileName.endsWith(".sha512");
-                    })
-                            .map(file -> {
-                                String fileName = file.getFileName().toString();
-                                final int lastPeriodPos = fileName.lastIndexOf('.');
-                                final String type = fileName.substring(lastPeriodPos + 1);
-                                final String classifier = (prefix.length() == lastPeriodPos)
+                    return Files.list(absVersionDir)
+                            .map(ArtifactFile::new)
+                            .filter(f -> f.type != null
+                                    && !NON_ARTIFACT_EXTENSIONS.contains(f.type)
+                                    && f.fileName.startsWith(prefix)
+                                    && Files.isRegularFile(f.path))
+                            .map(f -> {
+                                String classifier = (prefix.length() == f.lastPeriodPosition)
                                         ? null
-                                        : fileName.substring(prefix.length() + 1, lastPeriodPos);
-                                return gav.toGavtc(Type.of(type), classifier)
-                                        .toGavtcf(absVersionDir.resolve(file.getFileName()));
+                                        : f.fileName.substring(prefix.length() + 1, f.lastPeriodPosition);
+                                return gav.toGavtc(Type.of(f.type), classifier)
+                                        .toGavtcf(absVersionDir.resolve(f.path));
                             });
                 } catch (IOException e) {
                     throw new UncheckedIOException("Could not list " + absVersionDir, e);
                 }
+            }
+        }
+
+        static class ArtifactFile {
+            private final String type;
+            private final Path path;
+            private final String fileName;
+            private final int lastPeriodPosition;
+
+            ArtifactFile(Path path) {
+                this.path = path;
+                this.fileName = path.getFileName().toString();
+                this.lastPeriodPosition = this.fileName.lastIndexOf('.');
+                this.type = lastPeriodPosition > 0 && lastPeriodPosition < fileName.length() - 1
+                        ? fileName.substring(lastPeriodPosition + 1)
+                        : null;
             }
         }
 
